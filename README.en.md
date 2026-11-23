@@ -8,7 +8,7 @@
 
 **Make UU Remote Native on Any Device**
 
-Built for UU Remote · Display and touch enhancements for remote Macs<br>A dedicated screen for every device · Native touch gestures · App Library
+Display and touch enhancements for remote Macs · Supports UU Remote and CrossDesk<br>A dedicated screen for every device · Native touch gestures · App Library
 
 [![Latest release](https://img.shields.io/github/v/release/zephyr4123/snug?label=release&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-Universal-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Notarized](https://img.shields.io/badge/Apple-Notarized-black?logo=apple) [![License MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -24,7 +24,7 @@ Built for UU Remote · Display and touch enhancements for remote Macs<br>A dedic
 > [!IMPORTANT]
 > **For UU Remote VIP members**: from December 1, 2026, UU Remote moves multi-display and virtual display features to VIP. Snug is built on virtual displays; if you happen to be a UU Remote VIP member, give it a try.
 >
-> **Our position**: Snug is an independent community project with no commercial ties to UU Remote. Whether to subscribe is a decision about UU Remote itself; there is no need to subscribe just for Snug. For now Snug focuses on UU Remote and has no plans to add other remote desktop apps itself; the UU Remote integration is a swappable adapter layer, so pull requests adding other apps are welcome, as are forks (see [Development](#-development)).
+> Snug is an independent community project with no commercial ties to UU Remote. See the [CrossDesk guide](docs/remotes/crossdesk.md) to connect with CrossDesk.
 
 > Continued from [aoyamashou/UUyc-companion](https://github.com/aoyamashou/UUyc-companion) (UU Remote Companion by AoyamaShou, MIT License), with the original copyright notices and commit history fully preserved. Redesigned around the phone screen in 2.0; extended to tablets and computers in 2.6.
 

@@ -56,6 +56,10 @@ struct ScreensPage: View {
                 .padding(.top, MacTokens.Space.xs)
             }
             Section {
+                Toggle(isOn: Binding(get: { state.config.keepScreensReady }, set: { intents.setKeepScreensReady($0) })) {
+                    SettingLabel("提前准备虚拟屏", detail: "Snug 启动时建屏。打开后重新启动 CrossDesk。", tile: MacTokens.IconTile.mainScreen)
+                }
+                .toggleStyle(.switch)
                 LabeledContent {
                     // 设主屏立即生效、影响本机，先讲清代价再设；改回「不改」不用问
                     Picker("设为主屏", selection: Binding(get: { state.config.mainScreen }, set: { id in
@@ -68,7 +72,7 @@ struct ScreensPage: View {
                     .labelsHidden()
                     .fixedSize()
                 } label: {
-                    SettingLabel("设为主屏", detail: "常驻并作为主屏，每次连接直接进入", tile: MacTokens.IconTile.mainScreen)
+                    SettingLabel("设为主屏", detail: "常驻并作为 Mac 的主屏", tile: MacTokens.IconTile.mainScreen)
                 }
             }
         }
@@ -156,10 +160,8 @@ private struct WhyManyScreens: View {
     var body: some View {
         VStack(alignment: .leading, spacing: MacTokens.Space.m) {
             Text("可以开几块屏").font(.headline)
-            Text("UU远程 一次只让一台设备控制。多开的屏留给：").foregroundStyle(.secondary)
-            reason("rectangle.portrait.rotate", "横竖切换", "同一台设备横竖各一块，转过来在 UU 里切")
-            reason("arrow.left.arrow.right", "换设备", "另一台接管后直接选它的屏，不用改设置")
-            Text("关着的屏远程时不建，UU 的屏幕列表也更短。").font(.callout).foregroundStyle(.secondary)
+            reason("rectangle.portrait.rotate", "横竖切换", "同一台设备横竖各一块，在远控里切屏")
+            reason("arrow.left.arrow.right", "换设备", "用另一台设备时，直接选为它准备的屏")
         }
         .padding(MacTokens.Space.l)
         .frame(width: MacTokens.Size.helpPopoverWidth, alignment: .leading)
@@ -280,7 +282,7 @@ struct TouchPage: View {
                     SettingLabel("截图", detail: "小横条左侧的相机键 · 截当前窗口到剪贴板", tile: MacTokens.IconTile.screenshot)
                 }
             } footer: {
-                Text("只作用于手机和平板屏。电脑屏不翻译手势、不放大字号。")
+                Text("手机和平板屏支持字号放大。UU远程 由 Snug 翻译手势，CrossDesk 使用自身触控。")
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

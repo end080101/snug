@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SnugCore
 
@@ -33,6 +34,24 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.wishes(config: c, remote: remote, trusted: false).isEmpty)
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true, preview: true).count == 2)
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false, preview: true).isEmpty)
+    }
+
+    @Test("user 提前准备虚拟屏，重启 Snug 或远控断开后仍能选到屏幕")
+    func screensReadyBeforeConnection() throws {
+        // Given two enabled screens and no remote session
+        var c = config()
+        #expect(!c.keepScreensReady)
+        // When the user enables the setting and restarts Snug
+        c.keepScreensReady = true
+        c = try JSONDecoder().decode(AppConfig.self, from: JSONEncoder().encode(c))
+        // Then enabled screens stay available as secondary displays when idle
+        let idle = ScreenPlan.wishes(config: c, remote: false, trusted: true)
+        #expect(idle.map(\.id) == [.phone, c.screens[1].id])
+        #expect(idle.map(\.main) == [false, false])
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true) == idle)
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false).isEmpty)
+        c.keepScreensReady = false
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true).isEmpty)
     }
 
     @Test("类别 → 行为：手机、平板是触屏，电脑不是；手势总开关不改行为（翻不翻译由界面层按开关定）")

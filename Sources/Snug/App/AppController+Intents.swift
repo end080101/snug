@@ -43,6 +43,11 @@ extension AppController: AppIntents {
         editScreen(id, "名字 → \(name)") { $0.name = name }
     }
 
+    func setKeepScreensReady(_ on: Bool) {
+        guard changeConfig("提前准备虚拟屏 → \(on ? "开" : "关")", { $0.keepScreensReady = on }) else { return }
+        applyPlan()
+    }
+
     func setMainScreen(_ id: ScreenID?) {
         let name = id.flatMap { state.screen($0)?.name }
         guard changeConfig("设为主屏 → \(name.map { "「\($0)」" } ?? "不改")", { $0.mainScreen = id }) else { return }

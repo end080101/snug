@@ -549,14 +549,18 @@ public final class DeskSet {
     /// 远程在不在进行（会话层的结论）。远程结束后，远程中撤屏留下的永久配置要重写（settleDisplays）
     public func setRemote(_ on: Bool) {
         guard screens.setRemote(on), !on else { return }
-        // 远程结束：设为主屏的那块常驻不撤（ScreenPlan），这次远程的事不带到下一次
-        lane.run { self.endSession() }
+        lane.run { await self.endSession() }
         settleDisplays()
     }
 
-    /// 远程结束后还留着的屏（常驻的主屏）：屏上的窗口原样留着，下次连上接着用（主人定：设了主屏，
-    /// 屏上的东西就不该变；取消设为主屏、撤这块屏时才放回）。只收掉这次远程的提示
-    private func endSession() {
+    /// 提前准备的副屏继续在线，临时放上去的窗口归位。设为主屏的那块保留窗口供下次接续。
+    private func endSession() async {
+        for wish in wishes where !wish.main {
+            guard !screens.isRemote else { return }
+            guard let desk = desks[wish.id], desk.wanted, desk.state.display != nil else { continue }
+            await desk.vacate()
+            await desk.matchWidth()
+        }
         for desk in desks.values { desk.setNotice(nil) }
         forgetSession()
     }

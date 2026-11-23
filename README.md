@@ -8,7 +8,7 @@
 
 **Make UU Remote Native on Any Device**
 
-为 UU远程 打造 · 远程 Mac 的显示与触控增强<br>每台设备专属屏幕 · 原生触屏手势 · App 资源库
+远程 Mac 的显示与触控增强 · 支持 UU远程 和 CrossDesk<br>每台设备专属屏幕 · 原生触屏手势 · App 资源库
 
 [![最新版本](https://img.shields.io/github/v/release/zephyr4123/snug?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-%E9%80%9A%E7%94%A8-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![已公证](https://img.shields.io/badge/Apple-%E5%B7%B2%E5%85%AC%E8%AF%81-black?logo=apple) [![许可证 MIT](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-green)](LICENSE)
 
@@ -24,7 +24,7 @@
 > [!IMPORTANT]
 > **致 UU远程 VIP 用户**：UU远程 自 2026 年 12 月 1 日起将多屏、虚拟屏等功能纳入 VIP。Snug 基于虚拟屏架构，若你恰为 UU远程 VIP 用户，欢迎一试。
 >
-> **立场**：Snug 为独立社区项目，与 UU远程 无商业关联。是否开通 VIP，请依自身对 UU远程 的需求决定，不必为 Snug 专门开通。目前专注 UU远程，暂不自行适配其他远控软件；对接部分已抽为可替换的适配层，欢迎提 PR 接入或 fork 自行适配，详见[开发](#-开发)。
+> **立场**：Snug 为独立社区项目，与 UU远程 无商业关联。是否开通 VIP，请依自身对 UU远程 的需求决定，不必为 Snug 专门开通。使用 CrossDesk 请看 [连接步骤](docs/remotes/crossdesk.md)。
 
 > 承接自 [aoyamashou/UUyc-companion](https://github.com/aoyamashou/UUyc-companion)（UU远程伴侣，作者 AoyamaShou，MIT 许可），完整保留原作者的版权声明与提交历史。2.0 起以手机屏为核心重新设计，2.6 起扩展至平板与电脑。
 
@@ -41,7 +41,7 @@
 | **国内源** | 腾讯云 CDN 加速，中国大陆推荐 | [Snug.dmg](https://dl.zephyrxiang.com/snug/latest/Snug.dmg) |
 | **GitHub Releases** | 附更新说明、校验文件与历史版本 | [前往下载](https://github.com/zephyr4123/snug/releases/latest) |
 
-两个渠道的安装包完全相同。Snug 仅需安装于被控 Mac；控制端为安卓手机、iPhone、平板或电脑，只需 UU远程，无需另装 Snug。
+两个渠道的安装包完全相同。Snug 仅需安装于被控 Mac；控制端使用 UU远程 或 CrossDesk。
 
 > Windows 被控端：参见 [社区移植](#-社区移植)。
 
@@ -216,7 +216,7 @@ Snug 呈现的是 Mac 上的原生窗口，适用于任意 App，不绑定特定
 
 ## 📦 安装
 
-> **系统要求**：被控端 macOS 14 及更新版本，已安装 [UU远程](https://uuyc.163.com/)；控制端为任意安装 UU远程 的手机、平板或电脑。
+> **系统要求**：被控端 macOS 14 及更新版本。两端使用 [UU远程](https://uuyc.163.com/) 或 [CrossDesk](https://github.com/kunkundi/crossdesk)。
 
 **下载安装（推荐）**
 
@@ -253,6 +253,8 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 </details>
 
 ## 🧭 使用方式
+
+CrossDesk 用户先开启「屏幕 → 提前准备虚拟屏」，等屏幕上线后重新启动 CrossDesk。连接后在显示器菜单选 Snug 屏。 [CrossDesk 使用说明](docs/remotes/crossdesk.md)
 
 1. **添加屏幕**（按需）：默认仅一块竖屏「Snug 手机屏」；平板、电脑或横屏手机，在设置「屏幕」页添加并选定型号
 2. **切换屏幕**：连接后，在 UU远程 屏幕列表中选择对应屏幕
@@ -294,7 +296,7 @@ scripts/snug check     # 构建并运行全部测试
 scripts/snug install   # 构建、安装并打开
 ```
 
-- 代码分三层：`SnugCore`（纯逻辑）→ `SnugSystem`（系统接口）→ `Snug`（界面）；对接 UU远程 的部分是可替换的远控适配层（`Sources/Remotes`）
+- 代码分三层：`SnugCore`（纯逻辑）→ `SnugSystem`（系统接口）→ `Snug`（界面）。UU远程 和 CrossDesk 的适配器位于 `Sources/Remotes`。
 - 打包、发布、启动参数与数据位置：[开发文档](docs/development.md)
 - 连接判定、窗口移动与手势翻译：[工作原理](docs/how-it-works.md)
 

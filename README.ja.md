@@ -8,7 +8,7 @@
 
 **Make UU Remote Native on Any Device**
 
-UU远程 のために構築 · リモート Mac の表示とタッチを強化<br>デバイスごとに専用の画面 · ネイティブなタッチジェスチャー · App ライブラリ
+リモート Mac の表示とタッチを強化 · UU远程 と CrossDesk に対応<br>デバイスごとに専用の画面 · ネイティブなタッチジェスチャー · App ライブラリ
 
 [![Latest release](https://img.shields.io/github/v/release/zephyr4123/snug?label=release&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-Universal-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Notarized](https://img.shields.io/badge/Apple-Notarized-black?logo=apple) [![License MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -24,7 +24,7 @@ UU远程 のために構築 · リモート Mac の表示とタッチを強化<b
 > [!IMPORTANT]
 > **UU远程 の VIP 会員の方へ**：2026 年 12 月 1 日より、UU远程 はマルチディスプレイおよび仮想ディスプレイ機能を VIP に移行します。Snug は仮想ディスプレイ上に構築されています。もし UU远程 の VIP 会員であれば、ぜひお試しください。
 >
-> **私たちの立場**：Snug は独立したコミュニティプロジェクトであり、UU远程 とは商業的なつながりはありません。購読するかどうかは UU远程 そのものについての判断であり、Snug のためだけに購読する必要はありません。現在は UU远程 に専念しており、他のリモートデスクトップアプリへの対応は予定していません。連携部分は差し替え可能なアダプター層に切り出してあるため、対応を追加する PR やフォークでの独自対応を歓迎します（[開発](#-開発)を参照）。
+> Snug は独立したコミュニティプロジェクトであり、UU远程 とは商業的なつながりはありません。CrossDesk での接続手順は [CrossDesk ガイド](docs/remotes/crossdesk.md) を参照してください。
 
 > [aoyamashou/UUyc-companion](https://github.com/aoyamashou/UUyc-companion)（AoyamaShou 作の UU Remote Companion、MIT ライセンス）を引き継いだもので、元の著作権表示とコミット履歴を完全に保持しています。2.0 でスマートフォン画面を中心に再設計し、2.6 でタブレットとコンピュータに拡張しました。
 

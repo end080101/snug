@@ -691,6 +691,33 @@ struct DeskSetTests {
 
     // MARK: 设为主屏常驻（issue #28）
 
+    @Test("user 断开后，临时放上去的窗口归位，提前准备的副屏继续在线")
+    func preparedSecondaryReturnsPlacedWindow() async throws {
+        // Given a secondary virtual display is online before a connection.
+        let rig = try Rig()
+        let home = CGRect(x: 120, y: 100, width: 800, height: 600)
+        let window = WindowInfo(key: WindowKey(pid: 30, id: 50), app: "Xcode", bundleID: "com.apple.dt.Xcode", title: "snug")
+        rig.windows.add(window.key, frame: home, info: window)
+        rig.set.setWishes([rig.desk.wish])
+        await rig.set.idle()
+        let display = try #require(rig.set.state.desks[.phone]?.display)
+
+        // When the user puts a window on it during a session and disconnects.
+        rig.desk.setRemote(true)
+        rig.set.pull(window, on: .phone)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == window)
+        rig.set.setWishes([])
+        rig.set.setWishes([rig.desk.wish])
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+
+        // Then the window returns to its original position and the same display stays available.
+        #expect(rig.windows.window(window.key)?.frame == home)
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.set.state.desks[.phone]?.display == display)
+    }
+
     @Test("设为主屏的那块常驻：远程结束时不撤、仍是主屏，屏上的窗口原样留着（账也留着，下次连上接着用）；没设主屏的那块照旧撤")
     func persistentMainSurvivesSessionEnd() async throws {
         let rig = try Rig()

@@ -49,7 +49,7 @@ final class AppController: Sendable {
         desks = DeskSet(displays: VirtualDisplayService(helper: helper), windows: windows, apps: apps,
                         arrangement: DisplayArrangementService(), paths: paths, defaultZoom: store.config.zoomSteps)
         catalog = AppCatalog(apps: apps, windows: windows, excluding: Set(remotes.flatMap(\.identity.bundleIDs)))
-        touch = TouchTap(injectors: remotes.map(\.identity.injector))
+        touch = TouchTap(injectors: remotes.compactMap(\.identity.injector))
         state.config = store.config
         state.previewing = preview
         state.devices = devices
@@ -156,7 +156,7 @@ final class AppController: Sendable {
     /// 会话变化统一在这里落地（每拍和菜单的「立即结束」共用）
     private func handle(_ transitions: [SessionTransition]) {
         if transitions.contains(.ended) {
-            // 远程结束先说一声一块屏都不要，再按「不在远程」重算（只剩常驻的主屏）。不先说「不要」的话，下一次在同一拍里
+            // 远程结束先说一声一块屏都不要，再重算常驻屏。不先说「不要」的话，下一次在同一拍里
             // 开始时前后要的屏一样，上一次在手机上退出的屏会带进这一次。同一拍里先「不要」再「要」不会撤屏重建（DeskSet 排队时读的是最新结论）
             desks.setWishes([])
         }

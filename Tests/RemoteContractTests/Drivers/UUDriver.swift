@@ -7,7 +7,7 @@ struct UUDriver: RemoteDriver {
     let identity = UURemote.identity
     let namesControllers = true
     let reportsStreamedDisplay = true
-    let injectorPath = "/Applications/UURemote.app/Contents/Helpers/UURemoteServer"
+    let injectorPath: String? = "/Applications/UURemote.app/Contents/Helpers/UURemoteServer"
     let appBundleID = UURemote.bundleID
 
     func idle() -> RemoteObservation {

@@ -8,12 +8,12 @@
 import Foundation
 
 public enum ScreenPlan {
-    /// 此刻要的屏，按屏幕列表的顺序。remote：在不在远程（含断开后等重连的那段），不在远程时只要设为主屏的那块；
+    /// 此刻要的屏，按屏幕列表的顺序。remote：在不在远程（含断开后等重连的那段）。
     /// trusted：没有辅助功能权限放不了窗口、翻译不了手势，一块都不建；preview：不等远程，建出所有开着的屏（--preview-screens）
     public static func wishes(config: AppConfig, remote: Bool, trusted: Bool, preview: Bool = false) -> [ScreenWish] {
         guard trusted else { return [] }
         let shown = config.screens.filter(\.enabled).prefix(ScreenConfig.limit)
-        return shown.filter { remote || preview || $0.id == config.mainScreen }.map { screen in
+        return shown.filter { remote || preview || config.keepScreensReady || $0.id == config.mainScreen }.map { screen in
             ScreenWish(id: screen.id, spec: spec(of: screen), fit: fit(of: screen), behavior: behavior(screen.device.kind),
                        main: config.mainScreen == screen.id)
         }

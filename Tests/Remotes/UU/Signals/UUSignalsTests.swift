@@ -51,8 +51,8 @@ struct UUSignalsTests {
         #expect(UURemote.identity.logName == "UU")
         #expect(UURemote.identity.displayName == "UU远程")
         #expect(UURemote.identity.bundleIDs == ["com.netease.uuremote"])
-        #expect(UURemote.identity.injector.matches(executablePath: "/Applications/UURemote.app/Contents/Helpers/UURemoteServer"))
-        #expect(!UURemote.identity.injector.matches(executablePath: "/Applications/UURemote.app/Contents/MacOS/UURemote"))
+        #expect(UURemote.identity.injector?.matches(executablePath: "/Applications/UURemote.app/Contents/Helpers/UURemoteServer") == true)
+        #expect(UURemote.identity.injector?.matches(executablePath: "/Applications/UURemote.app/Contents/MacOS/UURemote") == false)
     }
 
     @Test("往返：信号快照写进日志再读回，覆盖窗口和推流两路对得上；写法对不上读成 nil",

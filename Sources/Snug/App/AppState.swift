@@ -114,6 +114,7 @@ protocol AppIntents: AnyObject, Sendable {
     /// 换型号：屏在就马上换成它的比例
     func setScreenDevice(_ id: ScreenID, _ device: DeviceChoice)
     func renameScreen(_ id: ScreenID, _ name: String)
+    func setKeepScreensReady(_ on: Bool)
     /// 设为主屏的那块（常驻）；nil 不改主屏
     func setMainScreen(_ id: ScreenID?)
     func setGestures(_ on: Bool)

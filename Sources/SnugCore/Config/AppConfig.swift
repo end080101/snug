@@ -2,8 +2,10 @@
 import Foundation
 
 public struct AppConfig: Codable, Equatable, Sendable {
-    /// 屏幕列表：远程时建出开着的那几块，设为主屏的那块常驻（见 ScreenPlan）。新装只有一块竖屏手机屏
+    /// 新装只有一块竖屏手机屏。
     public var screens = [ScreenConfig.legacyPhone(.standard, enabled: true)]
+    /// 在远控初始化前就建好已启用的虚拟屏，供会缓存屏幕列表的远控使用。
+    public var keepScreensReady = false
     /// 设为主屏的那块，常驻、不随远程建撤；nil 表示不改主屏（默认）
     public var mainScreen: ScreenID?
     /// 下一块新加的屏至少用哪一段序列号（只增不减：删掉的屏的号也不回收，免得系统把旧屏的记忆套到新屏上）
@@ -83,7 +85,7 @@ public struct AppConfig: Codable, Equatable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case screens, mainScreen, nextSerialBlock, phoneScreen, gestures, screenshot, zoomSteps, phone, welcomed, updateSource, lastVersion
+        case screens, keepScreensReady, mainScreen, nextSerialBlock, phoneScreen, gestures, screenshot, zoomSteps, phone, welcomed, updateSource, lastVersion
     }
 
     // 每一项都有默认值：以后加字段、或者手改漏了某项，都不会让整份配置被判为损坏
@@ -113,6 +115,7 @@ public struct AppConfig: Codable, Equatable, Sendable {
             let phone = (try? c.decodeIfPresent(DeviceChoice.self, forKey: .phone)).flatMap { $0.screen.isValid ? $0 : nil } ?? .standard
             screens = [.legacyPhone(phone, enabled: enabled)]
         }
+        keepScreensReady = (try? c.decodeIfPresent(Bool.self, forKey: .keepScreensReady)) ?? d.keepScreensReady
         mainScreen = (try? c.decodeIfPresent(ScreenID.self, forKey: .mainScreen)).flatMap { id in screens.contains { $0.id == id } ? id : nil }
         nextSerialBlock = ((try? c.decodeIfPresent(Int.self, forKey: .nextSerialBlock)) ?? 0).clamped(to: 0...Self.maxSerialBlock)
         gestures = try c.decodeIfPresent(Bool.self, forKey: .gestures) ?? d.gestures
@@ -138,6 +141,7 @@ extension AppConfig {
     public func encode(to encoder: any Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(screens, forKey: .screens)
+        if keepScreensReady { try c.encode(keepScreensReady, forKey: .keepScreensReady) }
         try c.encodeIfPresent(mainScreen, forKey: .mainScreen)
         try c.encode(nextSerialBlock, forKey: .nextSerialBlock)
         // 2.5 按保存的型号和尺寸建屏。没有可沿用的屏时，写成关着的默认手机。

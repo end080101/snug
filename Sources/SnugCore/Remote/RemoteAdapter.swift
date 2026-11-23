@@ -10,10 +10,10 @@ public struct RemoteIdentity: Equatable, Sendable {
     public let displayName: String
     /// 这家远控自己的 App：不出现在 App 资源库里（把遥控器放到 Snug 的屏上没有意义，退了它远程就断了）
     public let bundleIDs: Set<String>
-    /// 被远程时注入鼠标事件的进程：手势翻译只接管它发来的
-    public let injector: InjectedEventSource
+    /// 适配器要交给 Snug 翻译手势时，声明注入鼠标事件的进程。
+    public let injector: InjectedEventSource?
 
-    public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource) {
+    public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource?) {
         self.logName = logName
         self.displayName = displayName
         self.bundleIDs = bundleIDs
