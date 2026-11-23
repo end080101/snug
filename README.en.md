@@ -22,9 +22,11 @@ Display and touch enhancements for remote Macs · Supports UU Remote and CrossDe
 </div>
 
 > [!IMPORTANT]
+> **In progress**: full-time work on supporting a second remote desktop app, [CrossDesk](https://github.com/kunkundi/crossdesk) (free and open source). Progress in [#58](https://github.com/zephyr4123/snug/pull/58).
+>
 > **For UU Remote VIP members**: from December 1, 2026, UU Remote moves multi-display and virtual display features to VIP. Snug is built on virtual displays; if you happen to be a UU Remote VIP member, give it a try.
 >
-> Snug is an independent community project with no commercial ties to UU Remote. See the [CrossDesk guide](docs/remotes/crossdesk.md) to connect with CrossDesk.
+> **Our position**: Snug is an independent community project with no commercial ties to UU Remote. Whether to subscribe is a decision about UU Remote itself; there is no need to subscribe just for Snug. The remote desktop integration is a swappable adapter layer, so pull requests adding other apps are welcome, as are forks (see [Development](#-development)).
 
 > Continued from [aoyamashou/UUyc-companion](https://github.com/aoyamashou/UUyc-companion) (UU Remote Companion by AoyamaShou, MIT License), with the original copyright notices and commit history fully preserved. Redesigned around the phone screen in 2.0; extended to tablets and computers in 2.6.
 

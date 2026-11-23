@@ -13,13 +13,17 @@
 - [无显示器的 Mac（issue #8，已关）](project-headless-mac.md) — 手机屏会顶掉默认屏；退出入口已发布，替身主屏方案已定、缺实机验证
 - [多屏](project-multi-screen.md) — 三条原则、拍板、UU 与 macOS 实测、没做完的、还欠着的对外承诺；设计记录在 git 历史里
 - [远控适配层（11-19 合入）](project-remote-adapter.md) — 对接 UU 的部分可替换、给社区留口子；设计记录 docs/remote-adapter 保留；约定、门禁、技术债
+- [CrossDesk（PR #58）](project-crossdesk.md) — 一定要合、手势必须和 UU 一样；上下文在 docs/remote-adapter/crossdesk/README.md；等主人压缩对话后开工
 - [界面原型与令牌](project-ui-redesign.md) — 界面以 design/prototype 为准、令牌在 design/design-tokens.json；先改原型再改代码
 - [产品思维](feedback-product-thinking.md) — 用户无感、可选不强制、隔离干净；不为了做而做；能根治不打补丁、能通用不为单个 App 适配
+- [手势是核心](feedback-gestures-core.md) — 接任何远控都必须做原生手势翻译，不能以「远控自己处理」为由放弃
 - [界面规范](feedback-ui-style.md) — 图标只用 SF Symbols；文字短词、书面、克制；每个状态讲清楚
 - [对外文案](feedback-doc-writing.md) — 书面语、短语式、简短干练；提炼不照抄；第三方只陈述事实；打码只糊一小块
 - [回复 issue](feedback-issue-replies.md) — 主人第一人称；bug 留给报告人关、做完发版的需求就关；婉拒讲清定位、语气平和；做不到的要把实测和论证讲闭环；主人说发就不再审
 - [直接修不建 issue](feedback-direct-fix-no-issues.md) — bug 直接修、重构直接做，追溯靠 commit 信息
 - [Workflow 使用](feedback-workflow-scale.md) — 起之前先跟主人确认；小 bug 修复不审；大改动审一轮，维度含正确性、架构、工程审美、去冗余；5 个左右、一个核实者
+- [先内核后门面](feedback-core-before-facade.md) — 内核打通、实测过再统一改 README 等门面；一个时刻只专注一件事
+- [外部 PR 直接改](feedback-pr-direct-commit.md) — 要合的 PR 直接在作者分支上追加 commit，不退回让作者返工
 - [宣传片](feedback-promo-video.md) — 在 kineto 做：发布会式快节奏、代码画为主、场景可演绎细节必须真；给 kineto 只给方向
 - [工程审美](feedback-engineering-taste.md) — 干净优雅、架构好维护好扩展；不过度防御几乎不可能的事
 - [批量搜索](feedback-batch-search.md) — 大量查资料留给 workflow 一轮做，会话里不一步步调网络搜索
