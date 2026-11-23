@@ -22,9 +22,11 @@
 </div>
 
 > [!IMPORTANT]
+> **进行中**：正在全力接入第二款远控软件 [CrossDesk](https://github.com/kunkundi/crossdesk)（免费、开源），进展参见 [#58](https://github.com/zephyr4123/snug/pull/58)。
+>
 > **致 UU远程 VIP 用户**：UU远程 自 2026 年 12 月 1 日起将多屏、虚拟屏等功能纳入 VIP。Snug 基于虚拟屏架构，若你恰为 UU远程 VIP 用户，欢迎一试。
 >
-> **立场**：Snug 为独立社区项目，与 UU远程 无商业关联。是否开通 VIP，请依自身对 UU远程 的需求决定，不必为 Snug 专门开通。目前专注 UU远程，暂不自行适配其他远控软件；对接部分已抽为可替换的适配层，欢迎提 PR 接入或 fork 自行适配，详见[开发](#-开发)。
+> **立场**：Snug 为独立社区项目，与 UU远程 无商业关联。是否开通 VIP，请依自身对 UU远程 的需求决定，不必为 Snug 专门开通。对接部分为可替换的适配层，欢迎提 PR 接入其他远控或 fork 自行适配，详见[开发](#-开发)。
 
 > 承接自 [aoyamashou/UUyc-companion](https://github.com/aoyamashou/UUyc-companion)（UU远程伴侣，作者 AoyamaShou，MIT 许可），完整保留原作者的版权声明与提交历史。2.0 起以手机屏为核心重新设计，2.6 起扩展至平板与电脑。
 
