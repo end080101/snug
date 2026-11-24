@@ -332,11 +332,11 @@ scripts/snug install   # build, install, and launch
 
 ## 🌐 コミュニティ移植版
 
-| プラットフォーム | プロジェクト | メンテナー | 備考 |
-| :--- | :--- | :--- | :--- |
-| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | Snug 2.5.0 から移植。C# / .NET 10 / WPF。安定版リリースあり |
-| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | Snug 2.5.0 から移植。C# / .NET 8 / WPF |
-| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | Snug と snug-win をもとに書き直し。Rust / egui。ドライバー同梱の単一 EXE |
+| プラットフォーム | プロジェクト | メンテナー | 同期バージョン | 備考 |
+| :--- | :--- | :--- | :--- | :--- |
+| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | Snug 2.8.0 | C# / .NET 10 / WPF。UU远程 と CrossDesk に対応 |
+| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | Snug 2.5.0 | C# / .NET 10 / WPF。安定版リリースあり |
+| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | Snug 2.7.4 | Snug と snug-win をもとに書き直し。Rust / egui。ドライバー同梱の単一 EXE |
 
 コミュニティ移植版は、各作者が独立して開発・リリース・メンテナンスしています。このリポジトリは macOS 版のみを開発・テストしており、これらの移植版はテストしていません。問題は各リポジトリに報告してください。
 

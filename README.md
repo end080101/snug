@@ -332,11 +332,11 @@ scripts/snug install   # 构建、安装并打开
 
 ## 🌐 社区移植
 
-| 平台 | 项目 | 维护者 | 说明 |
-| :--- | :--- | :--- | :--- |
-| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | 基于 Snug 2.5.0 移植，C# / .NET 10 / WPF；已发布正式版 |
-| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | 基于 Snug 2.5.0 移植，C# / .NET 8 / WPF |
-| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | 基于 Snug 与 snug-win 重写，Rust / egui；单个 EXE，内含驱动 |
+| 平台 | 项目 | 维护者 | 跟进至 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | Snug 2.8.0 | C# / .NET 10 / WPF；支持 UU远程 与 CrossDesk |
+| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | Snug 2.5.0 | C# / .NET 10 / WPF；已发布正式版 |
+| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | Snug 2.7.4 | 基于 Snug 与 snug-win 重写，Rust / egui；单个 EXE，内含驱动 |
 
 社区移植由各自作者独立开发、发布与维护。本仓库仅开发与测试 macOS 版，未测试上述移植版本；使用问题请至对应仓库反馈。
 
