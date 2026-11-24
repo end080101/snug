@@ -163,6 +163,7 @@ final class AppController: Sendable {
             // 远程结束先说一声一块屏都不要，再重算常驻屏。不先说「不要」的话，下一次在同一拍里
             // 开始时前后要的屏一样，上一次在手机上退出的屏会带进这一次。同一拍里先「不要」再「要」不会撤屏重建（DeskSet 排队时读的是最新结论）
             desks.setWishes([])
+            touch.remoteEnded()
         }
         applyPlan()
         desks.setRemote(session.inEpisode)

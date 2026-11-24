@@ -37,6 +37,12 @@ public struct TouchPipeline: Sendable {
         self.normalizers = normalizers.map { $0.init() }
     }
 
+    /// 一次远程结束：各家整理、翻译器都从头来。整理记着的（手机端在发什么模式、扣着的移动）只对这次连接成立，
+    /// 屏常驻（提前准备、设为主屏）时监听会跨多次远程，不清就带进下一次：连别家远程时还挂着上一家的提醒
+    public mutating func reset() {
+        self = TouchPipeline(normalizers: normalizers.map { type(of: $0) })
+    }
+
     /// 监听要接哪几种原始事件：各家的并集
     public static func kinds(of normalizers: [any TouchNormalizer.Type]) -> Set<PointerEvent.Kind> {
         normalizers.reduce(into: []) { $0.formUnion($1.consumes) }

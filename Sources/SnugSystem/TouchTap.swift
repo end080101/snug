@@ -53,6 +53,11 @@ public final class TouchTap {
         return true
     }
 
+    /// 一次远程结束：手势层从头认（见 TouchPipeline.reset），旧的提醒收起。监听没开时没有要清的
+    public func remoteEnded() {
+        session?.reset()
+    }
+
     private func stop() {
         guard let session else { return }
         session.stop()
@@ -136,6 +141,18 @@ private final class TapSession: @unchecked Sendable {
         CFRunLoopWakeUp(runLoop)
     }
 
+    /// 在监听线程上清掉这次远程留下的：管线从头来，扣着的按下、惯性作废。和事件回调同一线程，不会撞上处理到一半的事件
+    func reset() {
+        guard let runLoop else { return }
+        CFRunLoopPerformBlock(runLoop, CFRunLoopMode.commonModes.rawValue) { [self] in
+            pipeline.reset()
+            heldPress = nil
+            stopCoasting()
+            settle()
+        }
+        CFRunLoopWakeUp(runLoop)
+    }
+
     private func installTap() -> Bool {
         guard let tap = CGEvent.tapCreate(tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
                                           eventsOfInterest: mask, callback: Self.callback,
@@ -175,6 +192,11 @@ private final class TapSession: @unchecked Sendable {
             case .dropHeld: heldPress = nil
             }
         }
+        settle()
+    }
+
+    /// 管线变了之后：惯性、超时拍的计时器跟上，提醒变了报给主线程
+    private func settle() {
         if pipeline.isCoasting { startCoasting() }
         scheduleDeadline()
         if pipeline.advice != advice {
