@@ -4,8 +4,9 @@
 //   按住 0.5 秒再拖 → 选择（照旧拖动）
 //   按住 0.5 秒松手 → 右键菜单（选区不丢，菜单里有拷贝、粘贴）
 //   点窗口自己的关闭按钮 → 不补发点击，交给 Snug 先把窗口放回原位再关（直接关，App 会存下屏上的大小和字号）
+// 远控那头已经认出长按、滑动时（各家的整理交来 recognized），按它认的来，不再看按了多久、移了多远。
 // 远控把单指拖动当成鼠标拖动发过来（会选中文字；UU 实测，RustDesk 源码同样），滚动要两根手指，这里在 Mac 这一侧翻译回来。
-// 纯状态机：吃进远控的按下 / 拖动 / 抬起，吐出「原事件放不放行」和要补发的事件，时间由调用方给。
+// 纯状态机：吃进标准手指输入（各家整理过的按下 / 拖动 / 抬起），吐出「原事件放不放行」和要补发的事件，时间由调用方给。
 // 只有范围（TouchRegion）里按下的那一下会被接管；之后的拖动、抬起跟着这一下走，手指滑出范围也一样。
 // 阈值按基准宽度标定，乘上范围带来的缩放倍数：屏换到更宽的一档时跟着放大，在手机上手感不变。
 // 这个模块不认屏：范围和倍数由调用方给（TouchRegion(screen:closeButton:)），系统那半在 SnugSystem 的 TouchTap
@@ -42,15 +43,27 @@ public struct CloseButton: Equatable, Sendable {
         self.windowFrame = windowFrame
     }
 
-    /// 这一点上最上面的窗口还是它、而且还在读按钮时的位置。onScreen：窗口服务器给的屏上窗口，从前到后
-    public func isFrontmost(at point: CGPoint, onScreen: [(id: UInt32, frame: CGRect)]) -> Bool {
-        guard frame.contains(point), let top = onScreen.first(where: { $0.frame.contains(point) }) else { return false }
+    /// 这一点上最上面的窗口还是它、而且还在读按钮时的位置。onScreen：窗口服务器给的屏上窗口（编号、位置、是不是指针），从前到后。
+    /// 指针自己不算：它在窗口服务器里也是个窗口，总在最前但不接点击；远控点下去之前往往先把指针挪到了这一点（CrossDesk 点按前先发移动）
+    public func isFrontmost(at point: CGPoint, onScreen: [(id: UInt32, frame: CGRect, isPointer: Bool)]) -> Bool {
+        guard frame.contains(point), let top = onScreen.first(where: { !$0.isPointer && $0.frame.contains(point) }) else { return false }
         return top.id == window && top.frame.matches(windowFrame)
     }
 }
 
 public struct TouchInput: Equatable, Sendable {
-    public enum Kind: Equatable, Sendable { case press, drag, release }
+    public enum Kind: Equatable, Sendable {
+        case press, drag, release
+        /// 远控那头已经认出这一按是什么：按下之后、翻译器还没判出来时才起作用，没有对应的原事件
+        case recognized(Gesture)
+    }
+
+    public enum Gesture: Equatable, Sendable {
+        /// 长按：之后拖出防抖是选择，没拖就松手是右键，不再看按了多久
+        case hold
+        /// 滑动：这一按是整理补出来的（远控只发了移动），马上开始滚动；不会是点击、长按
+        case slide
+    }
 
     public var kind: Kind
     public var location: CGPoint
@@ -118,6 +131,8 @@ public struct TouchTranslator: Sendable {
     private var pressStoppedCoast = false
     /// 这次按在窗口的关闭按钮上
     private var pressOnClose = false
+    /// 远控已认出这一按是长按
+    private var held = false
 
     public init() {}
 
@@ -130,6 +145,7 @@ public struct TouchTranslator: Sendable {
         case .press: press(input, in: region)
         case .drag: drag(input)
         case .release: release(input)
+        case .recognized(let gesture): recognize(gesture)
         }
     }
 
@@ -154,6 +170,7 @@ public struct TouchTranslator: Sendable {
         scale = region.scale
         pressStoppedCoast = !stop.isEmpty
         pressOnClose = region.closeButton?.frame.contains(input.location) ?? false
+        held = false
         phase = .pending(since: input.time)
         origin = input.location
         last = input.location
@@ -168,7 +185,7 @@ public struct TouchTranslator: Sendable {
             return .pass
         case .pending(let since):
             guard distance(input.location, origin) >= Self.slop * scale else { return .swallow() }
-            if input.time - since >= Self.holdDuration {
+            if held || input.time - since >= Self.holdDuration {
                 // 按住后再拖：补发按下，接下来照旧拖动，就是原来的选择
                 phase = .selecting
                 return .swallow([.replayPress, .replayCurrent])
@@ -188,7 +205,7 @@ public struct TouchTranslator: Sendable {
             return .pass
         case .pending(let since):
             phase = .idle
-            if input.time - since >= Self.holdDuration {
+            if held || input.time - since >= Self.holdDuration {
                 return .swallow([.rightClick(at: origin)])
             }
             // iPhone 上点一下正在滚的列表只是停住；补发点击会点到手指下还在移动的东西
@@ -199,6 +216,19 @@ public struct TouchTranslator: Sendable {
             let ended = wheel.step(dx: 0, dy: 0, phase: .ended, momentum: .none, at: origin)
             momentum = Momentum(velocity: flingVelocity(at: input.time), scale: scale)
             return .swallow([.scroll(ended)])
+        }
+    }
+
+    /// 只认还没判出来的那一按；屏外按下、已经在滚、在选的，原样不动
+    private mutating func recognize(_ gesture: TouchInput.Gesture) -> TouchResponse {
+        guard case .pending = phase else { return .pass }
+        switch gesture {
+        case .hold:
+            held = true
+            return .swallow()
+        case .slide:
+            phase = .scrolling
+            return .swallow([.scroll(wheel.step(dx: 0, dy: 0, phase: .began, momentum: .none, at: origin))])
         }
     }
 

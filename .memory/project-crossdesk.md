@@ -12,10 +12,10 @@ metadata:
 
 **唯一上下文入口**：`docs/remote-adapter/crossdesk/README.md`，在 PR #58 的分支上（本地 `pr58-crossdesk`，远端 `nexmoe/snug:crossdesk-adapter`），不在 main。里面有已定决策、CrossDesk 行为事实（带 v1.7.6 行号）、两轮真机录制、核实过的 PR 问题、手势方案、16 步工作清单和实测清单。开工前先读它，结论变了改它。
 
-**状态（11-23）**：调研和录制已完成。主人要求先把上下文固化成文档，**等他压缩对话后再开工**，从工作清单第 1 步做起。上游 issue 已发 kunkundi/crossdesk#200（先肯定项目，再请它支持空闲时显示器变化后重新识别），要跟进回复。
+**状态（11-23 晚）**：内核、审查、iPhone 实测（CrossDesk 1.7.7）、门面一轮都已在 `pr58-crossdesk` 上完成，未推送。剩：推送（先问主人）、PR #58 转回可审阅、合并时同步 GitHub 简介与话题、发版；上游 issue kunkundi/crossdesk#200 要跟进回复。
 
 **已定**：
-- 手势必须做到和 UU 一样（[[feedback-gestures-core]]），前提是手机端选「绝对鼠标」；Snug 认出「相对鼠标」后提示切换
+- 手势必须做到和 UU 一样（[[feedback-gestures-core]]），前提是手机端选「绝对鼠标」；「相对鼠标」下不翻译。屏上的「手势未生效」提示手机实测出不来，主人定砍掉（「别为了这个无关紧要的小功能堆积屎山」），改在 README 写一句
 - 「提前准备虚拟屏」保留，只在装了 CrossDesk 这类远控时显示，打开前弹确认
 - 门面最后统一改（[[feedback-core-before-facade]]）；直接在 PR 分支上提交（[[feedback-pr-direct-commit]]）
 

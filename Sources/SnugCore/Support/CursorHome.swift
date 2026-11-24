@@ -10,4 +10,14 @@ public enum CursorHome {
         guard let target = main.isEmpty ? kept.first : main, !target.isEmpty else { return nil }
         return CGPoint(x: target.midX, y: target.midY)
     }
+
+    /// 指针越过屏的边缘滑进了看不见的屏（没人远程时，提前准备的屏）：退回看得见的屏上离它最近的那一点，像碰到了墙。
+    /// 指针在看得见的屏上、或一块看得见的屏都没有时返回 nil
+    public static func edge(pointer: CGPoint, visible: [CGRect]) -> CGPoint? {
+        if visible.contains(where: { $0.contains(pointer) }) { return nil }
+        return visible.filter { !$0.isEmpty }.map { rect in
+            // 屏的范围不含右边、下边那一条线（CGRect.contains）：退到最后一个像素上
+            CGPoint(x: min(max(pointer.x, rect.minX), rect.maxX - 1), y: min(max(pointer.y, rect.minY), rect.maxY - 1))
+        }.min { hypot($0.x - pointer.x, $0.y - pointer.y) < hypot($1.x - pointer.x, $1.y - pointer.y) }
+    }
 }

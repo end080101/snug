@@ -689,6 +689,126 @@ struct DeskSetTests {
         #expect(rig.arrangement.origins()[1] == .zero)
     }
 
+    // MARK: 提前准备的屏
+
+    /// 提前准备的那块手机屏：远程中放上 ghostty、用户在屏上直接开了个窗口，然后远程结束（屏留着）
+    private func preparedSessionEnds(_ rig: Rig, before end: () -> Void = {}) async throws -> (memo: WindowInfo, frame: CGRect, display: DisplayID) {
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        let display = try #require(rig.set.state.desks[.phone]?.display)
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        let memo = WindowInfo(key: WindowKey(pid: 30, id: 40), app: "备忘录", bundleID: "com.apple.Notes", title: "手机上新开的")
+        let memoFrame = CGRect(x: phoneArea.minX + 20, y: phoneArea.minY + 40, width: 300, height: 200)
+        rig.windows.add(memo.key, frame: memoFrame, info: memo)
+        end()
+        rig.set.setWishes([])
+        rig.set.setWishes([wish])
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+        return (memo, memoFrame, display)
+    }
+
+    @Test("提前准备的屏，远程结束：屏留着；Snug 放的窗口按账归位、销账，用户在屏上直接开的挪到主屏居中（本机看不见这块屏）")
+    func preparedScreenEndsSession() async throws {
+        let rig = try Rig()
+        let (memo, memoFrame, display) = try await preparedSessionEnds(rig)
+        #expect(rig.set.state.desks[.phone]?.display == display)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.windows.window(ghostty.key)?.zoom == 0)
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.record == nil)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+    }
+
+    @Test("提前准备的屏，远程结束时放不回去的窗口（字号缩不回）：照旧算放着、账留着，也不当成用户的窗口挪去主屏；别的照常挪")
+    func preparedScreenKeepsStuckWindow() async throws {
+        let rig = try Rig()
+        let (memo, memoFrame, _) = try await preparedSessionEnds(rig) { rig.windows.blockZoom() }
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.record?.window == ghostty.key)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+    }
+
+    @Test("提前准备的屏，远程结束：窗口放上来时换宽了一档的屏，归位后换回基准宽度")
+    func preparedScreenRestoresWidth() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        rig.windows.setMinSize(finder.key, width: 740)
+        await rig.pull(finder)
+        rig.journal.clear()
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+        #expect(rig.journal.all.last == "width 101 540")
+    }
+
+    @Test("屏要留着时（只在启动时认屏的远程中的常驻屏）在手机上退出：屏不撤、编号不变；Snug 放的窗口归位，用户在上面开的挪到主屏，提示屏幕保留")
+    func keptOnDismiss() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        wish.staysOnDismiss = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        let display = try #require(rig.set.state.desks[.phone]?.display)
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        let memo = WindowInfo(key: WindowKey(pid: 30, id: 40), app: "备忘录", bundleID: "com.apple.Notes", title: "手机上新开的")
+        let memoFrame = CGRect(x: phoneArea.minX + 20, y: phoneArea.minY + 40, width: 300, height: 200)
+        rig.windows.add(memo.key, frame: memoFrame, info: memo)
+        rig.timeline.advance(10)
+        rig.set.dismissScreen(.phone)
+        await rig.set.idle()
+        let phone = try #require(rig.set.state.desks[.phone])
+        #expect(phone.display == display)
+        #expect(rig.set.state.dismissed.isEmpty)
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+        #expect(phone.notice == .keptOnDismiss)
+        #expect(phone.work == nil)
+        // 同一次远程里再算一遍要哪些屏：屏照旧在，编号不变
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        #expect(rig.set.state.desks[.phone]?.display == display)
+    }
+
+    @Test("预览自测的屏（不是提前准备的）：远程结束时不动，窗口照旧放着（开发者正看着）")
+    func previewScreenUntouchedAtSessionEnd() async throws {
+        let rig = try Rig()
+        rig.set.setWishes([rig.desk.wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+    }
+
+    @Test("提前准备的屏，远程结束后又连上（同一拍里）：屏上的窗口留给这一次，不归位")
+    func preparedScreenReconnects() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        rig.desk.setRemote(false)
+        rig.desk.setRemote(true)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+    }
+
     // MARK: 设为主屏常驻（issue #28）
 
     @Test("设为主屏的那块常驻：远程结束时不撤、仍是主屏，屏上的窗口原样留着（账也留着，下次连上接着用）；没设主屏的那块照旧撤")
@@ -796,6 +916,28 @@ struct DeskSetTests {
         #expect(rig.broughtKeys(on: second) == [finder.key])
         let area = try #require(rig.displays.windowArea(102, withHomeBar: false))
         #expect(rig.windows.window(finder.key)?.frame == area.centered(finderHome.size))
+    }
+
+    @Test("远程结束后马上又连上（收尾还排在队里）：上一次的提示照样收掉，不带到这一次")
+    func quickReconnectForgetsSession() async throws {
+        let rig = try Rig()
+        let codex = AppInfo(bundleID: "com.openai.codex", name: "ChatGPT", path: "/Applications/ChatGPT.app")
+        rig.desk.setRemote(true)
+        rig.set.setWishes([rig.desk.wish])
+        await rig.set.idle()
+        let app = rig.apps.run(codex, pid: 600)
+        rig.apps.onQuit(codex, .stalls)
+        rig.desk.quit(app)
+        await rig.set.idle()
+        #expect(rig.desk.state.notice == .quitStalled(app: "ChatGPT", pid: 600))
+        // 这一拍远程结束（AppController.handle：先不要屏、再按计划要、再报不在远程），下一拍又连上，收尾轮到时已经又在远程
+        rig.set.setWishes([])
+        rig.set.setWishes([])
+        rig.desk.setRemote(false)
+        rig.set.setWishes([rig.desk.wish])
+        rig.desk.setRemote(true)
+        await rig.set.idle()
+        #expect(rig.desk.state.notice == nil)
     }
 
     @Test("常驻的主屏：这次远程留在屏上的提示，远程结束时收掉，不带到下一次")

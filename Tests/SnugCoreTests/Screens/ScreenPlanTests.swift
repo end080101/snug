@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import SnugCore
 
@@ -33,6 +34,74 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.wishes(config: c, remote: remote, trusted: false).isEmpty)
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true, preview: true).count == 2)
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false, preview: true).isEmpty)
+    }
+
+    @Test("提前准备虚拟屏：存盘读回后还开着；没人远程也要所有开着的屏（常驻、不当主屏），远程中一样；没权限一块不要，关掉就不要")
+    func screensReadyBeforeConnection() throws {
+        var c = config()
+        #expect(!c.keepScreensReady)
+        c.keepScreensReady = true
+        c = try JSONDecoder().decode(AppConfig.self, from: JSONEncoder().encode(c))
+        let idle = ScreenPlan.wishes(config: c, remote: false, trusted: true)
+        #expect(idle.map(\.id) == [.phone, c.screens[1].id])
+        #expect(idle.map(\.main) == [false, false])
+        #expect(idle.allSatisfy { $0.prepared && $0.resident })
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true) == idle)
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false).isEmpty)
+        c.keepScreensReady = false
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true).isEmpty)
+        // 没开时远程中建的屏不常驻；设为主屏的那块总是常驻
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).allSatisfy { !$0.resident })
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).map(\.resident) == [true, false])
+    }
+
+    @Test("远控只在启动时认屏：没提前准备时远程中不建屏、报出没建的（设为主屏的那块照常常驻，不算）；提前准备了照常、不报")
+    func launchOnlyRemote() {
+        var c = config()
+        let all = c.screens.filter(\.enabled).map(\.id)
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).isEmpty)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false) == all)
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: true).isEmpty)
+        #expect(ScreenPlan.withheld(config: c, remote: false, seesNewScreens: false).isEmpty)
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).map(\.id) == [.phone])
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false) == [all[1]])
+        // 只开着设为主屏的那块：什么都没少建，不该提示去打开提前准备
+        c.screens[1].enabled = false
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false).isEmpty)
+        c.screens[1].enabled = true
+        c.mainScreen = nil
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false).isEmpty)
+        // 预览自测不看远控
+        c.keepScreensReady = false
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true, preview: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false, preview: true).isEmpty)
+    }
+
+    @Test("退出时屏留着：只在启动时认屏的远程中的常驻屏（提前准备的、设为主屏的）；随时认新屏的远控、远程中才建的屏照常撤")
+    func residentStaysOnDismiss() {
+        var c = config()
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).allSatisfy { $0.staysOnDismiss })
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).allSatisfy { !$0.staysOnDismiss })
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true).allSatisfy { !$0.staysOnDismiss })
+        // 没提前准备：设为主屏的那块常驻，同样留着
+        c.keepScreensReady = false
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).map(\.staysOnDismiss) == [true])
+        // 随时认新屏的远控：远程中才建的那块照常撤，设为主屏的那块也照常撤（下次连接前建回，UU 每次都认得）
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).allSatisfy { !$0.staysOnDismiss })
+    }
+
+    @Test("预览自测开着提前准备：屏不算提前准备的（远程结束不收拾，开发者正看着）")
+    func previewNotPrepared() {
+        var c = config()
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true, preview: true).allSatisfy { !$0.prepared })
     }
 
     @Test("类别 → 行为：手机、平板是触屏，电脑不是；手势总开关不改行为（翻不翻译由界面层按开关定）")

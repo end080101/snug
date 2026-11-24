@@ -43,6 +43,11 @@ extension AppController: AppIntents {
         editScreen(id, "名字 → \(name)") { $0.name = name }
     }
 
+    func setKeepScreensReady(_ on: Bool) {
+        guard changeConfig("提前准备虚拟屏 → \(on ? "开" : "关")", { $0.keepScreensReady = on }) else { return }
+        applyPlan()
+    }
+
     func setMainScreen(_ id: ScreenID?) {
         let name = id.flatMap { state.screen($0)?.name }
         guard changeConfig("设为主屏 → \(name.map { "「\($0)」" } ?? "不改")", { $0.mainScreen = id }) else { return }
@@ -101,6 +106,14 @@ extension AppController: AppIntents {
     }
 
     func openLoginItemsSettings() { SMAppService.openSystemSettingsLoginItems() }
+
+    /// 装了哪些只在启动时认屏的远控：启动时、Snug 被激活（打开设置）时重查，装上、删掉不用重启 Snug
+    func refreshRemoteInstalls() {
+        let installed = Remotes.all.map(\.identity).filter { remote in
+            remote.seesScreensOnlyAtLaunch && remote.bundleIDs.contains { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0) != nil }
+        }
+        state.update(\.launchOnlyRemotes, installed.map(\.displayName))
+    }
 
     func refreshLaunchAtLogin() {
         let enabled = SMAppService.mainApp.status == .enabled

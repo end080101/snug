@@ -20,6 +20,8 @@ struct ScreensPage: View {
     @State private var explaining = false
     /// 选了要设为主屏、等确认的那块（渲染样例用初值）
     @State var confirmingMain: ScreenID?
+    /// 要打开「提前准备虚拟屏」、等确认
+    @State private var confirmingReady = false
 
     var body: some View {
         Form {
@@ -56,6 +58,15 @@ struct ScreensPage: View {
                 .padding(.top, MacTokens.Space.xs)
             }
             Section {
+                // 装了只在启动时认屏的远控才要；已经开着的照样显示，删了那家远控也关得掉
+                if !state.launchOnlyRemotes.isEmpty || state.config.keepScreensReady {
+                    Toggle(isOn: Binding(get: { state.config.keepScreensReady }, set: { on in
+                        if on { confirmingReady = true } else { intents.setKeepScreensReady(false) }
+                    })) {
+                        SettingLabel("提前准备虚拟屏", detail: ReadyNotice.detail(state.launchOnlyRemotes), tile: MacTokens.IconTile.mainScreen)
+                    }
+                    .toggleStyle(.switch)
+                }
                 LabeledContent {
                     // 设主屏立即生效、影响本机，先讲清代价再设；改回「不改」不用问
                     Picker("设为主屏", selection: Binding(get: { state.config.mainScreen }, set: { id in
@@ -68,7 +79,7 @@ struct ScreensPage: View {
                     .labelsHidden()
                     .fixedSize()
                 } label: {
-                    SettingLabel("设为主屏", detail: "常驻并作为主屏，每次连接直接进入", tile: MacTokens.IconTile.mainScreen)
+                    SettingLabel("设为主屏", detail: "常驻并作为 Mac 的主屏", tile: MacTokens.IconTile.mainScreen)
                 }
             }
         }
@@ -88,20 +99,46 @@ struct ScreensPage: View {
                 confirmingMain = nil
             }
         } message: {
-            Text(MainScreenNotice.detail)
+            Text(MainScreenNotice.detail(state.mainScreenRemotes))
+        }
+        .confirmationDialog("提前准备虚拟屏？", isPresented: $confirmingReady) {
+            Button("打开") { intents.setKeepScreensReady(true) }
+        } message: {
+            Text(ReadyNotice.confirm(state.launchOnlyRemotes))
         }
     }
 }
 
-/// 设为主屏的代价：设置里确认时讲清楚（README「设为主屏」同一套说法）
+/// 提前准备虚拟屏：为谁、代价是什么
+enum ReadyNotice {
+    /// 开关下面那一行
+    static func detail(_ remotes: [String]) -> String {
+        remotes.isEmpty ? "Snug 启动时即建立屏幕" : "Snug 启动时即建立屏幕；开启后需重启 \(remotes.joined(separator: "、"))"
+    }
+
+    /// 打开前确认
+    static func confirm(_ remotes: [String]) -> String {
+        let names = remotes.isEmpty ? "远控" : remotes.joined(separator: "、")
+        return "\(names) 仅在启动时识别显示器，连接后新建的屏幕无法选择。开启后，已开启的屏幕常驻，无人远程时亦在线，本机不可见；重启 \(names) 后即可选择。"
+    }
+}
+
+/// 设为主屏的代价：设置里确认时讲清楚（README「设为主屏」同一套说法）。
+/// 「每次连接即进入」只对连上时先推主屏的远控成立（RemoteIdentity.opensOnMainScreen），按它们的名字说
 enum MainScreenNotice {
-    static let detail = """
-        此屏将常驻并作为 Mac 的主屏，立即生效；UU远程 每次连接即进入此屏。
+    static func detail(_ remotes: [String]) -> String {
+        let names = remotes.joined(separator: "、")
+        let entry = remotes.isEmpty ? "" : "；\(names) 每次连接即进入此屏"
+        let reason = remotes.isEmpty ? "可随时在 App 资源库或菜单栏取消。"
+            : "原因：\(names) 在连接时选定主屏，Snug 仅能在连接后察觉，须预先设定。可随时在 App 资源库或菜单栏取消。"
+        return """
+            此屏将常驻并作为 Mac 的主屏，立即生效\(entry)。
 
-        影响：当前主屏上的窗口随即移至此屏；此后程序坞、新窗口、系统提示与锁屏登录框均显示于此屏，本机不可见。适用于未接显示器或仅远程使用的 Mac。
+            影响：当前主屏上的窗口随即移至此屏；此后程序坞、新窗口、系统提示与锁屏登录框均显示于此屏，本机不可见。适用于未接显示器或仅远程使用的 Mac。
 
-        原因：UU远程 在连接时选定主屏，Snug 仅能在连接后察觉，须预先设定。可随时在 App 资源库或菜单栏取消。
-        """
+            \(reason)
+            """
+    }
 }
 
 /// 设置窗口上弹出的表单
@@ -156,10 +193,8 @@ private struct WhyManyScreens: View {
     var body: some View {
         VStack(alignment: .leading, spacing: MacTokens.Space.m) {
             Text("可以开几块屏").font(.headline)
-            Text("UU远程 一次只让一台设备控制。多开的屏留给：").foregroundStyle(.secondary)
-            reason("rectangle.portrait.rotate", "横竖切换", "同一台设备横竖各一块，转过来在 UU 里切")
-            reason("arrow.left.arrow.right", "换设备", "另一台接管后直接选它的屏，不用改设置")
-            Text("关着的屏远程时不建，UU 的屏幕列表也更短。").font(.callout).foregroundStyle(.secondary)
+            reason("rectangle.portrait.rotate", "横竖切换", "同一台设备横竖各一块，在远控里切屏")
+            reason("arrow.left.arrow.right", "换设备", "用另一台设备时，直接选为它准备的屏")
         }
         .padding(MacTokens.Space.l)
         .frame(width: MacTokens.Size.helpPopoverWidth, alignment: .leading)
@@ -280,7 +315,7 @@ struct TouchPage: View {
                     SettingLabel("截图", detail: "小横条左侧的相机键 · 截当前窗口到剪贴板", tile: MacTokens.IconTile.screenshot)
                 }
             } footer: {
-                Text("只作用于手机和平板屏。电脑屏不翻译手势、不放大字号。")
+                Text("手机和平板屏支持字号放大和手势翻译。")
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }

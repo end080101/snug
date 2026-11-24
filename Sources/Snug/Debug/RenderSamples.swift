@@ -61,7 +61,13 @@ enum RenderSamples {
         s.launchAtLogin = true
         s.devices = devices
         s.config = sampleConfig()
+        s.remotes = Remotes.all.map(\.identity)
         return s
+    }
+
+    /// 登记的远控里只在启动时认屏的那几家（「提前准备虚拟屏」按它们显示）
+    private static var launchOnlyRemotes: [String] {
+        Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
     }
 
     /// 远程中，开着的屏都建好了；手机在看第一块屏
@@ -88,6 +94,15 @@ enum RenderSamples {
                 s.desks.desks[.phone]?.placed = Desk.Placed(window: windows[0], zoom: 2)
             },
             page("settings-screens-main") { s in s.config.mainScreen = computerID },
+            page("settings-screens-unseen") { s in
+                s.launchOnlyRemotes = launchOnlyRemotes
+                s.config.keepScreensReady = true
+                s.screensUnseenBy = s.launchOnlyRemotes.first
+            },
+            page("settings-screens-ready") { s in
+                s.launchOnlyRemotes = launchOnlyRemotes
+                s.config.keepScreensReady = true
+            },
             page("settings-screens-legacy") { s in s.config = AppConfig() },
             page("settings-screens-trouble") { s in
                 s.config = sampleConfig(count: ScreenConfig.limit)
@@ -189,8 +204,8 @@ enum RenderSamples {
 
     private static var about: [RenderSample] {
         [
-            RenderSample(name: "about") { AnyView(AboutView()) },
-            RenderSample(name: "about-dark", dark: true) { AnyView(AboutView()) },
+            RenderSample(name: "about") { AnyView(AboutView(remotes: Remotes.all.map(\.identity.displayName))) },
+            RenderSample(name: "about-dark", dark: true) { AnyView(AboutView(remotes: Remotes.all.map(\.identity.displayName))) },
         ] + [
             ("about-update-downloading-dark", true, { (u: inout UpdateState) in
                 u.check = .available(sampleFeed)
@@ -239,6 +254,7 @@ enum RenderSamples {
             RenderSample(name: granted ? "welcome-granted" : "welcome") {
                 let s = AppState()
                 s.accessibilityTrusted = granted
+                s.remotes = Remotes.all.map(\.identity)
                 return AnyView(WelcomeView(state: s, onDone: {}))
             }
         }
@@ -322,6 +338,11 @@ enum RenderSamples {
             panel("phone-confirm-quit", confirming: .quit(2)) { _, _ in },
             panel("phone-confirm-close", confirming: .close(windows[4].key)) { s, _ in s.desks.desks[.phone]?.placed = placed },
             panel("phone-confirm-dismiss", confirming: .dismissScreen) { s, _ in s.desks.desks[.phone]?.placed = placed },
+            panel("phone-confirm-dismiss-kept", confirming: .dismissScreen) { s, _ in
+                s.desks.desks[.phone]?.placed = placed
+                s.desks.desks[.phone]?.staysOnDismiss = true
+            },
+            panel("phone-kept-on-dismiss") { s, _ in s.desks.desks[.phone]?.notice = .keptOnDismiss },
             panel("phone-main") { s, _ in s.config.mainScreen = .phone },
             panel("phone-confirm-cancel-main", confirming: .cancelMain) { s, _ in s.config.mainScreen = .phone },
             panel("phone-dismissing-dark", dark: true) { s, _ in s.desks.desks[.phone]?.work = .dismissing },

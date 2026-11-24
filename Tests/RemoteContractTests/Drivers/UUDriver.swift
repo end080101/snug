@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import RemoteUU
 import SnugCore
@@ -24,6 +25,22 @@ struct UUDriver: RemoteDriver {
 
     func streaming(_ display: DisplayID) -> RemoteObservation {
         signals(.unrecognized, capture: [.displayDescribed(display), .captureStarted])
+    }
+
+    /// UU 随时认新屏（连上后建的屏也选得到），不报
+    func reaching(launched: Set<DisplayID>, online: Set<DisplayID>) -> RemoteObservation? { nil }
+
+    /// UU 把手指当鼠标左键：按下、拖动、抬起原样发过来
+    func touchEvents(_ gesture: FingerGesture) -> [PointerEvent] {
+        let p = CGPoint(x: 200, y: 400)
+        let down = PointerEvent(.leftDown, at: p, time: 10)
+        let drags = { (start: Double) in (1...6).map { PointerEvent(.leftDrag, at: CGPoint(x: 200, y: 400 + Double($0) * 15), time: start + Double($0) * 0.016) } }
+        return switch gesture {
+        case .tap: [down, PointerEvent(.leftUp, at: p, time: 10.08)]
+        case .holdRelease: [down, PointerEvent(.leftUp, at: p, time: 10.7)]
+        case .holdDrag: [down] + drags(10.6) + [PointerEvent(.leftUp, at: CGPoint(x: 200, y: 490), time: 10.8)]
+        case .slide: [down] + drags(10) + [PointerEvent(.leftUp, at: CGPoint(x: 200, y: 490), time: 10.1)]
+        }
     }
 
     /// 按顺序回放这几条推流事件，再在最后一条之后问推流状态

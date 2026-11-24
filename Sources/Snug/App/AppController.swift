@@ -49,8 +49,9 @@ final class AppController: Sendable {
         desks = DeskSet(displays: VirtualDisplayService(helper: helper), windows: windows, apps: apps,
                         arrangement: DisplayArrangementService(), paths: paths, defaultZoom: store.config.zoomSteps)
         catalog = AppCatalog(apps: apps, windows: windows, excluding: Set(remotes.flatMap(\.identity.bundleIDs)))
-        touch = TouchTap(injectors: remotes.map(\.identity.injector))
+        touch = TouchTap(remotes: remotes.map(\.identity))
         state.config = store.config
+        state.remotes = remotes.map(\.identity)
         state.previewing = preview
         state.devices = devices
         state.accessibilityTrusted = AX.isTrusted
@@ -140,7 +141,9 @@ final class AppController: Sendable {
         refreshTrust()
         screenshots.expire()
         let wallClock = Date()
-        handle(session.update(remotes.map { RemoteReading(remote: $0.identity, observation: $0.sample(wallClock: wallClock)) }, now: now))
+        let readings = remotes.map { RemoteReading(remote: $0.identity, observation: $0.sample(wallClock: wallClock)) }
+        handle(session.update(readings, now: now))
+        noteUnseenScreens(readings)
         keepPointerOffSnugScreens()
         if now.timeIntervalSince(lastVerifyAt) >= Self.verifyInterval {
             lastVerifyAt = now
@@ -156,9 +159,10 @@ final class AppController: Sendable {
     /// 会话变化统一在这里落地（每拍和菜单的「立即结束」共用）
     private func handle(_ transitions: [SessionTransition]) {
         if transitions.contains(.ended) {
-            // 远程结束先说一声一块屏都不要，再按「不在远程」重算（只剩常驻的主屏）。不先说「不要」的话，下一次在同一拍里
+            // 远程结束先说一声一块屏都不要，再重算常驻屏。不先说「不要」的话，下一次在同一拍里
             // 开始时前后要的屏一样，上一次在手机上退出的屏会带进这一次。同一拍里先「不要」再「要」不会撤屏重建（DeskSet 排队时读的是最新结论）
             desks.setWishes([])
+            touch.remoteEnded()
         }
         applyPlan()
         desks.setRemote(session.inEpisode)
@@ -167,16 +171,29 @@ final class AppController: Sendable {
         state.update(\.remoteName, session.owner?.displayName)
     }
 
-    /// 断开后远控不再动指针，而 Snug 的屏要等重连窗口才撤。这十几秒里指针若停在 Snug 的屏上，
-    /// 那块屏在本机看不见，就成了「鼠标找不回来」。等待期每拍看一眼：用户一动又可能滑回去；
-    /// 只在断开与重连之间生效，连上马上停（issue #29）。设为主屏的那块除外：它常驻、远程结束也不撤，
-    /// 指针留在上面正是设主屏的本意（重连后接着用），和撤屏时指针落到主屏一致
-    private func keepPointerOffSnugScreens() {
-        guard session.inEpisode, !session.isConnected else { return }
-        for (id, desk) in state.desks.desks where id != store.config.mainScreen {
-            guard let display = desk.display else { continue }
-            Cursor.leave(display)
+    /// 只在启动时认屏的远控，它启动后才建的 Snug 屏选不到：状态里提示重启它（没人远程时也提示，好在连之前就重启）
+    private func noteUnseenScreens(_ readings: [RemoteReading]) {
+        let blind = RemoteReading.blind(readings, owner: session.owner, snugDisplays: Set(state.desks.desks.values.compactMap(\.display)))
+        let name = blind?.remote.displayName
+        guard name != state.screensUnseenBy else { return }
+        if let blind {
+            Log.info("\(blind.remote.logName) 看不到 Snug 的屏 \(blind.displays.sorted().map { "#\($0)" }.joined(separator: "、"))：重启它才选得到")
+        } else if let gone = state.screensUnseenBy {
+            Log.info("\(gone) 看得到 Snug 的屏了（或不再需要）")
         }
+        state.screensUnseenBy = name
+    }
+
+    /// Snug 的屏在本机看不见，没人远程时指针停在上面就成了「鼠标找不回来」。每拍看一眼，连上马上停：
+    /// - 断开后的重连等待期：远控不再动指针，屏要等重连窗口才撤，指针若停在屏上就收回主屏中央（issue #29）
+    /// - 没人远程、屏还在（提前准备的屏）：用户越过边缘滑进去，就退回看得见的屏上最近的那一点
+    /// 设为主屏的那块除外：它常驻、远程结束也不撤，指针留在上面正是设主屏的本意（重连后接着用），和撤屏时指针落到主屏一致。
+    /// 预览自测（--preview-screens）时也不管：那时就是要看这些屏
+    private func keepPointerOffSnugScreens() {
+        guard !session.isConnected, !state.previewing else { return }
+        let hidden = Set(state.desks.desks.filter { $0.key != store.config.mainScreen }.compactMap(\.value.display))
+        guard !hidden.isEmpty else { return }
+        if session.inEpisode { hidden.forEach(Cursor.leave) } else { Cursor.keepOff(hidden) }
     }
 
     /// 不等重连窗口，立即结束本次远程（菜单栏「立即结束本次远程」，issue #29）。
@@ -188,7 +205,14 @@ final class AppController: Sendable {
 
     /// 按此刻的配置和会话算出要哪些屏，交给 DeskSet（结论没变就什么都不做）
     func applyPlan() {
-        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, trusted: state.accessibilityTrusted, preview: preview))
+        let seesNewScreens = session.owner?.seesScreensOnlyAtLaunch != true
+        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, seesNewScreens: seesNewScreens,
+                                          trusted: state.accessibilityTrusted, preview: preview))
+        let withheld = !ScreenPlan.withheld(config: store.config, remote: session.inEpisode, seesNewScreens: seesNewScreens, preview: preview).isEmpty
+        if withheld, !state.screensWithheld, let owner = session.owner {
+            Log.info("\(owner.logName) 只在启动时认屏、没开「提前准备虚拟屏」：这次远程不建屏")
+        }
+        state.update(\.screensWithheld, withheld)
     }
 
     /// 权限是用户在系统设置里给的，随时会变：刚给上时把上次没放回去的窗口放回去

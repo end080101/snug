@@ -26,12 +26,17 @@ let package = Package(
         .target(name: "RemoteUU", dependencies: ["SnugCore"], path: "Sources/Remotes/UU/Logic"),
         // UU远程：读 UU 的界面（辅助功能）、盯推流日志（log 子进程）、看进程；--dump-remote、--check-remote 的实现
         .target(name: "RemoteUUSystem", dependencies: ["RemoteUU", "SnugCore", "SnugSystem"], path: "Sources/Remotes/UU/System"),
+        // CrossDesk：电源断言判在场、手势整理（绝对鼠标的方言）、跟读日志推算各格推的屏、兼容自检的判定
+        .target(name: "RemoteCrossDesk", dependencies: ["SnugCore"], path: "Sources/Remotes/CrossDesk/Logic"),
+        // CrossDesk：查电源断言、读日志文件、看进程；--dump-remote、--check-remote 的实现
+        .target(name: "RemoteCrossDeskSystem", dependencies: ["RemoteCrossDesk", "SnugCore", "SnugSystem"], path: "Sources/Remotes/CrossDesk/System"),
         .executableTarget(
             name: "Snug",
             dependencies: [
                 "SnugCore",
                 "SnugSystem",
                 "RemoteUUSystem",
+                "RemoteCrossDeskSystem",
                 .product(name: "PermissionFlow", package: "PermissionFlow"),
             ]
         ),
@@ -39,7 +44,8 @@ let package = Package(
         .executableTarget(name: "SnugRelease", dependencies: ["SnugCore"]),
         .testTarget(name: "SnugCoreTests", dependencies: ["SnugCore"]),
         .testTarget(name: "RemoteUUTests", dependencies: ["RemoteUU", "SnugCore"], path: "Tests/Remotes/UU", resources: [.copy("Fixtures")]),
+        .testTarget(name: "RemoteCrossDeskTests", dependencies: ["RemoteCrossDesk", "SnugCore"], path: "Tests/Remotes/CrossDesk", resources: [.copy("Fixtures")]),
         // 契约测试：每家远控一个驱动，跑同一组断言（接入新远控时的验收清单）
-        .testTarget(name: "RemoteContractTests", dependencies: ["SnugCore", "RemoteUU"]),
+        .testTarget(name: "RemoteContractTests", dependencies: ["SnugCore", "RemoteUU", "RemoteCrossDesk"]),
     ]
 )

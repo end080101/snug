@@ -35,7 +35,11 @@ struct StatusText: Equatable {
         if s.quitting { return "正在还原窗口" }
         if !s.accessibilityTrusted { return "用于移动窗口与转换手势" }
         if !s.config.screens.contains(where: \.enabled) { return "屏幕都已关闭" }
+        if let remote = s.screensUnseenBy { return "重启 \(remote) 以识别新屏幕" }
         if s.connection == .idle { return nil }
+        if s.screensWithheld, let remote = s.remoteName {
+            return "开启「提前准备虚拟屏」后重启 \(remote)"
+        }
         if s.gesturesFailed { return "手势转换未启用" }
         let screens = s.config.screens.filter(\.enabled)
         let states = screens.map { s.desks.desks[$0.id]?.screen ?? .off }
@@ -84,9 +88,10 @@ extension Desk.Notice {
         case .noNewWindow(let app): StatusText(headline: "\(app) 无法新建窗口", detail: "可点 App 打开已有窗口")
         case .noWindow(let app): StatusText(headline: "未找到 \(app) 的窗口", detail: "App 已打开，但没有可显示的窗口")
         case .quitStalled(let app, _): StatusText(headline: "\(app) 未退出", detail: "强制退出将丢失未存储的内容")
-        // 只有 UU 的实测依据（UU 换档后要切走再切回才按新比例对齐点按），接别家时按实测再定
-        case .reshaped: StatusText(headline: "屏幕比例已调整", detail: "在 UU远程 中切到其他屏幕再切回，点按位置才准确")
+        // 实测依据只有 UU（换档后要切走再切回才按新比例对齐点按）；CrossDesk 换档后的表现待实测，说法先不点名
+        case .reshaped: StatusText(headline: "屏幕比例已调整", detail: "在远控中切到其他屏幕再切回，点按位置才准确")
         case .reshapeFailed: StatusText(headline: "屏幕比例未能调整", detail: "下次连接时生效")
+        case .keptOnDismiss: StatusText(headline: "窗口已还原", detail: "屏幕保留，可在远控中切换屏幕")
         case .zoomLeftBehind(let app, let steps): StatusText(headline: "\(app) 窗口已关闭", detail: "再打开时字号若偏大，按 \(steps) 次 ⌘- 复原")
         }
     }

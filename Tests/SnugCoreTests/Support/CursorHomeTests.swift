@@ -26,4 +26,15 @@ struct CursorHomeTests {
     func nothingLeft() {
         #expect(CursorHome.landing(pointer: CGPoint(x: 1600, y: 30), kept: [], main: .zero) == nil)
     }
+
+    @Test("没人远程时滑进看不见的屏：退回看得见的屏上最近的一点（像碰到墙）；在看得见的屏上不动；一块看得见的都没有不动")
+    func edge() {
+        let external = CGRect(x: 1512, y: -200, width: 1920, height: 1080)
+        // 从内建屏右边滑进右边的虚拟屏：退到内建屏最右一列
+        #expect(CursorHome.edge(pointer: CGPoint(x: 1530, y: 400), visible: [main]) == CGPoint(x: 1511, y: 400))
+        // 两块看得见的屏取更近的那块
+        #expect(CursorHome.edge(pointer: CGPoint(x: 1600, y: -300), visible: [main, external]) == CGPoint(x: 1600, y: -200))
+        #expect(CursorHome.edge(pointer: CGPoint(x: 100, y: 100), visible: [main]) == nil)
+        #expect(CursorHome.edge(pointer: CGPoint(x: 3000, y: 3000), visible: []) == nil)
+    }
 }

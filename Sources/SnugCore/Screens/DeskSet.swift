@@ -103,6 +103,7 @@ public final class DeskSet {
         for wish in next {
             if let desk = desks[wish.id] {
                 desk.behavior = wish.behavior
+                desk.staysOnDismiss = wish.staysOnDismiss
                 desk.wanted = true
                 // 换了型号：闲着就马上盖上「正在调整」；别的动作在做时不冲掉它的状态，轮到换比例时再设
                 if let old = previous.first(where: { $0.id == wish.id }), old.fit != wish.fit, desk.state.work == nil, desk.state.display != nil {
@@ -117,9 +118,11 @@ public final class DeskSet {
 
     /// 在手机上退出了某块屏：放回窗口、撤掉这块屏，直到不再要它之前都不再加（这次远程结束、关了开关）。
     /// 没接显示器的 Mac 上，Snug 的屏一出现系统就撤掉自己的默认屏，远控里没有别的屏可切，靠它回到原来的画面（issue #8）。
+    /// 屏要留着的（staysOnDismiss，见 ScreenPlan）只还原窗口，和远程结束时收拾提前准备的屏一样。
     /// 远程刚结束、屏还没撤完时点的不算：不然会挡掉下一次远程的屏
     public func dismissScreen(_ id: ScreenID) {
         guard let desk = desks[id], desk.wanted else { return }
+        if desk.staysOnDismiss { return keepOnDismiss(desk) }
         state.dismissed.insert(id)
         wishes.removeAll { $0.id == id }
         desk.wanted = false
@@ -128,8 +131,22 @@ public final class DeskSet {
         lane.run { await self.reconcile() }
     }
 
+    private func keepOnDismiss(_ desk: Desk) {
+        Log.info("在手机上退出了屏（\(desk.id)）：这次远程的远控只在启动时认屏，撤了再建它就选不到，只还原窗口、屏留着")
+        let ticket = desk.begin(.dismissing)
+        lane.run {
+            await desk.perform(ticket) {
+                await desk.returnAll()
+                await self.clear(desk.id, "退出这块屏、屏留着，")
+                await desk.matchWidth()
+            }
+            desk.setNotice(.keptOnDismiss)
+        }
+    }
+
     private func addDesk(for wish: ScreenWish) {
         let desk = Desk(id: wish.id, behavior: wish.behavior, env: env)
+        desk.staysOnDismiss = wish.staysOnDismiss
         desk.onChange = { [weak self, weak desk] in
             guard let self, let desk, desks[desk.id] === desk else { return }
             state.desks[desk.id] = desk.state
@@ -155,7 +172,7 @@ public final class DeskSet {
                 busy.append(desk)
             }
             await desk.vacate()
-            await clear(desk.id)
+            await clear(desk.id, "撤屏前")
         }
         for wish in target where screens.display(wish.id) != nil && screens.fit(wish.id) != wish.fit {
             guard let desk = desks[wish.id] else { continue }
@@ -183,22 +200,24 @@ public final class DeskSet {
         if desks.isEmpty { forgetSession() }
     }
 
-    /// 撤屏前清场（docs/how-it-works.md「Snug 的屏」）：Snug 放上去的已经按账放回，屏上剩下的（用户在这块屏上直接开的、
-    /// 设主屏时跟过来的）挪到主屏，居中、大小不超过主屏。不挪的话，撤屏后它们停在所有屏的范围之外，系统不挪回来（实测）。
+    /// 清场（docs/how-it-works.md「Snug 的屏」）：Snug 放上去的已经按账放回，屏上剩下的（用户在这块屏上直接开的、
+    /// 设主屏时跟过来的）挪到主屏，居中、大小不超过主屏。撤屏前不挪的话，撤屏后它们停在所有屏的范围之外，系统不挪回来（实测）；
+    /// 远程结束、屏留着（提前准备）时不挪的话，它们留在本机看不见的屏上。还算放着、挪着的（放不回去的）不动，账留着下次再放。
     /// 设回原主屏没成功时，主屏还是要撤的这块：挪到原来的主屏上，撤掉后系统把它摆回主屏，窗口跟着走
-    private func clear(_ id: ScreenID) async {
+    private func clear(_ id: ScreenID, _ moment: String) async {
         guard let bounds = screens.bounds(id), var main = screens.mainArea() else { return }
         if main.intersects(bounds), let home = screens.homeMainArea() { main = home }
-        let stranded = await windows.windows(in: bounds)
+        let kept = desks[id].map { $0.state.brought.union([$0.placedWindow].compactMap { $0 }) } ?? []
+        let stranded = await windows.windows(in: bounds).filter { !kept.contains($0.key) }
         guard !stranded.isEmpty else { return }
         guard !main.intersects(bounds) else {
-            return Log.warn("撤屏（\(id)）前屏上还有 \(stranded.count) 个窗口，主屏就是这块、找不到原来的主屏，挪不走")
+            return Log.warn("\(moment)屏（\(id)）上还有 \(stranded.count) 个窗口，主屏就是这块、找不到原来的主屏，挪不走")
         }
         for (key, frame) in stranded.sorted(by: { ($0.key.pid, $0.key.id) < ($1.key.pid, $1.key.id) }) {
             let target = main.centered(frame.size)
-            if await windows.move(key, to: target) == nil { Log.warn("撤屏前挪不走 pid \(key.pid) 的窗口 \(key.id)（\(frame.short)）") }
+            if await windows.move(key, to: target) == nil { Log.warn("\(moment)挪不走 pid \(key.pid) 的窗口 \(key.id)（\(frame.short)）") }
         }
-        Log.info("撤屏（\(id)）前把屏上剩下的 \(stranded.count) 个窗口挪到主屏")
+        Log.info("\(moment)把屏（\(id)）上剩下的 \(stranded.count) 个窗口挪到主屏")
     }
 
     // MARK: 屏上的意图
@@ -549,14 +568,21 @@ public final class DeskSet {
     /// 远程在不在进行（会话层的结论）。远程结束后，远程中撤屏留下的永久配置要重写（settleDisplays）
     public func setRemote(_ on: Bool) {
         guard screens.setRemote(on), !on else { return }
-        // 远程结束：设为主屏的那块常驻不撤（ScreenPlan），这次远程的事不带到下一次
-        lane.run { self.endSession() }
+        lane.run { await self.endSession() }
         settleDisplays()
     }
 
-    /// 远程结束后还留着的屏（常驻的主屏）：屏上的窗口原样留着，下次连上接着用（主人定：设了主屏，
-    /// 屏上的东西就不该变；取消设为主屏、撤这块屏时才放回）。只收掉这次远程的提示
-    private func endSession() {
+    /// 远程结束、屏还留着：提前准备的屏上，Snug 放的窗口归位、用户在上面开的挪回主屏（本机看不见这些屏）；
+    /// 设为主屏的那块屏上的东西原样留着，下次连上接着用（主人定）；预览自测的屏也不动（开发者正看着）。这次远程的提示、监视都收掉
+    private func endSession() async {
+        for wish in wishes where wish.prepared && !wish.main {
+            // 又连上了：屏上的窗口留给这一次，不再归位；提示、监视照样收掉（属于上一次）
+            guard !screens.isRemote else { break }
+            guard let desk = desks[wish.id], desk.wanted, desk.state.display != nil else { continue }
+            await desk.returnAll()
+            await clear(desk.id, "远程结束、屏留着，")
+            await desk.matchWidth()
+        }
         for desk in desks.values { desk.setNotice(nil) }
         forgetSession()
     }

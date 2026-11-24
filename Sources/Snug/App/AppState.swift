@@ -22,14 +22,22 @@ final class AppState {
     var previewing = false
     /// 此刻同时连着的控制端
     var controllers: [String] = []
+    /// 登记的远控（启动时从 Remotes 取一次）：界面提到远控时按这份说，不写死哪一家
+    var remotes: [RemoteIdentity] = []
     /// 这次远程归哪家远控（界面上的名字）；不在远程时为 nil
     var remoteName: String?
+    /// 这次远程因为远控只在启动时认屏、又没提前准备，有开着的屏没建（ScreenPlan.withheld）：状态里提示去打开提前准备
+    var screensWithheld = false
+    /// 看不到某块 Snug 屏的远控（界面上的名字）：它只在启动时认屏，这块屏是它启动后才建的，要重启它
+    var screensUnseenBy: String?
     /// 远控此刻在推的屏
     var streamedDisplay: DisplayID?
     /// 各块屏上的状态（DeskSet 写）
     var desks = DeskSet.State()
     /// 手势翻译要开却没开起来（建事件监听失败）
     var gesturesFailed = false
+    /// 装了的、只在自己启动时认屏的远控（界面上的名字，按登记顺序）：设置里据此显示「提前准备虚拟屏」
+    var launchOnlyRemotes: [String] = []
     var accessibilityTrusted = false
     /// 录屏权限：手机、平板屏上的截图要它，和辅助功能分开授权（开了截图键才去读）
     var screenRecordingTrusted = false
@@ -79,6 +87,12 @@ final class AppState {
         config.screens.map(\.id).filter { id in desks.desks[id].map { $0.display != nil && !$0.behavior.touch } == true }
     }
 
+    /// 界面上提到远控时的名字：这次远程的那家；不在远程时是登记的全部（「UU远程、CrossDesk」），哪家都能用
+    var remoteNames: String { remoteName ?? remotes.map(\.displayName).joined(separator: "、") }
+
+    /// 连上时先推主屏的远控（界面上的名字）：设为主屏的那块，用它们时每次连接即进入
+    var mainScreenRemotes: [String] { remotes.filter(\.opensOnMainScreen).map(\.displayName) }
+
     /// 只在值真的变了时才写，免得每拍都让界面重算
     func update<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<AppState, T>, _ value: T) {
         if self[keyPath: keyPath] != value { self[keyPath: keyPath] = value }
@@ -114,6 +128,7 @@ protocol AppIntents: AnyObject, Sendable {
     /// 换型号：屏在就马上换成它的比例
     func setScreenDevice(_ id: ScreenID, _ device: DeviceChoice)
     func renameScreen(_ id: ScreenID, _ name: String)
+    func setKeepScreensReady(_ on: Bool)
     /// 设为主屏的那块（常驻）；nil 不改主屏
     func setMainScreen(_ id: ScreenID?)
     func setGestures(_ on: Bool)

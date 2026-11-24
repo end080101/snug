@@ -1,6 +1,7 @@
 // 唯一登记远控的地方：会话、手势翻译、资源库的排除名单、诊断命令都从这里取。
 // 接一家新的远控：在 Sources/Remotes 下建它的两个目标，在这里加一行，再给契约测试加一个驱动（见 docs/remotes/README.md）
 import Foundation
+import RemoteCrossDeskSystem
 import RemoteUUSystem
 import SnugCore
 
@@ -22,6 +23,7 @@ enum Remotes {
     /// 登记顺序就是归属顺序：两家同时报在场时归前面那家
     static let all: [Entry] = [
         Entry(adapter: UURemoteAdapter.self, dump: UUDump.run, check: UUCheckRun.run(hours:)),
+        Entry(adapter: CrossDeskRemoteAdapter.self, dump: CrossDeskDump.run, check: CrossDeskCheckRun.run(hours:)),
     ]
 
     static var names: [String] { all.map(\.name) }

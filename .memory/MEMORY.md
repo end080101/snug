@@ -7,17 +7,18 @@
 - [产品](project-product.md) — 目标与已拍板的取舍：设主屏可选且常驻、一块屏不换方向、资源库、截图、按机型定比例、边界扩到电脑；移植和 macOS 13 不合进来
 - [实测坑](project-phone-screen.md) — UU 更新先跑 remote-check uu；UU 推流规律、系统按组记模式、真机自测只从访达重开正式版、ColorSync、App 实测
 - [发版](project-release.md) — 只走 scripts/snug；个人 Developer ID（29898YBGWD）公证；gh 绑定 zephyr4123 并写明 -R；版本号与更新日志口径；发版后不替主人装
-- [国内源与 README](project-domestic-mirror.md) — dl.zephyrxiang.com/snug/；看下载量；证书 2027-01-12 到期；README 结构、截图规格、camo 的坑
+- [国内源与 README](project-domestic-mirror.md) — dl.zephyrxiang.com/snug/；看下载量；证书 2027-01-12 到期；README 结构、截图规格、camo 的坑；GitHub 简介随 README 同步改
 - [演示录制（进行中）](project-demo-recording.md) — 三块屏原画并排，正式素材和粗剪已就绪；全在 footage/（绝不进 git），主人说交接时才交给 kineto
 - [UU远程 VIP 与横向扩展](project-uu-vip.md) — 12-01 起多屏、虚拟屏纳入 VIP：对外立场、免费版不实测；11-19 定专注 UU、暂不接 RustDesk 等其他远控
-- [无显示器的 Mac（issue #8，已关）](project-headless-mac.md) — 手机屏会顶掉默认屏；退出入口已发布，替身主屏方案已定、缺实机验证
+- [无显示器的 Mac（issue #8，已关）](project-headless-mac.md) — 手机屏会顶掉默认屏；退出入口已发布（CrossDesk 下退出不撤屏），替身主屏方案已定、缺实机验证
 - [多屏](project-multi-screen.md) — 三条原则、拍板、UU 与 macOS 实测、没做完的、还欠着的对外承诺；设计记录在 git 历史里
 - [远控适配层（11-19 合入）](project-remote-adapter.md) — 对接 UU 的部分可替换、给社区留口子；设计记录 docs/remote-adapter 保留；约定、门禁、技术债
-- [CrossDesk（PR #58）](project-crossdesk.md) — 一定要合、手势必须和 UU 一样；上下文在 docs/remote-adapter/crossdesk/README.md；等主人压缩对话后开工
+- [CrossDesk（PR #58）](project-crossdesk.md) — 一定要合、手势必须和 UU 一样；内核、实测、门面都已做完待推送；上下文在 docs/remote-adapter/crossdesk/README.md
 - [界面原型与令牌](project-ui-redesign.md) — 界面以 design/prototype 为准、令牌在 design/design-tokens.json；先改原型再改代码
 - [产品思维](feedback-product-thinking.md) — 用户无感、可选不强制、隔离干净；不为了做而做；能根治不打补丁、能通用不为单个 App 适配
 - [手势是核心](feedback-gestures-core.md) — 接任何远控都必须做原生手势翻译，不能以「远控自己处理」为由放弃
 - [界面规范](feedback-ui-style.md) — 图标只用 SF Symbols；文字短词、书面、克制；每个状态讲清楚
+- [远控并列](feedback-remotes-interchangeable.md) — 界面上各家远控并列可换，名字从登记处取，特有说法按能力点名
 - [对外文案](feedback-doc-writing.md) — 书面语、短语式、简短干练；提炼不照抄；第三方只陈述事实；打码只糊一小块
 - [回复 issue](feedback-issue-replies.md) — 主人第一人称；bug 留给报告人关、做完发版的需求就关；婉拒讲清定位、语气平和；做不到的要把实测和论证讲闭环；主人说发就不再审
 - [直接修不建 issue](feedback-direct-fix-no-issues.md) — bug 直接修、重构直接做，追溯靠 commit 信息

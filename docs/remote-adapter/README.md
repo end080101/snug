@@ -351,7 +351,7 @@ public struct RemoteObservation: Equatable, Sendable {
 
 ### 12.4 已知疏漏：手势只拆了一半
 
-2026-11-20 发现，待 RustDesk 的 PR 来了一起拆。
+2026-11-20 发现，待 RustDesk 的 PR 来了一起拆。**11-23 已拆**（接 CrossDesk 时，PR #58）：端口是 `TouchNormalizer`（`Sources/SnugCore/Touch/TouchNormalizer.swift`），身份里声明 `normalizer`，分派在纯值的 `TouchPipeline`（还掉了 7.5「`TouchTap` 的分派没有测试」），翻译器加了「远控已认出长按、滑动」的入口；只登记 UU 时逐字不变由 `TouchGoldenMasterTests` 守着。下面是当时的记录，拆法和草案一致；补发事件仍是拷贝后改写记号（CrossDesk 的记号打在事件本身，和 UU 同一条路径，真机待验）。
 
 **现状**：手势链路全部共用。适配器只在身份里声明 `injector`（哪个进程注入的事件归它）。系统层的 `TouchTap` 全局只有一个，启动时收齐各家的 `injector`（`AppController.swift` 里 `TouchTap(injectors:)`），截下远控注入的事件。核心的 `TouchTranslator` 也只有一个，只认「按下 → 拖动 → 抬起」这一种原料，按 iPhone 的习惯翻译成点击、滚动、长按选择、右键。
 
@@ -368,6 +368,17 @@ public struct RemoteObservation: Equatable, Sendable {
 - 验收照 12.2：只登记 UU 时，手势行为与日志逐字不变
 
 **审那个 PR 时另要逐条核实的**：fork 里还一并做了几处不属于手势整理的改动，作用范围要逐条确认：远程期间隐藏 Snug 屏上的系统光标（按代码看对所有远控生效）；点按吸附到控件中心（每次点按查一次辅助功能）；点按反馈圈（黄圈、蓝框、红点，像调试画面）；快滑成批到达不再判成长按（改的是共用翻译器）。每条先问：是不是通用、会不会改变只有 UU 时的行为。`.memory` 的改动不收。
+
+### 12.5 接 CrossDesk 时的端口增补（11-23，PR #58）
+
+都按「有第二家的真实用例才加」：
+
+- `RemoteIdentity.seesScreensOnlyAtLaunch`：只在自己启动时认显示器（CrossDesk）。据此显示「提前准备虚拟屏」；没提前准备时远程中不建屏（`ScreenPlan` 的 `seesNewScreens`）。
+- `RemoteIdentity.opensOnMainScreen`：连上时先推 Mac 的主屏（UU）。「设为主屏每次连接即进入」只按声明了的那几家说。
+- `RemoteObservation.unreachableDisplays`：只在启动时认屏的远控报此刻在线、它却选不到的屏（CrossDesk 按各格此刻推的屏推算，含按序号回退能落到的；只报在线的，正在撤的屏不会被当成选不到），`RemoteReading.unseen` 取出其中 Snug 的屏，提示重启它；远程中只问这次远程的那家（`RemoteReading.blind`）；别家为 nil。契约测试按「启动时认到、此刻在线」两组屏核对：启动后才建的要报出来，启动时就在的不报。
+- `ScreenWish.prepared`：提前准备的屏，`resident` = 设为主屏 || 提前准备；远程结束时只收拾提前准备的屏。
+- 自检：条目与报告在 `SnugCore` 的 `RemoteCheck`，取证工具（读 Snug 日志、扫包、写材料）在 `SnugSystem` 的 `RemoteCheckTools`，各家只写判定（`UUCheck`、`CrossDeskCheck`）。
+- 界面不写死哪一家：提到远控时用登记处的名单或这次远程的那家（`AppState.remoteNames`）。
 
 ## 附：调研原始报告
 

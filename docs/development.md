@@ -82,14 +82,15 @@ App 将本机已安装的 Snug 按同样方式切块，只按字节范围从最�
 
 | 目标 | 内容 |
 | :--- | :--- |
-| `SnugCore` | 纯逻辑：远控适配层的端口与连接判定、会话（`Remote/`）、屏幕调度（见下）、屏幕适配 `ScreenFit`、机型库 `DeviceCatalog`、手势翻译 `TouchTranslator`、截图 `Screenshots`、还原记录、配置、日志、启动参数、更新包格式。系统能力抽象为协议，测试中使用假实现 |
-| `SnugSystem` | 系统层：`CGVirtualDisplay` 建屏与撤屏、辅助进程切换分辨率档位、设主屏与还原排列 `DisplayArrangementService`、辅助功能接口移动窗口、按进程发送字号快捷键、手势事件监听 `TouchTap`、ScreenCaptureKit 截图 |
+| `SnugCore` | 纯逻辑：远控适配层的端口与连接判定、会话、自检报告 `RemoteCheck`（`Remote/`）、屏幕调度（见下）、屏幕适配 `ScreenFit`、机型库 `DeviceCatalog`、手势层（各家整理的端口 `TouchNormalizer`、分派 `TouchPipeline`、共用翻译 `TouchTranslator`，`Touch/`）、截图 `Screenshots`、还原记录、配置、日志、启动参数、更新包格式。系统能力抽象为协议，测试中使用假实现 |
+| `SnugSystem` | 系统层：`CGVirtualDisplay` 建屏与撤屏、辅助进程切换分辨率档位、设主屏与还原排列 `DisplayArrangementService`、辅助功能接口移动窗口、按进程发送字号快捷键、手势事件监听 `TouchTap`、ScreenCaptureKit 截图、远控自检的取证工具 `RemoteCheckTools` |
 | `RemoteUU`、`RemoteUUSystem` | UU远程 的适配器：纯逻辑一个目标、调系统一个目标（见「远控适配层」） |
+| `RemoteCrossDesk`、`RemoteCrossDeskSystem` | CrossDesk 的适配器：按「共享桌面」电源断言判在场、手势整理（绝对鼠标的方言）、跟读日志推算各格推的屏（它只在启动时认屏）、兼容自检与诊断命令 |
 | `Snug` | 应用层：登记远控 `Remotes`、AppController、应用内更新 `Updater`、Snug 屏上的 App 资源库（`Screens/`）、指示条与截图裁剪、设置（屏幕、触控、通用三页）、添加屏幕与屏幕详情、关于、电脑屏的 App 资源库窗口、欢迎页、菜单栏 |
 
 发布工具 `SnugRelease` 只依赖 `SnugCore`，由 `scripts/snug` 调用。
 
-测试目标与代码目标对应：`SnugCoreTests` 只用假远控；`RemoteUUTests`（`Tests/Remotes/UU`，含 UU 的推流日志夹具）；`RemoteContractTests` 是每家远控都要过的契约测试。
+测试目标与代码目标对应。`SnugCoreTests` 测共用逻辑（含手势翻译的黄金母本），`RemoteUUTests` 与 `RemoteCrossDeskTests` 测各自的信号、手势整理（CrossDesk 用真机录制回放）和自检。`RemoteContractTests` 用同一组断言核对每家适配器。
 
 ### 远控适配层
 

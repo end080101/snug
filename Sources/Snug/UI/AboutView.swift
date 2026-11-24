@@ -4,6 +4,9 @@ import SwiftUI
 import SnugCore
 
 struct AboutView: View {
+    /// 登记的远控（界面上的名字）：免责声明里逐家点名
+    let remotes: [String]
+
     private struct Credit: Identifiable {
         let name, url, author, usage: String
         var id: String { name }
@@ -53,7 +56,7 @@ struct AboutView: View {
             } header: {
                 Text("致谢（MIT 许可）")
             } footer: {
-                Text("非 UU远程 官方软件").font(.footnote).foregroundStyle(.secondary)
+                Text("非 \(remotes.joined(separator: "、")) 官方软件").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
@@ -70,7 +73,7 @@ final class AboutWindowController {
     func show(on display: DisplayID? = nil, activating: Bool = true) {
         if window == nil {
             // 先定尺寸再居中（NSWindow(hosting:)），否则按 0×0 居中，窗口偏到右下
-            let w = NSWindow(hosting: AboutView(), title: "关于 Snug")
+            let w = NSWindow(hosting: AboutView(remotes: Remotes.all.map(\.identity.displayName)), title: "关于 Snug")
             w.titlebarAppearsTransparent = true
             window = w
         }
