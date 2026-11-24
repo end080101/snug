@@ -13,7 +13,8 @@ metadata:
 - **GitHub 账号**：`GH_CONFIG_DIR=~/.config/gh-zephyr4123`，推送和 gh 命令前 `gh api user --jq .login` 必须是 zephyr4123；gh 命令一律写 `-R zephyr4123/snug`（不写会挑 upstream，2.0.0 差点发到原作者仓库）。main 不加分支保护（11-19 主人定）
 - **版本号**：x.y.0 发主打功能，x.y.z 修 issue 报的问题（带一个小入口也算）
 - **更新日志**（标签说明，分 修复 / 改进 / 致谢 / 安装）：讲用户得到什么，不点名具体 App、不讲实现。主人通常只审更新日志，其余放手
-- **主人的发版习惯**：合并、推送、发版前照红线先问；合并前删掉过程文档、结论并进记忆（例外：远控适配层的设计记录保留，见 [[project-remote-adapter]]）；「小补丁」不用自己手测，发版后请报告人测；**不替主人装**：从访达重开「应用程序」里的旧版（见 [[project-phone-screen]]），让它弹「软件更新」，顺带弹出的设置窗口关掉，主人自己点更新
+- **主人的发版习惯**：合并、推送、发版前照红线先问；合并前删掉过程文档、结论并进记忆（例外：远控适配层的设计记录保留，见 [[project-remote-adapter]]）；「小补丁」不用自己手测，发版后请报告人测；**不替主人装**：从访达重开「应用程序」里的旧版（见 [[project-phone-screen]]），让它弹「软件更新」，顺带弹出的设置窗口关掉，主人自己点更新。退出主人正在跑的 Snug 要他当次点头（11-24 发 2.9.0 时自动模式拦下了），没点头就告诉他自己重开
+- **发版后清理**：`dist/` 只留刚发的版本（ship 中断重跑用），更早的、`build/`、`.playwright-mcp/` 可删；`footage/`、`.build/`、`.venv/`、`.machine.env`、`design/prototype/assets/` 留着
 - **应用内更新**（2.1.0 起）：按内容分块（`Snug-<版本>.pack` + `update.json`），GitHub 和国内源都传。不做差分是主人拍板的（要按版本配对、「产生一堆中间产物」），别再提。`firstUpdatable` = 2.1.0
 - **本机实测更新**：别往 COS 传测试文件。临时把 `UpdateSource.tencentBase` 改成 `http://127.0.0.1:8765/snug`、VERSION 设成旧版本 install；另打新版本号的 App，用临时本地标签跑 `snug-release pack/feed` 摆成国内源目录，起支持 Range 的本地服务器。测完 `git checkout` 还原、删临时标签、重装。「立即更新」用 osascript 点 `last button of group 1 of window "软件更新"`
 
