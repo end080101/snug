@@ -12,7 +12,7 @@ metadata:
 
 **唯一上下文入口**：`docs/remote-adapter/crossdesk/README.md`，在 PR #58 的分支上（本地 `pr58-crossdesk`，远端 `nexmoe/snug:crossdesk-adapter`），不在 main。里面有已定决策、CrossDesk 行为事实（带 v1.7.6 行号）、两轮真机录制、核实过的 PR 问题、手势方案、16 步工作清单和实测清单。开工前先读它，结论变了改它。
 
-**状态（11-23 晚）**：内核、审查、iPhone 实测（CrossDesk 1.7.7）、门面一轮都已在 `pr58-crossdesk` 上完成，未推送。剩：推送（先问主人）、PR #58 转回可审阅、合并时同步 GitHub 简介与话题、发版；上游 issue kunkundi/crossdesk#200 要跟进回复。
+**状态（11-24）**：已合并（PR #58，合并提交 0f3acb3），随 2.8.0 发布；GitHub 简介、话题已同步。#33（已关）、#35、#47、#55、讨论区 #51、PR #58 都已回复发布。上游：kunkundi 在 #200 回复「非常欢迎提交 PR」（热插拔与虚拟屏重新识别）；已另发 kunkundi/crossdesk#225 告知 Snug 已支持，并对外说了会按 #200 的思路给 CrossDesk 提 PR，**这是欠着的承诺**。
 
 **已定**：
 - 手势必须做到和 UU 一样（[[feedback-gestures-core]]），前提是手机端选「绝对鼠标」；「相对鼠标」下不翻译。屏上的「手势未生效」提示手机实测出不来，主人定砍掉（「别为了这个无关紧要的小功能堆积屎山」），改在 README 写一句

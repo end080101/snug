@@ -13,7 +13,7 @@
 - [无显示器的 Mac（issue #8，已关）](project-headless-mac.md) — 手机屏会顶掉默认屏；退出入口已发布（CrossDesk 下退出不撤屏），替身主屏方案已定、缺实机验证
 - [多屏](project-multi-screen.md) — 三条原则、拍板、UU 与 macOS 实测、没做完的、还欠着的对外承诺；设计记录在 git 历史里
 - [远控适配层（11-19 合入）](project-remote-adapter.md) — 对接 UU 的部分可替换、给社区留口子；设计记录 docs/remote-adapter 保留；约定、门禁、技术债
-- [CrossDesk（PR #58）](project-crossdesk.md) — 一定要合、手势必须和 UU 一样；内核、实测、门面都已做完待推送；上下文在 docs/remote-adapter/crossdesk/README.md
+- [CrossDesk（PR #58）](project-crossdesk.md) — 已合并、随 2.8.0 发布；欠 CrossDesk 一个热插拔 PR（#200、#225）；上下文在 docs/remote-adapter/crossdesk/README.md
 - [界面原型与令牌](project-ui-redesign.md) — 界面以 design/prototype 为准、令牌在 design/design-tokens.json；先改原型再改代码
 - [产品思维](feedback-product-thinking.md) — 用户无感、可选不强制、隔离干净；不为了做而做；能根治不打补丁、能通用不为单个 App 适配
 - [手势是核心](feedback-gestures-core.md) — 接任何远控都必须做原生手势翻译，不能以「远控自己处理」为由放弃
