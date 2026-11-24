@@ -25,16 +25,6 @@ enum CrossDeskLogs {
         }
     }
 
-    static func state(in files: [FileStamp], since date: Date) -> Bool? {
-        let cutoff = timestamp(date)
-        for file in files {
-            // If a current log can't be read, an older capture record alone is inconclusive.
-            guard let log = read(file.url) else { return nil }
-            if let result = CrossDeskLog.captureState(in: log, since: cutoff) { return result }
-        }
-        return nil
-    }
-
     static func recentEvents(since date: Date) -> [CrossDeskLog.Event]? {
         let files = files(since: date)
         guard !files.isEmpty else { return nil }

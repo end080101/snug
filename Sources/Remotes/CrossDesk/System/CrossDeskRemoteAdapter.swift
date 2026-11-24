@@ -1,60 +1,33 @@
-import AppKit
+// CrossDesk 的适配器：每拍查一次电源断言（见 CrossDeskRemote），同步、不读日志
+import Foundation
 import RemoteCrossDesk
 import SnugCore
 
 @MainActor
 package final class CrossDeskRemoteAdapter: RemoteAdapter {
     package static let identity = CrossDeskRemote.identity
-
-    private var hostLaunch: Date?
-    private var files: [CrossDeskLogs.FileStamp]?
-    private var capture: Bool?
-    private var pendingRead: Task<Void, Never>?
+    /// 上一拍查不了电源断言：只在开始查不了、恢复时各记一次，不每拍刷日志
+    private var unreadable = false
 
     package init() {}
 
     package func start() {}
-
-    package func stop() {
-        pendingRead?.cancel()
-        pendingRead = nil
-        hostLaunch = nil
-        files = nil
-        capture = nil
-    }
+    package func stop() {}
 
     package func sample(wallClock: Date) -> RemoteObservation {
-        guard let launch = Self.runningHost?.launchDate else {
-            stop()
-            return CrossDeskRemote.observation(running: false, capture: nil)
-        }
-        if launch != hostLaunch {
-            stop()
-            hostLaunch = launch
-        }
-        if pendingRead == nil {
-            let previous = files
-            pendingRead = Task { [weak self] in
-                let update = await Task.detached(priority: .utility) { () -> (files: [CrossDeskLogs.FileStamp], state: Bool?)? in
-                    let current = CrossDeskLogs.files(since: launch)
-                    guard current != previous else { return nil }
-                    return (current, CrossDeskLogs.state(in: current, since: launch))
-                }.value
-                guard !Task.isCancelled, let self else { return }
-                if let update {
-                    // Retry an unreadable log, even if its metadata stayed the same.
-                    files = update.state == nil ? nil : update.files
-                    capture = update.state
-                }
-                pendingRead = nil
-            }
-        }
-        return CrossDeskRemote.observation(running: true, capture: capture)
+        CrossDeskRemote.observation(sharing: sharingOwners())
     }
 
-    static var runningHost: NSRunningApplication? {
-        NSRunningApplication.runningApplications(withBundleIdentifier: CrossDeskRemote.bundleID)
-            .filter { !$0.isTerminated && $0.launchDate != nil }
-            .min { ($0.launchDate ?? .distantFuture) < ($1.launchDate ?? .distantFuture) }
+    private func sharingOwners() -> [Int32]? {
+        do {
+            let owners = CrossDeskRemote.sharingOwners(in: try CrossDeskHost.assertions())
+            if unreadable { Log.info("电源断言又查得到了：CrossDesk 的连接检测恢复") }
+            unreadable = false
+            return owners
+        } catch {
+            if !unreadable { Log.error("查不了电源断言（\(error)）：认不出 CrossDesk 的远程，之后每拍照查") }
+            unreadable = true
+            return nil
+        }
     }
 }

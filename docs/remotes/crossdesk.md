@@ -1,6 +1,6 @@
 # CrossDesk
 
-Snug 在被控 Mac 上创建虚拟屏，CrossDesk 将画面传给控制端。手机和平板屏可以使用 App 资源库、窗口铺满和字号放大。CrossDesk 处理自己的点按、拖动、滚动和右键。
+Snug 在被控 Mac 上创建虚拟屏，CrossDesk 将画面传给控制端。手机和平板屏可以使用 App 资源库、窗口铺满和字号放大。手势由 Snug 翻译，和 UU远程 一样：单指滑滚动带惯性、长按选择、长按松手右键，需在手机端选「绝对鼠标」（选「相对鼠标」时 Snug 的屏上会提示）。
 
 ## 连接
 
@@ -12,7 +12,9 @@ Snug 在被控 Mac 上创建虚拟屏，CrossDesk 将画面传给控制端。手
 
 ## 会话检测
 
-适配器只读 `~/Library/Logs/CrossDesk/crossdesk.log` 及其三个轮转文件，并按当前 CrossDesk 进程启动时间排除旧记录。抓屏启动表示连入，最后一台控制端断开表示会话结束。抓屏启动失败、停止或日志重新初始化时清掉旧状态。控制端名称和当前推流屏未知时，Snug 仍可管理虚拟屏和 App 资源库。
+有人远程时，CrossDesk 持有一条名为「CrossDesk is sharing the desktop」的电源断言：有入站控制端、在抓屏时建立，停止抓屏时释放。适配器每拍查一次这条断言，不读日志，也不看进程的启动时间，开机自启或看门狗拉起的 CrossDesk 同样认得出。最后一台控制端断开后，CrossDesk 可能过几秒才释放断言（实测最长 9.5 秒），会话随之结束。控制端名称和当前推流屏未知时，Snug 仍可管理虚拟屏和 App 资源库。
+
+日志 `~/Library/Logs/CrossDesk/crossdesk.log`（及三份轮转）只用于自检。
 
 macOS App bundle 为 `cn.crossdesk.app`，在 App 资源库中排除。
 

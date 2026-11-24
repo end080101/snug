@@ -8,21 +8,6 @@ package enum CrossDeskLog {
 
     package enum Event {
         case initialized, captureStarted, captureFailed, captureStopped, lastControllerLeft
-
-        var capturing: Bool { self == .captureStarted }
-    }
-
-    package static func captureState(in log: String, since: String) -> Bool? {
-        // spdlog flushes complete lines. A write concurrent with this read can leave a partial final line.
-        guard let lastNewline = log.lastIndex(of: "\n") else { return nil }
-        var remaining = log[..<lastNewline]
-        while let newline = remaining.lastIndex(of: "\n") {
-            let line = remaining[remaining.index(after: newline)...]
-            if let record = record(line), record.timestamp >= since[...] { return record.event.capturing }
-            remaining = remaining[..<newline]
-        }
-        guard let record = record(remaining), record.timestamp >= since[...] else { return nil }
-        return record.event.capturing
     }
 
     package static func record(_ line: Substring) -> Record? {

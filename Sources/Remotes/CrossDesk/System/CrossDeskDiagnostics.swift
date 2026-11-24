@@ -1,3 +1,4 @@
+// --dump-remote crossdesk：打印从 CrossDesk 读到的东西。--check-remote crossdesk：兼容自检。只读，不碰 CrossDesk、不碰屏幕
 import AppKit
 import RemoteCrossDesk
 import SnugCore
@@ -5,18 +6,27 @@ import SnugCore
 @MainActor
 package enum CrossDeskDiagnostics {
     package static func dump() -> Int32 {
-        let host = CrossDeskRemoteAdapter.runningHost
-        if let url = host?.bundleURL ?? NSWorkspace.shared.urlForApplication(withBundleIdentifier: CrossDeskRemote.bundleID),
-           let version = Bundle(url: url)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String {
-            print("CrossDesk 版本：\(version)（验证过 \(CrossDeskRemote.verifiedVersion) 的日志格式）")
+        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: CrossDeskRemote.bundleID) {
+            let version = Bundle(url: url)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            print("CrossDesk：\(url.path)（版本 \(version ?? "未知")，上次核对的是 \(CrossDeskRemote.verifiedVersion)）")
         } else {
-            print("未找到 CrossDesk.app（\(CrossDeskRemote.bundleID)）")
+            print("CrossDesk：没装（按 \(CrossDeskRemote.bundleID) 找不到）")
         }
-        let capture = host?.launchDate.flatMap { CrossDeskLogs.state(in: CrossDeskLogs.files(since: $0), since: $0) }
-        let observation = CrossDeskRemote.observation(running: host != nil, capture: capture)
-        print("会话观测：\(observation.evidence)")
+        let processes = CrossDeskHost.processes()
+        print("进程：" + (processes.isEmpty ? "没在运行" : processes.map { app in
+            let start = app.launchDate.map { "启动于 \($0.formatted(date: .omitted, time: .standard))" } ?? "没有启动时间（开机自启或看门狗拉起）"
+            return "\(app.processIdentifier)（\(app.executableURL?.path ?? "路径读不到")，\(start)）"
+        }.joined(separator: "；")))
+        let owners: [Int32]?
+        do {
+            owners = CrossDeskRemote.sharingOwners(in: try CrossDeskHost.assertions())
+        } catch {
+            print("电源断言：查不了（\(error)）")
+            owners = nil
+        }
+        print("会话观测：\(CrossDeskRemote.observation(sharing: owners).evidence)")
         print("日志：\(CrossDeskLogs.directory.path)")
-        return host != nil && capture != nil ? 0 : 1
+        return owners == nil ? 1 : 0
     }
 
     package static func check(hours: Int) -> Int32 {

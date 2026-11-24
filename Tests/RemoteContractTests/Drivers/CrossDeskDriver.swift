@@ -10,15 +10,16 @@ struct CrossDeskDriver: RemoteDriver {
     let appBundleID = CrossDeskRemote.bundleID
 
     func idle() -> RemoteObservation {
-        observation("Logger initialized")
+        CrossDeskRemote.observation(sharing: CrossDeskRemote.sharingOwners(in: [352: ["Powerd - Prevent sleep while display is on"], 78275: []]))
     }
 
     func unreadable() -> RemoteObservation {
-        CrossDeskRemote.observation(running: true, capture: nil)
+        CrossDeskRemote.observation(sharing: nil)
     }
 
     func connected(controllers: [String]) -> RemoteObservation {
-        observation("Start screen capturer, show cursor: false")
+        CrossDeskRemote.observation(sharing: CrossDeskRemote.sharingOwners(in: [352: ["Powerd - Prevent sleep while display is on"],
+                                                                               78275: [CrossDeskRemote.sharingAssertion, CrossDeskRemote.sharingAssertion]]))
     }
 
     func streaming(_ display: DisplayID) -> RemoteObservation {
@@ -37,10 +38,5 @@ struct CrossDeskDriver: RemoteDriver {
         case .holdDrag: touch + moves(10.05).map { PointerEvent(.leftDrag, at: $0.location, time: $0.time) } + [PointerEvent(.leftUp, at: CGPoint(x: 200, y: 490), time: 10.3)]
         case .slide: [PointerEvent(.move, at: CGPoint(x: 100, y: 100), time: 9), PointerEvent(.move, at: p, time: 10)] + moves(10.016)
         }
-    }
-
-    private func observation(_ message: String) -> RemoteObservation {
-        let line = "[2026-11-23 21:44:45.735] [crossdesk] [info] \(message)\n"
-        return CrossDeskRemote.observation(running: true, capture: CrossDeskLog.captureState(in: line, since: "2026-11-23 21:44:06.000"))
     }
 }
