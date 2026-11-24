@@ -24,34 +24,44 @@ enum CrossDeskRecording {
     }
 }
 
-/// 把事件按到达时刻喂给管线，超时拍在 deadline 那一刻准点喂（系统层的计时器就是这样），记下 App 实际会收到什么
+/// 把事件按到达时刻喂给管线，超时拍在 deadline 那一刻准点喂、惯性按 Momentum.frameRate 一帧帧走（系统层的计时器就是这样），
+/// 记下 App 实际会收到什么：惯性中来的按下只停住惯性，不算点击
 struct CrossDeskReplay {
     /// 录制在 Mac 实体屏上（两块屏，短边约 1080 点）：一块范围盖住全部坐标，倍数按 2 算
     static let everywhere = TouchRegion(frame: CGRect(x: -3000, y: -3000, width: 6000, height: 6000), scale: 2)
 
     var pipeline = TouchPipeline(normalizers: [CrossDeskTouch.self])
     var regions = [Self.everywhere]
-    /// 点击（抬起时补发按下、抬起）、选择（拖动时补发按下、当前）、右键、关窗、滚动开始、带惯性的松手、放行的原事件
-    var clicks = 0, selections = 0, rightClicks = 0, closes = 0, slides = 0, flings = 0
-    var passedMoves = 0, swallowedMoves = 0
-    var slideStarts: [TimeInterval] = []
+    /// 点击（抬起时补发按下、抬起）、选择（拖动时补发按下、当前）、右键、关窗、滚动开始、带惯性的松手、惯性中按下只停住、吞掉的移动
+    var clicks = 0, selections = 0, rightClicks = 0, closes = 0, slides = 0, flings = 0, coastStops = 0, swallowedMoves = 0
     private var time = 0.0
+    /// 惯性上一帧的时刻
+    private var coastClock = 0.0
 
     mutating func run(_ events: [PointerEvent]) {
         for event in events {
             advance(to: event.time)
             let step = pipeline.take(event, from: 0, regions: regions)
             count(step, kind: event.kind, at: event.time)
-            if event.kind == .move { if step.passOriginal { passedMoves += 1 } else { swallowedMoves += 1 } }
+            if event.kind == .move, !step.passOriginal { swallowedMoves += 1 }
         }
         advance(to: time + 5)
     }
 
+    /// 走到 t：超时拍和惯性帧谁先到先走谁
     private mutating func advance(to t: TimeInterval) {
-        while let due = pipeline.deadline, due <= t {
-            count(pipeline.tick(at: due, regions: regions), kind: nil, at: due)
+        while true {
+            let frame = pipeline.isCoasting ? coastClock + 1 / Momentum.frameRate : nil
+            let due = pipeline.deadline
+            if let frame, frame <= t, frame < due ?? .infinity {
+                coastClock = frame
+                _ = pipeline.momentumFrame()
+            } else if let due, due <= t {
+                count(pipeline.tick(at: due, regions: regions), kind: nil, at: due)
+            } else {
+                break
+            }
         }
-        while pipeline.isCoasting { _ = pipeline.momentumFrame() }
         time = t
     }
 
@@ -64,12 +74,13 @@ struct CrossDeskReplay {
             switch command {
             case .rightClick: rightClicks += 1
             case .closeWindow: closes += 1
-            case .scroll(let s) where s.phase == .began: slides += 1; slideStarts.append(t)
+            case .scroll(let s) where s.phase == .began: slides += 1
+            case .scroll(let s) where s.phase == .ended && pipeline.isCoasting:
+                flings += 1
+                coastClock = t
+            case .scroll(let s) where s.momentum == .end && kind == .leftDown: coastStops += 1
             default: break
             }
-        }
-        if pipeline.isCoasting, !commands.isEmpty, commands.contains(where: { if case .scroll(let s) = $0 { s.phase == .ended } else { false } }) {
-            flings += 1
         }
     }
 }

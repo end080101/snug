@@ -30,6 +30,11 @@ private struct Run {
     var kinds: [TouchInput.Kind] { inputs.map(\.kind) }
 }
 
+/// 在这一点点一下：移动、左键按下、抬起同时到
+private func tapping(at p: CGPoint, _ t: Double) -> [PointerEvent] {
+    [PointerEvent(.move, at: p, time: t), PointerEvent(.leftDown, at: p, time: t + 0.0005), PointerEvent(.leftUp, at: p, time: t + 0.001)]
+}
+
 /// 让整理认出「绝对鼠标」：点一下，过一会儿在 80 点开外开始一下（开头跳到手指落点）
 private func fingerWarmUp() -> [PointerEvent] {
     [e(.move, 100, 100, 0), e(.leftDown, 100, 100, 0.0005), e(.leftUp, 100, 100, 0.001), e(.move, 300, 400, 1)]
@@ -68,11 +73,15 @@ struct CrossDeskTouchTests {
 
     @Test("虚拟鼠标键（左键按下前没有同一点、紧挨着的移动）：按下、拖动、抬起都原样放行，不交翻译器")
     func virtualButton() {
-        for lead in [nil, CGPoint(x: 200, y: 300), CGPoint(x: 260, y: 300)] as [CGPoint?] {
+        let leads: [(move: PointerEvent?, why: String)] = [
+            (nil, "前面没有移动"),
+            (e(.move, 200, 300, 0.9), "同一点，但早了 0.1 秒（超出 touchMoveLead）"),
+            (e(.move, 260, 300, 0.999), "紧挨着，但挪了 60 点"),
+        ]
+        for lead in leads {
             var run = Run()
-            let before = lead.map { [PointerEvent(.move, at: $0, time: lead == CGPoint(x: 200, y: 300) ? 0.9 : 0.999)] } ?? []
-            run.feed(before + [e(.leftDown, 200, 300, 1), e(.leftDrag, 230, 300, 1.2), e(.leftUp, 230, 300, 1.4)])
-            #expect(run.inputs.isEmpty, "前面的移动：\(String(describing: lead))")
+            run.feed((lead.move.map { [$0] } ?? []) + [e(.leftDown, 200, 300, 1), e(.leftDrag, 230, 300, 1.2), e(.leftUp, 230, 300, 1.4)])
+            #expect(run.inputs.isEmpty, "\(lead.why)")
         }
     }
 
@@ -86,23 +95,50 @@ struct CrossDeskTouchTests {
         #expect(run.inputs.isEmpty)
     }
 
-    @Test("一下的开头跳到别处（手指落点）：认作绝对鼠标；连续 3 下开头都在上一个事件那一点（光标处）：认作相对鼠标")
+    @Test("一下的开头跳到别处（手指落点）：认作绝对鼠标；连续 3 下开头都在上一下抬起那一点（光标处）：认作相对鼠标")
     func feedVotes() {
         var run = Run()
         run.feed(fingerWarmUp())
         #expect(run.touch.feed == .finger)
-        // 相对鼠标：点在光标处、滑动从光标处开始
+        // 相对鼠标：点在光标处，点完光标停在原处，下一下从这里开始；第一下前面是预热的移动，不算
         let p = CGPoint(x: 300, y: 400)
-        run.feed([PointerEvent(.move, at: p, time: 2), PointerEvent(.leftDown, at: p, time: 2.0005), PointerEvent(.leftUp, at: p, time: 2.001)])
+        for t in [2.0, 3, 4] { run.feed(tapping(at: p, t)) }
         #expect(run.touch.feed == .finger)
-        run.feed([PointerEvent(.move, at: p, time: 3), e(.move, 320, 400, 3.02)])
-        run.feed([e(.move, 320, 400, 4), e(.leftDown, 320, 400, 4.0005), e(.leftUp, 320, 400, 4.001)])
+        run.feed(tapping(at: p, 5))
         #expect(run.touch.feed == .cursor)
         #expect(run.touch.advice?.contains("绝对鼠标") == true)
         // 又从手指落点开始：回到绝对鼠标，提醒收起
-        run.feed([e(.move, 600, 800, 5)])
+        run.feed([e(.move, 600, 800, 6)])
         #expect(run.touch.feed == .finger)
         #expect(run.touch.advice == nil)
+    }
+
+    @Test("中间有一下开头挪开了（哪怕不到 80 点）就不算连续，要重新数")
+    func feedVotesMustBeConsecutive() {
+        var run = Run()
+        run.feed(fingerWarmUp())
+        let p = CGPoint(x: 300, y: 400), q = CGPoint(x: 320, y: 400)
+        for t in [2.0, 3, 4] { run.feed(tapping(at: p, t)) }
+        // 挪开的那一下清零，之后在 q 再点三下才够
+        for t in [5.0, 6, 7] { run.feed(tapping(at: q, t)) }
+        #expect(run.touch.feed == .finger)
+        run.feed(tapping(at: q, 8))
+        #expect(run.touch.feed == .cursor)
+    }
+
+    @Test("绝对鼠标慢慢读长文：滑、按住不动超过 0.3 秒、原地接着滑，反复几次仍是绝对鼠标，每次都合成滑动")
+    func slidePauseSlideStaysFinger() {
+        var run = Run()
+        run.feed(fingerWarmUp())
+        // 每一轮从上一轮停住的那一点接着滑（绝对鼠标下手指按住没抬，坐标不变）
+        var t = 2.0, y = 400.0
+        for _ in 0..<4 {
+            for step in 0..<6 { run.feed([e(.move, 300, y, t)]); t += 0.016; if step < 5 { y += 15 } }
+            t += 0.4
+        }
+        run.advance(to: t + 1)
+        #expect(run.touch.feed == .finger)
+        #expect(run.kinds.filter { $0 == .recognized(.slide) }.count == 4)
     }
 
     @Test("隔太久（10 秒以上，本机的鼠标可能动过光标）、一下没结束的，开头不拿来判模式")
@@ -117,7 +153,7 @@ struct CrossDeskTouchTests {
         var run = Run()
         let p = CGPoint(x: 300, y: 400)
         // 第一下没有上一个事件可比，之后三下都在光标处
-        for t in [1.0, 2, 3, 4] { run.feed([PointerEvent(.move, at: p, time: t), PointerEvent(.leftDown, at: p, time: t + 0.0005), PointerEvent(.leftUp, at: p, time: t + 0.001)]) }
+        for t in [1.0, 2, 3, 4] { run.feed(tapping(at: p, t)) }
         #expect(run.touch.feed == .cursor)
         run.inputs = []
         run.feed([PointerEvent(.move, at: p, time: 5), e(.move, 340, 400, 5.02), e(.move, 380, 400, 5.04)])
@@ -195,6 +231,21 @@ struct CrossDeskTouchTests {
         #expect(quiet.inputs.last == TouchInput(.drag, at: CGPoint(x: 300, y: 430), time: 1.1))
     }
 
+    @Test("滑动中停了快 0.3 秒、挪了一点又接着滑：仍是同一下，中间不收尾，时间不倒退")
+    func pauseNearSlideEnd() {
+        var run = Run()
+        run.feed(fingerWarmUp())
+        run.feed([e(.move, 300, 420, 1.016), e(.move, 300, 440, 1.032),
+                  e(.move, 300, 460, 1.322), e(.move, 300, 480, 1.338), e(.move, 300, 500, 1.354)])
+        let tail = run.inputs.drop { $0.time < 1.01 }
+        #expect(!tail.contains { $0.kind == .release })
+        #expect(tail.suffix(3).map(\.location) == [CGPoint(x: 300, y: 460), CGPoint(x: 300, y: 480), CGPoint(x: 300, y: 500)])
+        run.advance(to: 3)
+        var grammar = TouchGrammar()
+        let problems = run.inputs.compactMap { grammar.check($0) }
+        #expect(problems.isEmpty, "\(problems)")
+    }
+
     @Test("滑动中来了左键按下（长按）：滑动收尾记在此刻，再交这一按")
     func pressInterruptsSlide() {
         var run = Run()
@@ -214,11 +265,12 @@ struct CrossDeskTouchTests {
 
     // MARK: 真机录制回放
 
-    @Test("回放绝对鼠标录制：13 次点击；2 次长按松手、2 次长按后小幅挪动（不出防抖）是右键；1 次长按拖是选择；认出绝对鼠标后的 14 下滑动都成了滚动")
+    @Test("回放绝对鼠标录制：手上点了 13 下，2 下落在惯性里只停住惯性（和 iPhone 一样），App 收到 11 次点击；2 次长按松手、2 次长按后小幅挪动（不出防抖）是右键；1 次长按拖是选择；认出绝对鼠标后的 14 下滑动都成了滚动")
     func replayAbsolute() throws {
         var replay = CrossDeskReplay()
         replay.run(try CrossDeskRecording.events("absolute"))
-        #expect(replay.clicks == 13)
+        #expect(replay.clicks == 11)
+        #expect(replay.coastStops == 2)
         #expect(replay.rightClicks == 4)
         #expect(replay.selections == 1)
         #expect(replay.slides == 14)
@@ -245,7 +297,7 @@ struct CrossDeskTouchTests {
                                       closeButton: CloseButton(frame: CGRect(x: 733, y: -550, width: 20, height: 20), window: 7, windowFrame: .zero))]
         replay.run(try CrossDeskRecording.events("absolute"))
         #expect(replay.closes == 2)
-        #expect(replay.clicks == 11)
+        #expect(replay.clicks == 9)
     }
 
     @Test("两份录制整理出的输入都合标准语法")
