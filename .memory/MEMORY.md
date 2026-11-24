@@ -6,7 +6,7 @@
 - [项目定位](project-positioning.md) — 承接的自有项目，保留原作者版权与致谢；2.0.0 已发布，本地数据格式变更要带迁移
 - [产品](project-product.md) — 目标与已拍板的取舍：设主屏可选且常驻、一块屏不换方向、资源库、截图、按机型定比例、边界扩到电脑；移植和 macOS 13 不合进来
 - [实测坑](project-phone-screen.md) — UU 更新先跑 remote-check uu；UU 推流规律、系统按组记模式、真机自测只从访达重开正式版、ColorSync、App 实测
-- [发版](project-release.md) — 只走 scripts/snug；个人 Developer ID（29898YBGWD）公证；gh 绑定 zephyr4123 并写明 -R；版本号与更新日志口径；发版后不替主人装
+- [发版](project-release.md) — 只走 scripts/snug；个人 Developer ID（29898YBGWD）公证；gh 绑定 zephyr4123 并写明 -R；版本号与更新日志口径；发版后不替主人装；比较日期别用 <=、>=（27.2 测试版会崩）
 - [国内源与 README](project-domestic-mirror.md) — dl.zephyrxiang.com/snug/；看下载量；证书 2027-01-12 到期；README 结构、截图规格、camo 的坑；GitHub 简介随 README 同步改
 - [演示录制（进行中）](project-demo-recording.md) — 三块屏原画并排，正式素材和粗剪已就绪；全在 footage/（绝不进 git），主人说交接时才交给 kineto
 - [UU远程 VIP 与横向扩展](project-uu-vip.md) — 12-01 起多屏、虚拟屏纳入 VIP：对外立场、免费版不实测；11-19 定专注 UU、暂不接 RustDesk 等其他远控
