@@ -5,33 +5,39 @@
 import SnugCore
 
 package struct CrossDeskLaunchDisplays: Sendable {
-    /// 这次启动认到的屏；还没读到（刚启动还没认、启动那段已滚动掉、一块都没认到）为 nil
-    package private(set) var displays: Set<DisplayID>?
+    /// 每一格此刻推哪块屏（格号 → 屏）：启动时认到的是初值，之后某格改推别的屏跟着改；
+    /// 还没读到（刚启动还没认、启动那段已滚动掉、一块都没认到）为 nil
+    package private(set) var slots: [Int: DisplayID]?
 
     package init() {}
 
+    /// 各格推的屏（去重）；还没读到为 nil
+    package var displays: Set<DisplayID>? { slots.map { Set($0.values) } }
+
     package mutating func take(_ line: Substring) {
-        guard let parsed = CrossDeskLogLine(line) else { return }
-        switch parsed.event {
-        case .started: displays = nil
-        case .displayFound(_, let display, _): displays = (displays ?? []).union([display])
+        if let parsed = CrossDeskLogLine(line) { take(parsed) }
+    }
+
+    package mutating func take(_ line: CrossDeskLogLine) {
+        switch line.event {
+        case .started: slots = nil
+        case .displayFound(let index, let display, _): slots = (slots ?? [:]).merging([index: display]) { $1 }
+        case .displayRemapped(let slot, let display): slots?[slot] = display
         case .sharingBegan, .sharingEnded, .lastControllerLeft: break
         }
     }
 
-    /// 此刻选得到的屏（online：系统此刻在线的全部屏）；还没读到为 nil。认到的还在线的都选得到；
-    /// 没认过的新屏，不多于空出来的格就按序号落上去，也选得到。多了就一律算选不到：
+    /// 此刻选得到的屏（online：系统此刻在线的全部屏）；还没读到为 nil。格子推的屏还在线的都选得到；
+    /// 没格子推的新屏，不多于推着已下线屏的格就按序号落上去，也选得到。多了就一律算选不到：
     /// 哪块落在哪格看系统的排序，Snug 不知道，宁可多报（实测 Snug 的屏总排第 0，换编号的那块落回原来那格）
     package func reachable(online: Set<DisplayID>) -> Set<DisplayID>? {
-        displays.map { Self.reachable(found: $0, online: online) }
-    }
-
-    /// 同上，认到的屏（found）由调用方给（自检从整段日志里取）
-    package static func reachable(found: Set<DisplayID>, online: Set<DisplayID>) -> Set<DisplayID> {
-        let kept = found.intersection(online)
-        return online.count - kept.count <= found.count - kept.count ? online : kept
+        slots.map { slots in
+            let held = Set(slots.values)
+            let vacant = slots.values.filter { !online.contains($0) }.count
+            return online.subtracting(held).count <= vacant ? online : held.intersection(online)
+        }
     }
 
     /// CrossDesk 换了进程（重启、退了又开）：新进程启动那几句读到之前，旧的不算
-    package mutating func restarted() { displays = nil }
+    package mutating func restarted() { slots = nil }
 }

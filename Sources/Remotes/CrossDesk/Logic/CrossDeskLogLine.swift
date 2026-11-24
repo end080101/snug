@@ -1,6 +1,6 @@
 // CrossDesk 日志里 Snug 认的几句。日志在 ~/Library/Logs/CrossDesk/crossdesk.log（spdlog，5MB 滚动，留 3 份旧的），
 // 一行：[yyyy-MM-dd HH:mm:ss.SSS] [crossdesk] [级别] [源文件:行] 内容，时间是本机的本地时间，自己那句 Logger initialized 不带源文件。
-// Snug 判在场不看日志（看电源断言，见 CrossDeskRemote）；日志只拿来自检（CrossDeskCheck）和认 CrossDesk 启动时看到了哪几块屏
+// Snug 判在场不看日志（看电源断言，见 CrossDeskRemote）；日志只拿来自检（CrossDeskCheck）和推算 CrossDesk 选得到哪几块屏
 import Foundation
 import SnugCore
 
@@ -16,6 +16,8 @@ package struct CrossDeskLogLine: Equatable, Sendable {
         case sharingEnded
         /// 最后一台控制端断开
         case lastControllerLeft
+        /// 开始推某一格时，这格记的屏不在了，改推了别的屏（同一序号的那块；抓屏自动恢复时也这样）
+        case displayRemapped(slot: Int, display: DisplayID)
     }
 
     /// 原样的时间戳（本地时间）
@@ -28,7 +30,8 @@ package struct CrossDeskLogLine: Equatable, Sendable {
     package static let sharingBegan = "Requested display and system idle-sleep inhibition for screen sharing"
     package static let sharingEnded = "Released screen sharing power inhibitors"
     package static let lastControllerLeft = "Last remote controller disconnected;"
-    package static let phrases = [started, displayFound, sharingBegan, sharingEnded, lastControllerLeft]
+    package static let displayRemapped = "macOS display mapping refreshed: slot="
+    package static let phrases = [started, displayFound, sharingBegan, sharingEnded, lastControllerLeft, displayRemapped]
 
     /// 认不出的行（别的句子、没写完的半行、别的 logger）为 nil
     package init?(_ line: Substring) {
@@ -77,6 +80,7 @@ package struct CrossDeskLogLine: Equatable, Sendable {
         case sharingEnded: return .sharingEnded
         case _ where message.hasPrefix(lastControllerLeft): return .lastControllerLeft
         case _ where message.hasPrefix(displayFound): return display(message.dropFirst(displayFound.count))
+        case _ where message.hasPrefix(displayRemapped): return remap(message.dropFirst(displayRemapped.count))
         default: return nil
         }
     }
@@ -88,5 +92,14 @@ package struct CrossDeskLogLine: Equatable, Sendable {
               let index = Int(rest[..<idRange.lowerBound]), let display = DisplayID(rest[idRange.upperBound..<nameRange.lowerBound]),
               nameRange.upperBound < rest.endIndex, rest.last == "'" else { return nil }
         return .displayFound(index: index, display: display, name: String(rest[nameRange.upperBound..<rest.index(before: rest.endIndex)]))
+    }
+
+    /// 「0, old_id=27, new_id=1, stream='Display1'」：只要格号和新推的屏
+    private static func remap(_ rest: Substring) -> Event? {
+        let oldKey = ", old_id=", newKey = ", new_id=", streamKey = ", stream="
+        guard let oldRange = rest.range(of: oldKey), let newRange = rest.range(of: newKey, range: oldRange.upperBound..<rest.endIndex),
+              let streamRange = rest.range(of: streamKey, range: newRange.upperBound..<rest.endIndex),
+              let slot = Int(rest[..<oldRange.lowerBound]), let display = DisplayID(rest[newRange.upperBound..<streamRange.lowerBound]) else { return nil }
+        return .displayRemapped(slot: slot, display: display)
     }
 }

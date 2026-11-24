@@ -117,6 +117,10 @@ struct CrossDeskCheckTests {
         #expect(unseen.status == .warn && unseen.detail.contains("#368") && unseen.detail.contains("重启 CrossDesk"))
         let renumbered = try #require(item("认屏", in: CrossDeskCheck.evaluate(facts(online: [368]))))
         #expect(renumbered.status == .ok && renumbered.detail.contains("#368") && renumbered.detail.contains("空出来的格"))
+        // 推着 #367 时 Snug 撤屏，CrossDesk 那格改推了内建屏 #1：再建的 #368 没格子
+        let remapped = [started] + displays + session + [crossdesk("09:20:00.000", "macOS display mapping refreshed: slot=1, old_id=367, new_id=1, stream='Display2'")]
+        let lost = try #require(item("认屏", in: CrossDeskCheck.evaluate(facts(log: remapped, online: [368]))))
+        #expect(lost.status == .warn && lost.detail.contains("第 1 格后来改推 #1") && lost.detail.contains("重启 CrossDesk"))
         let restarted = [started] + displays + session + ["[2026-11-23 09:20:00.000] [crossdesk] [info] Logger initialized", displays[0]]
         #expect(item("认屏", in: CrossDeskCheck.evaluate(facts(log: restarted)))?.status == .warn)
         #expect(item("认屏", in: CrossDeskCheck.evaluate(facts(online: [])))?.status == .info)

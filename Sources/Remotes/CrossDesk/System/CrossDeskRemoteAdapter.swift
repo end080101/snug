@@ -1,5 +1,5 @@
 // CrossDesk 的适配器：每拍查一次电源断言判在场（见 CrossDeskRemote），同步；
-// 再看一眼日志新长出来的行，跟着 CrossDesk 这次启动认到了哪几块屏（它只在启动时认屏），推算此刻选得到哪几块
+// 再看一眼日志新长出来的行，跟着 CrossDesk 各格推哪块屏（它只在启动时认屏，见 CrossDeskLaunchDisplays），推算此刻选得到哪几块
 import Foundation
 import RemoteCrossDesk
 import SnugCore
@@ -47,12 +47,12 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
         }
         hosts = now
         do {
-            let before = launch.displays
+            let before = launch.slots
             for line in try tail.poll() { launch.take(line) }
             if tailFailed { Log.info("CrossDesk 的日志又读得到了") }
             tailFailed = false
-            if launch.displays != before, let found = launch.displays {
-                Log.info("CrossDesk 这次启动认到的屏：\(found.sorted().map { "#\($0)" }.joined(separator: "、"))")
+            if launch.slots != before, let slots = launch.slots {
+                Log.info("CrossDesk 各格推的屏：\(slots.sorted { $0.key < $1.key }.map { "第 \($0.key) 格 #\($0.value)" }.joined(separator: "、"))")
             }
         } catch {
             if !tailFailed { Log.error("读不了 CrossDesk 的日志（\(error)）：看不出它认到了哪几块屏") }
