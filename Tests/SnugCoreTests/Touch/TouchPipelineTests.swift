@@ -129,10 +129,23 @@ struct TouchPipelineTests {
         #expect(scrollPhases(p.take(event(.move, 300, 600, 1), from: 0, regions: [phone])) == [.ended, .began])
     }
 
-    @Test("补出来的输入要补发原事件（整理不合语法）：跳过这一条，扣住的按下照常补发")
-    func synthesizedReplayCurrentDropped() {
+    @Test("补出来的按下、抬起拼成点一下：语法查得出；管线不补发（扣着的是别的按下，补发会让 App 一直按着）")
+    func synthesizedTapRejected() {
+        var grammar = TouchGrammar()
+        var tapFromMove = TapFromMove()
+        let n = tapFromMove.normalize(event(.move, 100, 300, 0))
+        #expect(!n.before.compactMap { grammar.check($0, synthesized: true) }.isEmpty)
         var p = TouchPipeline(normalizers: [TapFromMove.self])
-        #expect(p.take(event(.move, 100, 300, 0), from: 0, regions: [phone]).actions == [.perform(.replayPress, in: phone)])
+        #expect(p.take(event(.move, 100, 300, 0), from: 0, regions: [phone]).actions.isEmpty)
+    }
+
+    @Test("补出来的按下紧跟「认出滑动」、补出来的抬起收尾滑动：合语法")
+    func synthesizedSlideAccepted() {
+        var grammar = TouchGrammar()
+        let inputs = [TouchInput(.press, at: .zero, time: 0), TouchInput(.recognized(.slide), at: .zero, time: 0)]
+        #expect(inputs.compactMap { grammar.check($0, synthesized: true) }.isEmpty)
+        #expect(grammar.check(TouchInput(.drag, at: CGPoint(x: 0, y: 40), time: 0.02), synthesized: false) == nil)
+        #expect(grammar.check(TouchInput(.release, at: CGPoint(x: 0, y: 40), time: 0.02), synthesized: true) == nil)
     }
 
     @Test("要提醒用户的话：按登记顺序第一家有话说的；都没话说为 nil（直通从不提醒）")

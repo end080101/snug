@@ -28,7 +28,8 @@ public struct PointerEvent: Equatable, Sendable {
 
 /// 整理一个原始事件的结果
 public struct Normalized: Equatable, Sendable {
-    /// 先交给翻译器、没有对应原事件的输入：补出来的按下、抬起，远控已认出的手势
+    /// 先交给翻译器、没有对应原事件的输入：补出来的按下、抬起，远控已认出的手势。
+    /// 补出来的按下、抬起只能用来滑动（见 TouchGrammar）：点击、长按、选择要靠真的原事件收尾，翻译器要补发它
     public var before: [TouchInput]
     /// 这个原事件本身对应的输入；nil = 不归手势翻译管，原样放行
     public var current: TouchInput?
@@ -42,9 +43,8 @@ public struct Normalized: Equatable, Sendable {
     public static let ignored = Normalized(current: nil)
 }
 
-/// 一家远控的手势整理：把它注入的原始事件整理成标准手指输入。纯值类型，每次开监听新建一份。
-/// 交出的输入要合标准语法（契约测试逐条查）：一次手势是 press、若干 drag、最多一个 recognized、一个 release；
-/// 手势之间不重叠，时间不倒退
+/// 一家远控的手势整理：把它注入的原始事件整理成标准手指输入。纯值类型，每次远程从头来（开监听时新建、远程结束时重建）。
+/// 交出的输入要合标准语法（契约测试逐条查，见 TouchGrammar）
 public protocol TouchNormalizer: Sendable {
     init()
     /// 要看哪几种原始事件：监听的事件掩码取各家的并集
@@ -52,7 +52,7 @@ public protocol TouchNormalizer: Sendable {
     mutating func normalize(_ event: PointerEvent) -> Normalized
     /// 下一次要喂超时拍的时刻（比如「停多久算松手」）；nil = 不用
     var deadline: TimeInterval? { get }
-    /// 到了 deadline：交出到点该补的输入（比如补一个抬起）
+    /// 到了 deadline：交出到点该补的输入（比如补一个抬起）；和 before 一样没有原事件
     mutating func tick(at time: TimeInterval) -> [TouchInput]
     /// 此刻要提醒用户的话：远控发来的翻译不了时（比如在发光标位移而不是手指位置），说清怎么在远控里换。nil = 不用提醒
     var advice: String? { get }
@@ -81,32 +81,42 @@ public struct DirectTouch: TouchNormalizer {
 }
 
 /// 标准手指输入的语法，写成可以逐条核对的样子：契约测试和各家的回放测试拿它查整理交出的输入。
-/// 一次手势：press，若干 drag，最多一个 recognized（在 release 之前），release；手势之间不重叠，时间不倒退
+/// 一次手势：press，若干 drag，最多一个 recognized（在 release 之前），release；手势之间不重叠，时间不倒退。
+/// 补出来的输入（before 里的、超时拍交的）没有原事件可扣、可补发，所以补出来的按下后面紧跟 recognized(.slide)，
+/// 补出来的抬起只收尾认出了滑动的这一下；点击、长按、选择收尾时翻译器要补发原事件
 public struct TouchGrammar: Sendable {
     private var pressed = false
-    private var recognized = false
+    private var recognized: TouchInput.Gesture?
+    /// 上一条是补出来的按下
+    private var synthesizedPress = false
     private var lastTime = -Double.infinity
 
     public init() {}
 
-    /// 合语法返回 nil，否则返回哪里不对
-    public mutating func check(_ input: TouchInput) -> String? {
+    /// 合语法返回 nil，否则返回哪里不对。synthesized：这条是补出来的，没有原事件
+    public mutating func check(_ input: TouchInput, synthesized: Bool) -> String? {
         defer { lastTime = max(lastTime, input.time) }
         if input.time < lastTime { return "时间倒退：\(input.kind) @\(input.time) 早于 \(lastTime)" }
+        if synthesizedPress {
+            synthesizedPress = false
+            if input.kind != .recognized(.slide) { return "补出来的按下后面不是「认出滑动」 @\(input.time)：点击、长按要靠原事件补发" }
+        }
         switch input.kind {
         case .press:
             if pressed { return "上一下还没抬起又按下 @\(input.time)" }
             pressed = true
-            recognized = false
+            recognized = nil
+            synthesizedPress = synthesized
         case .drag:
             if !pressed { return "没按下就拖动 @\(input.time)" }
-        case .recognized:
+        case .recognized(let gesture):
             if !pressed { return "没按下就认出手势 @\(input.time)" }
-            if recognized { return "一下里认出了两次手势 @\(input.time)" }
-            recognized = true
+            if recognized != nil { return "一下里认出了两次手势 @\(input.time)" }
+            recognized = gesture
         case .release:
             if !pressed { return "没按下就抬起 @\(input.time)" }
             pressed = false
+            if synthesized, recognized != .slide { return "补出来的抬起收尾的不是滑动 @\(input.time)：点击、长按、选择要靠原事件补发" }
         }
         return nil
     }

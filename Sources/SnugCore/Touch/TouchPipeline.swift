@@ -87,12 +87,12 @@ public struct TouchPipeline: Sendable {
         return translator.handle(input, in: pressed)
     }
 
-    /// 补出来的输入：没有原事件，「补发当前事件」无从做起（整理交出的输入不合语法才会走到）
+    /// 补出来的输入：没有原事件，补发按下、补发当前事件都无从做起（整理交出的输入不合语法才会走到，见 TouchGrammar）
     private mutating func feed(_ inputs: [TouchInput], into step: inout TouchStep, regions: [TouchRegion]) {
         for input in inputs {
             for command in translate(input, regions: regions).commands {
-                guard command != .replayCurrent else {
-                    Log.error("手势整理补出来的输入（\(input.kind)）要补发原事件，可它没有原事件：跳过。整理交出的输入不合语法")
+                guard command != .replayPress, command != .replayCurrent else {
+                    Log.error("手势整理补出来的输入（\(input.kind)）要补发原事件（\(command)），可它没有原事件：跳过。整理交出的输入不合语法")
                     continue
                 }
                 step.actions.append(.perform(command, in: pressed))

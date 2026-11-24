@@ -78,13 +78,14 @@ struct RemoteContractTests {
         var normalizer = driver.identity.normalizer.init()
         var grammar = TouchGrammar()
         var problems: [String] = []
-        let check = { (inputs: [TouchInput]) in problems += inputs.compactMap { grammar.check($0) } }
+        let check = { (inputs: [TouchInput], synthesized: Bool) in problems += inputs.compactMap { grammar.check($0, synthesized: synthesized) } }
         for event in events {
-            while let due = normalizer.deadline, due <= event.time { check(normalizer.tick(at: due)) }
+            while let due = normalizer.deadline, due <= event.time { check(normalizer.tick(at: due), true) }
             let n = normalizer.normalize(event)
-            check(n.before + (n.current.map { [$0] } ?? []))
+            check(n.before, true)
+            check(n.current.map { [$0] } ?? [], false)
         }
-        while let due = normalizer.deadline { check(normalizer.tick(at: due)) }
+        while let due = normalizer.deadline { check(normalizer.tick(at: due), true) }
         #expect(problems.isEmpty, "\(problems)")
 
         let phone = TouchRegion(frame: CGRect(x: 0, y: 0, width: 540, height: 950), scale: 1)

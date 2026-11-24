@@ -8,23 +8,30 @@ private func e(_ kind: PointerEvent.Kind, _ x: Double, _ y: Double, _ t: Double)
     PointerEvent(kind, at: CGPoint(x: x, y: y), time: t)
 }
 
-/// 整理交出的输入（不经翻译器），超时拍按 deadline 准点喂
+/// 整理交出的输入（不经翻译器），超时拍按 deadline 准点喂；边喂边按标准语法查
 private struct Run {
     var touch = CrossDeskTouch()
     var inputs: [TouchInput] = []
     var ignored: [PointerEvent] = []
+    private var grammar = TouchGrammar()
+    private(set) var problems: [String] = []
 
     mutating func feed(_ events: [PointerEvent]) {
         for event in events {
             advance(to: event.time)
             let n = touch.normalize(event)
-            inputs += n.before
-            if let current = n.current { inputs.append(current) } else { ignored.append(event) }
+            take(n.before, synthesized: true)
+            if let current = n.current { take([current], synthesized: false) } else { ignored.append(event) }
         }
     }
 
     mutating func advance(to t: TimeInterval) {
-        while let due = touch.deadline, due <= t { inputs += touch.tick(at: due) }
+        while let due = touch.deadline, due <= t { take(touch.tick(at: due), synthesized: true) }
+    }
+
+    private mutating func take(_ next: [TouchInput], synthesized: Bool) {
+        inputs += next
+        problems += next.compactMap { grammar.check($0, synthesized: synthesized) }
     }
 
     var kinds: [TouchInput.Kind] { inputs.map(\.kind) }
@@ -241,9 +248,7 @@ struct CrossDeskTouchTests {
         #expect(!tail.contains { $0.kind == .release })
         #expect(tail.suffix(3).map(\.location) == [CGPoint(x: 300, y: 460), CGPoint(x: 300, y: 480), CGPoint(x: 300, y: 500)])
         run.advance(to: 3)
-        var grammar = TouchGrammar()
-        let problems = run.inputs.compactMap { grammar.check($0) }
-        #expect(problems.isEmpty, "\(problems)")
+        #expect(run.problems.isEmpty, "\(run.problems)")
     }
 
     @Test("滑动中来了左键按下（长按）：滑动收尾记在此刻，再交这一按")
@@ -306,9 +311,7 @@ struct CrossDeskTouchTests {
             var run = Run()
             run.feed(try CrossDeskRecording.events(name))
             run.advance(to: .infinity)
-            var grammar = TouchGrammar()
-            let problems = run.inputs.compactMap { grammar.check($0) }
-            #expect(problems.isEmpty, "\(name)：\(problems.prefix(3))")
+            #expect(run.problems.isEmpty, "\(name)：\(run.problems.prefix(3))")
         }
     }
 }
