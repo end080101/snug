@@ -30,12 +30,8 @@ public struct RemoteIdentity: Equatable, Sendable {
         self.opensOnMainScreen = opensOnMainScreen
     }
 
-    /// 元类型不能自动比较：整理按类型本身比
-    public static func == (a: Self, b: Self) -> Bool {
-        a.logName == b.logName && a.displayName == b.displayName && a.bundleIDs == b.bundleIDs && a.injector == b.injector
-            && ObjectIdentifier(a.normalizer) == ObjectIdentifier(b.normalizer) && a.seesScreensOnlyAtLaunch == b.seesScreensOnlyAtLaunch
-            && a.opensOnMainScreen == b.opensOnMainScreen
-    }
+    /// 身份按日志名认：各家不重名由契约测试守着。整理是元类型，不能自动合成判等；逐项比的话每加一项能力都要记得补
+    public static func == (a: Self, b: Self) -> Bool { a.logName == b.logName }
 }
 
 /// 认哪个进程注入的事件：按来源进程的可执行文件名认，本机的触控板、鼠标不是它发的
