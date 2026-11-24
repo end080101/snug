@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f97709de-705a-489b-bb7a-7353b1fba51c
-  modified: 2026-11-19T16:00:00.000Z
+  modified: 2026-11-24T16:01:36.325Z
 ---
 
 行为以 `docs/how-it-works.md` 为准，结构见 `docs/development.md`。设计记录（取舍、V1～V12 实测表和原始数据）合并前删了：`git show 5bca1f6:docs/multi-screen.md`。
@@ -36,6 +36,7 @@ metadata:
 - #7 请 yeshiwuyu233 用 iPad Pro 帮测（只说过 iPad 第 10 代横屏和 iPhone 实测过）；#20 请用户帮看新加机型（只抽查了 6 款）
 - PR #41（jasonmumiao）部分收下，2.7.3 后请作者用 iPad mini 6 验证黑边；超宽横屏比例、平板底栏缩窄没收，回复里说了理由
 - 开着的需求：#19 键盘（先调研 UU 有没有途径）、#22 herdr（等对方回）、#24 Codex 窗口「退出时最小化、下次接着用」
+- #54（11-24 主人点头发出）：答应手机、平板屏在屏幕详情里加一项可调的基准宽度（比例不变、装更多内容），默认保持现在的大小，没给时间；「自定义分辨率」改个更准的叫法（只定比例、不定清晰度；设置、README、型号页截图 alt 里都有）。做完回 #54
 
 **自测**：`--preview-screens` 本机建屏、不要控制端；`--probe-screens` 建实验屏（身份 999000001～999000004）。坑见 [[project-phone-screen]]。
 
