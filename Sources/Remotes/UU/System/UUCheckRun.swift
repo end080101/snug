@@ -60,7 +60,7 @@ package enum UUCheckRun {
         let facts = UUCheck.Facts(hours: hours, since: since, version: version, appRunning: pid != nil, server: server,
                                   serverExecutables: servers, linkers: linkers, capture: capture, snugLog: snugLines.map(String.init),
                                   onlineSnugDisplays: RemoteCheckTools.onlineSnugDisplays(), controllersNow: table)
-        return RemoteCheckTools.conclude(UUCheck.evaluate(facts), title: UUCheck.title, remote: "uu", hours: hours, at: now, files: files)
+        return RemoteCheckTools.conclude(UUCheck.evaluate(facts), remote: UURemote.identity, hours: hours, at: now, files: files)
     }
 
     // MARK: 收集

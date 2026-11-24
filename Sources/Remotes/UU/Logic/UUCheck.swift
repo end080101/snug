@@ -111,8 +111,6 @@ package enum UUCheck {
         return f.string(from: date)
     }
 
-    /// 报告的标题
-    package static let title = "UU远程 兼容自检"
 
     // MARK: 逐项
 

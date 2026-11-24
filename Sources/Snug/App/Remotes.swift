@@ -23,7 +23,7 @@ enum Remotes {
     /// 登记顺序就是归属顺序：两家同时报在场时归前面那家
     static let all: [Entry] = [
         Entry(adapter: UURemoteAdapter.self, dump: UUDump.run, check: UUCheckRun.run(hours:)),
-        Entry(adapter: CrossDeskRemoteAdapter.self, dump: CrossDeskDiagnostics.dump, check: CrossDeskDiagnostics.check(hours:)),
+        Entry(adapter: CrossDeskRemoteAdapter.self, dump: CrossDeskDump.run, check: CrossDeskCheckRun.run(hours:)),
     ]
 
     static var names: [String] { all.map(\.name) }

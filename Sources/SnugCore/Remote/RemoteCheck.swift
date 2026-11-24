@@ -28,15 +28,15 @@ public enum RemoteCheck {
         }
     }
 
-    /// 报告正文：标题、结论、逐项。title 是「UU远程 兼容自检」这样的一句
-    public static func report(_ items: [Item], title: String, hours: Int, at date: Date) -> String {
+    /// 报告正文：标题（「<远控> 兼容自检」）、结论、逐项
+    public static func report(_ items: [Item], remote: RemoteIdentity, hours: Int, at date: Date) -> String {
         let stamp = DateFormatter()
         stamp.locale = Locale(identifier: "en_US_POSIX")
         stamp.dateFormat = "MM-dd HH:mm"
         let fails = items.filter { $0.status == .fail }.count
         let warns = items.filter { $0.status == .warn }.count
         let verdict = fails > 0 ? "发现 \(fails) 项问题" : warns > 0 ? "未发现问题，\(warns) 项需留意" : "未发现兼容问题"
-        return (["\(title) · \(stamp.string(from: date)) · 回看 \(hours) 小时", "结论：\(verdict)", ""]
+        return (["\(remote.displayName) 兼容自检 · \(stamp.string(from: date)) · 回看 \(hours) 小时", "结论：\(verdict)", ""]
             + items.map { "\($0.status.symbol) \($0.title)：\($0.detail)" }).joined(separator: "\n")
     }
 

@@ -22,7 +22,9 @@ macOS App bundle 为 `cn.crossdesk.app`，在 App 资源库中排除。
 
 ```bash
 scripts/snug check
-scripts/snug remote-check crossdesk
+scripts/snug remote-check crossdesk [小时]
 ```
+
+`remote-check crossdesk` 只读，先用手机照常连一次（切到 Snug 的屏）再跑。逐项核对：程序里还有没有那条电源断言（没了即连接检测失效，退出码 1）、此刻查不查得到；日志里认的几句程序里还在不在；回看时段内 CrossDesk 每次开始共享，Snug 有没有记到连入，以及断开到释放断言隔了多久；CrossDesk 最近一次启动认到的屏里有没有此刻在线的 Snug 屏。取证材料写进 `~/Library/Logs/Snug-crossdesk-check/`，每次覆盖。
 
 在 macOS CrossDesk `v1.7.6-20261112` 上验证了启动前已上线的 Snug 测试屏。原生 CrossDesk CLI 0.2.0 连入后列出该屏，选屏后收到 600×1080 画面。Snug 诊断在连入与断开时读到对应状态。将这次的日志在隔离目录回放，Snug 正常启动后记录了连入、断开和会话结束。移动端触控和 App 资源库未在这次连接中验证。

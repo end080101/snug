@@ -50,10 +50,10 @@ public enum RemoteCheckTools {
         }
     }
 
-    /// 打出报告，把报告连同材料写进 ~/Library/Logs/Snug-<remote>-check/（每次覆盖），有一项不通过以 1 退出
-    public static func conclude(_ items: [RemoteCheck.Item], title: String, remote: String, hours: Int, at date: Date,
+    /// 打出报告，把报告连同材料写进 ~/Library/Logs/Snug-<日志名小写>-check/（每次覆盖），有一项不通过以 1 退出
+    public static func conclude(_ items: [RemoteCheck.Item], remote: RemoteIdentity, hours: Int, at date: Date,
                                 files: [String: String]) -> Int32 {
-        let report = RemoteCheck.report(items, title: title, hours: hours, at: date)
+        let report = RemoteCheck.report(items, remote: remote, hours: hours, at: date)
         print(report)
         print("")
         print(writeEvidence(files.merging(["report.txt": report]) { _, new in new }, remote: remote))
@@ -61,9 +61,9 @@ public enum RemoteCheckTools {
     }
 
     /// 整个目录换成这次的材料；写不进去时说明原因（报告已经打出来了，不因此失败）
-    private static func writeEvidence(_ files: [String: String], remote: String) -> String {
+    private static func writeEvidence(_ files: [String: String], remote: RemoteIdentity) -> String {
         let fm = FileManager.default
-        let evidence = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Snug-\(remote)-check")
+        let evidence = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Snug-\(remote.logName.lowercased())-check")
         do {
             if fm.fileExists(atPath: evidence.path) { try fm.removeItem(at: evidence) }
             try fm.createDirectory(at: evidence, withIntermediateDirectories: true)

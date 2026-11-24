@@ -48,9 +48,17 @@ package struct CrossDeskLogLine: Equatable, Sendable {
     }
 
     /// 时间戳按 timeZone 读成时刻。夏令时回拨的那一小时有两个读法，取前一个：只影响自检里的对照
-    package func date(in timeZone: TimeZone = .current) -> Date? {
+    package func date(in timeZone: TimeZone = .current) -> Date? { Self.date(stamp: stamp, in: timeZone) }
+
+    /// 任意一行（认不认得这句都行）的时刻；不是以时间戳开头的行（多行报错的续行）为 nil
+    package static func date(ofLine line: Substring, in timeZone: TimeZone = .current) -> Date? {
+        guard line.first == "[", let close = line.firstIndex(of: "]") else { return nil }
+        return date(stamp: line[line.index(after: line.startIndex)..<close], in: timeZone)
+    }
+
+    private static func date(stamp: Substring, in timeZone: TimeZone) -> Date? {
         let digits = stamp.split(whereSeparator: { "- :.".contains($0) }).compactMap { Int($0) }
-        guard digits.count == 7 else { return nil }
+        guard stamp.utf8.count == 23, digits.count == 7 else { return nil }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let parts = DateComponents(year: digits[0], month: digits[1], day: digits[2], hour: digits[3], minute: digits[4], second: digits[5])

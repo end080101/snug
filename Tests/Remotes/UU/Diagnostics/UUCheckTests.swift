@@ -56,7 +56,7 @@ struct UUCheckTests {
         #expect(item("推流日志", in: items)?.detail.contains("推流开始 2 次") == true)
         #expect(item("推流屏", in: items)?.status == .ok)
         #expect(item("推流屏", in: items)?.detail.contains("Snug 的屏 #79") == true)
-        #expect(RemoteCheck.report(items, title: UUCheck.title, hours: 4, at: remoteStart).contains("结论：未发现兼容问题"))
+        #expect(RemoteCheck.report(items, remote: UURemote.identity, hours: 4, at: remoteStart).contains("结论：未发现兼容问题"))
     }
 
     @Test("没装 UU：只报这一项")
@@ -85,7 +85,7 @@ struct UUCheckTests {
         let items = UUCheck.evaluate(facts(capture: []))
         #expect(item("推流日志", in: items)?.status == .fail)
         #expect(item("推流屏", in: items) == nil)
-        #expect(RemoteCheck.report(items, title: UUCheck.title, hours: 4, at: remoteStart).contains("结论：发现 1 项问题"))
+        #expect(RemoteCheck.report(items, remote: UURemote.identity, hours: 4, at: remoteStart).contains("结论：发现 1 项问题"))
     }
 
     @Test("这段时间没有远程：无从核对，提示先连一次")
