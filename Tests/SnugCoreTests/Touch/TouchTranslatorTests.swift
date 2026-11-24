@@ -246,4 +246,80 @@ struct TouchTranslatorTests {
             #expect(t.isCoasting == coasts)
         }
     }
+
+    // MARK: 远控已认出的手势（各家整理交来 recognized）
+
+    @Test("认出长按：按下才 0.05 秒拖出防抖也是选择（补发按下和当前拖动，之后放行）；防抖内的小抖动照旧扣着")
+    func recognizedHoldSelects() {
+        var t = TouchTranslator()
+        _ = t.handle(input(.press, 100, 300, 0), in: phone)
+        #expect(t.handle(input(.recognized(.hold), 100, 300, 0.01), in: phone) == TouchResponse(passOriginal: false, commands: []))
+        #expect(t.handle(input(.drag, 104, 303, 0.03), in: phone) == TouchResponse(passOriginal: false, commands: []))
+        #expect(t.handle(input(.drag, 100, 330, 0.05), in: phone)
+                == TouchResponse(passOriginal: false, commands: [.replayPress, .replayCurrent]))
+        #expect(t.handle(input(.drag, 100, 360, 0.08), in: phone) == .pass)
+        #expect(t.handle(input(.release, 100, 360, 0.1), in: phone) == .pass)
+        #expect(!t.isCoasting)
+    }
+
+    @Test("认出长按：按下才 0.1 秒没拖就松手也是右键；按在关闭按钮上同样是右键（和按住 0.5 秒一样）")
+    func recognizedHoldRightClicks() {
+        var region = phone
+        region.closeButton = CloseButton(frame: CGRect(x: 8, y: 30, width: 14, height: 14), window: 7, windowFrame: CGRect(x: 0, y: 22, width: 540, height: 900))
+        for p in [CGPoint(x: 100, y: 300), CGPoint(x: 15, y: 37)] {
+            var t = TouchTranslator()
+            _ = t.handle(TouchInput(.press, at: p, time: 0), in: region)
+            _ = t.handle(TouchInput(.recognized(.hold), at: p, time: 0.05), in: region)
+            #expect(t.handle(TouchInput(.release, at: p, time: 0.1), in: region).commands == [.rightClick(at: p)])
+        }
+    }
+
+    @Test("认出滑动：补出来的按下马上开始滚动（began），之后每次拖动都滚，慢也不会变成选择；松手 ended，甩得快带惯性；从不补发点击")
+    func recognizedSlideScrolls() {
+        var t = TouchTranslator()
+        #expect(t.handle(input(.press, 100, 300, 0), in: phone) == TouchResponse(passOriginal: false, commands: []))
+        #expect(scrolls(t.handle(input(.recognized(.slide), 100, 300, 0), in: phone)).map(\.phase) == [.began])
+        // 很慢：0.8 秒才挪 3 点，照样是滚动
+        let slow = t.handle(input(.drag, 100, 303, 0.8), in: phone)
+        #expect(!slow.passOriginal && scrolls(slow).map(\.pixelsY) == [3])
+        for (i, y) in [340.0, 380, 420].enumerated() { _ = t.handle(input(.drag, 100, y, 0.81 + Double(i) * 0.016), in: phone) }
+        let end = t.handle(input(.release, 100, 420, 0.85), in: phone)
+        #expect(scrolls(end).map(\.phase) == [.ended])
+        #expect(t.isCoasting)
+
+        // 没挪动就收尾：只有 began、ended，不点到任何东西
+        var still = TouchTranslator()
+        _ = still.handle(input(.press, 100, 300, 0), in: phone)
+        _ = still.handle(input(.recognized(.slide), 100, 300, 0), in: phone)
+        let quiet = still.handle(input(.release, 100, 300, 0.3), in: phone)
+        #expect(quiet.commands.allSatisfy { if case .scroll = $0 { true } else { false } })
+        #expect(!still.isCoasting)
+    }
+
+    @Test("认出的手势只管还没判出来的那一按：屏外按下的原样放行；手指已经滚起来、长按已经在选，都不改")
+    func recognizedOnlyWhilePending() {
+        var outside = TouchTranslator()
+        _ = outside.handle(input(.press, 100, 300, 0), in: elsewhere)
+        #expect(outside.handle(input(.recognized(.slide), 100, 300, 0), in: elsewhere) == .pass)
+        #expect(outside.handle(input(.drag, 100, 360, 0.05), in: elsewhere) == .pass)
+
+        var scrolling = TouchTranslator()
+        _ = scrolling.handle(input(.press, 100, 300, 0), in: phone)
+        _ = scrolling.handle(input(.drag, 100, 340, 0.05), in: phone)
+        #expect(scrolling.handle(input(.recognized(.hold), 100, 340, 0.06), in: phone) == .pass)
+        #expect(scrolls(scrolling.handle(input(.drag, 100, 380, 0.07), in: phone)).map(\.phase) == [.changed])
+    }
+
+    @Test("惯性中补出一次滑动：先停掉惯性，再开始新的滚动")
+    func recognizedSlideStopsMomentum() {
+        var t = TouchTranslator()
+        _ = t.handle(input(.press, 100, 300, 0), in: phone)
+        for (i, y) in [340.0, 400, 460].enumerated() { _ = t.handle(input(.drag, 100, y, 0.016 * Double(i + 1)), in: phone) }
+        _ = t.handle(input(.release, 100, 460, 0.05), in: phone)
+        #expect(t.isCoasting)
+        let press = t.handle(input(.press, 200, 500, 0.2), in: phone)
+        #expect(scrolls(press).map(\.momentum) == [.end])
+        #expect(scrolls(t.handle(input(.recognized(.slide), 200, 500, 0.2), in: phone)).map(\.phase) == [.began])
+        #expect(!t.isCoasting)
+    }
 }

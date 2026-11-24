@@ -5,7 +5,7 @@ import Testing
 
 // 黄金母本：远控发「按下 → 拖动 → 抬起」（手指直通）时，手势翻译的全部回应。
 // 按固定种子生成几百段手势（点、滑、甩、惯性中点、长按拖、长按松手、关闭按钮、屏外、宽档、成团到达），
-// 回应和惯性帧逐条写成文本取摘要。翻译器、管线怎么拆，这份摘要都必须一字不差；
+// 回应和惯性帧逐条写成文本取摘要。直接交翻译器、经管线和直通整理，这份摘要都必须一字不差；
 // 只有有意改手感（阈值、惯性）时才更新常量，并在提交里写明改了什么
 
 /// 固定种子的随机数（SplitMix64）：每次跑生成同样的手势
@@ -33,22 +33,36 @@ private struct GoldenRun {
 
     var rng: SplitMix64
     var translator = TouchTranslator()
+    /// 经管线和直通整理走（系统层的路径）；nil = 直接交翻译器
+    var pipeline: TouchPipeline?
+    /// 经管线走时，留拷贝、作废拷贝、指令带的范围和直接交翻译器时的规矩对不上的次数
+    var mismatches: [String] = []
     var lines: [String] = []
     var time = 0.0
     /// 这一按所在的范围：之后的拖动、抬起跟着这一下走（和系统层一样）
     var pressed: TouchRegion?
     var counts: [String: Int] = [:]
 
-    init(seed: UInt64) { rng = SplitMix64(state: seed) }
+    init(seed: UInt64, throughPipeline: Bool) {
+        rng = SplitMix64(state: seed)
+        if throughPipeline { pipeline = TouchPipeline(normalizers: [DirectTouch.self]) }
+    }
+
+    var isCoasting: Bool { pipeline?.isCoasting ?? translator.isCoasting }
+
+    mutating func momentumFrame() -> ScrollStep? {
+        if pipeline != nil { return pipeline!.momentumFrame() }
+        return translator.momentumFrame()
+    }
 
     mutating func random(_ range: ClosedRange<Double>) -> Double { Double.random(in: range, using: &rng) }
     mutating func random(_ range: ClosedRange<Int>) -> Int { Int.random(in: range, using: &rng) }
 
     /// 惯性按 60fps 走到 until 为止（系统层的计时器就是这样喂的）
     mutating func coast(until: TimeInterval) {
-        while translator.isCoasting, time + 1 / Momentum.frameRate <= until {
+        while isCoasting, time + 1 / Momentum.frameRate <= until {
             time += 1 / Momentum.frameRate
-            if let step = translator.momentumFrame() { record("帧", describe(step)) }
+            if let step = momentumFrame() { record("帧", describe(step)) }
         }
         time = max(time, until)
     }
@@ -56,8 +70,33 @@ private struct GoldenRun {
     mutating func send(_ kind: TouchInput.Kind, _ point: CGPoint, at t: TimeInterval) {
         coast(until: t)
         if kind == .press { pressed = [Self.phone, Self.widest].first { $0.frame.contains(point) } }
-        let response = translator.handle(TouchInput(kind, at: point, time: t), in: pressed)
+        let response = pipeline == nil ? translator.handle(TouchInput(kind, at: point, time: t), in: pressed) : viaPipeline(kind, point, t)
         record("\(kind) \(fmt(point.x)),\(fmt(point.y)) @\(fmt(t))", describe(response))
+    }
+
+    /// 经管线走一步，还原成翻译器的回应；系统层要的留拷贝、作废拷贝、范围按原来 TouchTap 的规矩核对
+    mutating func viaPipeline(_ kind: TouchInput.Kind, _ point: CGPoint, _ t: TimeInterval) -> TouchResponse {
+        let raw: PointerEvent.Kind = switch kind {
+        case .press: .leftDown
+        case .drag: .leftDrag
+        default: .leftUp
+        }
+        let step = pipeline!.take(PointerEvent(raw, at: point, time: t), from: 0, regions: [Self.phone, Self.widest])
+        var commands: [TouchCommand] = []
+        for (i, action) in step.actions.enumerated() {
+            switch action {
+            case .holdOriginal where !(kind == .press && !step.passOriginal && i == 0),
+                 .dropHeld where !(kind == .release && i == step.actions.count - 1):
+                mismatches.append("\(action) @\(t)")
+            case .perform(let command, let region):
+                if region != pressed { mismatches.append("范围 @\(t)") }
+                commands.append(command)
+            default: break
+            }
+        }
+        if kind == .press, !step.passOriginal, step.actions.first != .holdOriginal { mismatches.append("没留拷贝 @\(t)") }
+        if kind == .release, step.actions.last != .dropHeld { mismatches.append("没作废拷贝 @\(t)") }
+        return TouchResponse(passOriginal: step.passOriginal, commands: commands)
     }
 
     mutating func record(_ input: String, _ output: String) {
@@ -156,8 +195,8 @@ private func digest(_ text: String) -> UInt64 {
     text.utf8.reduce(0xCBF2_9CE4_8422_2325) { ($0 ^ UInt64($1)) &* 0x0000_0100_0000_01B3 }
 }
 
-private func goldenRun() -> GoldenRun {
-    var run = GoldenRun(seed: 20261123)
+private func goldenRun(throughPipeline: Bool = false) -> GoldenRun {
+    var run = GoldenRun(seed: 20261123, throughPipeline: throughPipeline)
     for _ in 0..<320 { run.gesture() }
     run.coast(until: run.time + 3)
     return run
@@ -175,6 +214,13 @@ struct TouchGoldenMasterTests {
         let text = run.lines.joined(separator: "\n")
         #expect(run.counts == Self.expectedCounts, "回应的构成变了：\(run.counts.sorted { $0.key < $1.key })")
         #expect(digest(text) == Self.expectedDigest, "摘要变了：0x\(String(digest(text), radix: 16, uppercase: true))，共 \(run.lines.count) 条")
+    }
+
+    @Test("经管线和直通整理走（系统层的路径）：回应和惯性帧与母本逐字一致；留拷贝、作废拷贝、指令带的范围和原来一样")
+    func pipelineMatchesTranslator() {
+        let run = goldenRun(throughPipeline: true)
+        #expect(digest(run.lines.joined(separator: "\n")) == Self.expectedDigest)
+        #expect(run.mismatches.isEmpty, "\(run.mismatches.prefix(5))")
     }
 
     @Test("母本覆盖到了每一种回应：点击、滚动、惯性、惯性中点按只停住、右键、关闭按钮、屏外放行")
