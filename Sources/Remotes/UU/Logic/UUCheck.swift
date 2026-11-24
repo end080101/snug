@@ -1,6 +1,6 @@
 // UU远程 兼容自检（scripts/snug remote-check uu → Snug --check-remote uu）：UU 一更新，把 Snug 依赖它的几处逐项核对，出一份报告。
-// 这里只做判定，事实由系统部分（RemoteUUSystem 的 UUCheckRun）收集：UU 的安装与进程、抓屏和编码框架还链不链、
-// 一段时间内 UU 的推流日志和 Snug 自己的日志。推流日志用正式运行的那套解析和状态（CaptureLogParser、CaptureSessionState）回放，
+// 这里只做判定，事实由系统部分（RemoteUUSystem 的 UUCheckRun）收集：UU 的安装与进程、抓屏框架还链不链、
+// 一段时间内 UU 的推流日志和 Snug 自己的日志。推流日志用正式运行的那套解析和推流表（CaptureLogParser、CaptureStreams）回放，
 // 查的就是发出去的逻辑。只看日志、不碰 UU，所以要先用手机照常连一次，再回看
 import Foundation
 import SnugCore
@@ -8,10 +8,8 @@ import SnugCore
 package enum UUCheck {
     /// 最近一次核对过（自检无问题、手机实测无误）的 UU远程 版本，报告里拿它对照。核对完新版本后改这里
     package static let verifiedVersion = "4.48.1"
-    /// UU 用它抓屏：推流日志里的屏描述、开始与停止都是它打的（见 CaptureLogParser）
+    /// UU 用它抓屏：推流日志里的屏描述、登记输出、开推、停止与释放都是它打的（见 CaptureLogParser）
     package static let captureFramework = "ScreenCaptureKit"
-    /// UU 用它编码：编码会话的新建与结束用来判断推流中途是不是重启
-    package static let encoderFramework = "VideoToolbox"
     /// Snug 记到的远程开始，前后这么久内 UU 日志里有推流开始，就算对上
     static let matchWindow: TimeInterval = 15
 
@@ -68,7 +66,7 @@ package enum UUCheck {
     }
 
     /// 实际拿来核对的那一段：只认此刻的 UURemoteServer 进程。UU 一更新就换进程，更新前的远程不能替新版本作证
-    /// （正式运行也只认当前进程的推流记录，见 CaptureSessionState.resumed）
+    /// （正式运行也只认当前进程的推流记录，见 CaptureStreams.resumed）
     struct Scope {
         /// 此刻的进程打的推流记录；日志读不出来为 nil
         var capture: [CaptureLogRecord]?
@@ -113,17 +111,11 @@ package enum UUCheck {
 
     private static func frameworks(_ f: Facts) -> RemoteCheck.Item {
         let capture = f.linkers[captureFramework] ?? []
-        let encoder = f.linkers[encoderFramework] ?? []
         guard !capture.isEmpty else {
             return RemoteCheck.Item(status: .fail, title: "推流框架",
                         detail: "没有程序链接 \(captureFramework)：UU 可能换了抓屏方式，推流日志会消失，连接检测与推流屏判断随之失效")
         }
-        guard !encoder.isEmpty else {
-            return RemoteCheck.Item(status: .warn, title: "推流框架",
-                        detail: "没有程序链接 \(encoderFramework)：编码会话的日志会消失，推流中途重启时可能误判停流")
-        }
-        return RemoteCheck.Item(status: .ok, title: "推流框架",
-                    detail: "\(captureFramework)：\(capture.joined(separator: "、"))；\(encoderFramework)：\(encoder.joined(separator: "、"))")
+        return RemoteCheck.Item(status: .ok, title: "推流框架", detail: "\(captureFramework)：\(capture.joined(separator: "、"))")
     }
 
     /// 推流日志能不能认出推流的开始，以及推的是哪块屏
@@ -132,14 +124,15 @@ package enum UUCheck {
             return [RemoteCheck.Item(status: .warn, title: "推流日志", detail: "读不出系统日志（log show 失败），推流相关各项无从核对")]
         }
         // 照正式运行的方式回放：每次推流开始时，此刻认定在推哪块屏
-        var state = CaptureSessionState()
+        var streams = CaptureStreams()
         var starts: [(date: Date, display: DisplayID?)] = []
-        var stops = 0
+        var stops = 0, sounds = 0
         for record in records {
-            state.apply(record)
+            streams.apply(record)
             switch record.event {
-            case .captureStarted: starts.append((record.date, state.streamingDisplay(at: record.date)))
+            case .captureStarted: starts.append((record.date, streams.streamingDisplay(at: record.date)))
             case .captureStopped: stops += 1
+            case .soundAdded: sounds += 1
             default: break
             }
         }
@@ -155,10 +148,11 @@ package enum UUCheck {
         let log = matched < sessions.count
             ? RemoteCheck.Item(status: .warn, title: "推流日志", detail: "\(counts)；Snug 记到的 \(sessions.count) 次远程里 \(matched) 次对得上推流开始")
             : RemoteCheck.Item(status: .ok, title: "推流日志", detail: sessions.isEmpty ? counts : "\(counts)；Snug 记到的 \(sessions.count) 次远程都对得上")
-        return [log, streamedDisplays(starts.compactMap(\.display), snug: scope.snug.snugDisplays)]
+        return [log, streamedDisplays(starts.compactMap(\.display), snug: scope.snug.snugDisplays, sounds: sounds)]
     }
 
-    private static func streamedDisplays(_ displays: [DisplayID], snug: Set<DisplayID>) -> RemoteCheck.Item {
+    /// sounds：登记了声音输出的次数。认不出声音流，它挂的主屏会被当成在看的屏
+    private static func streamedDisplays(_ displays: [DisplayID], snug: Set<DisplayID>, sounds: Int) -> RemoteCheck.Item {
         guard !displays.isEmpty else {
             return RemoteCheck.Item(status: .fail, title: "推流屏",
                         detail: "推流开始前都没有可认的屏描述：认不出 UU 在推哪块屏，资源库刷新、面板与主屏判断都会出错")
@@ -166,6 +160,10 @@ package enum UUCheck {
         var seen: [DisplayID] = []
         for d in displays where !seen.contains(d) { seen.append(d) }
         let list = seen.map { "#\($0)" }.joined(separator: "、")
+        guard sounds > 0 else {
+            return RemoteCheck.Item(status: .warn, title: "推流屏",
+                        detail: "推过 \(list)；没认出 UU 的声音流（登记声音输出的那句日志）：远程开头会把它挂的主屏当成在看的屏（UU 关了声音时也会这样）")
+        }
         let mine = seen.filter(snug.contains)
         guard !mine.isEmpty else {
             return RemoteCheck.Item(status: .info, title: "推流屏", detail: "推过 \(list)；这段时间没推过 Snug 的屏，切屏能否认出待下次核对")

@@ -6,15 +6,15 @@ import Testing
 /// 夹具里没留进程号，按此刻的 UURemoteServer 补上
 private let serverPID: pid_t = 4242
 
-/// 推流事件取自 CaptureLogTests 的夹具 2257：远程开头先为手机屏 79 开推，紧跟着为主屏 1 再起一路
+/// 推流事件取自夹具 2224（11-23 本机两次远程）：画面开在主屏 1、声音流挂在 1，先后切到手机屏 32、33
 private func records(_ name: String) throws -> [CaptureLogRecord] {
     let parser = CaptureLogParser()
     return try UUFixtures.lines(name).compactMap { parser.parse(line: $0) }
         .map { CaptureLogRecord(date: $0.date, event: $0.event, processID: serverPID) }
 }
 
-/// 夹具 2257 的第一次推流开始：2026-11-12 22:57:12.969 -0800
-private let remoteStart = Date(timeIntervalSince1970: 1_794_553_032.969)
+/// 夹具 2224 的第一次推流开始：2026-11-23 22:24:03.890 -0800
+private let remoteStart = Date(timeIntervalSince1970: 1_795_501_443.890)
 
 private func logLine(_ date: Date, _ message: String) -> String {
     let f = DateFormatter()
@@ -24,7 +24,7 @@ private func logLine(_ date: Date, _ message: String) -> String {
 }
 
 /// 每次连入一行信号、每次远程一行开始，控制端和屏编号各一行。会话和连入的行用正式的 logLine 生成，跟着产出方的写法走
-private func snugLog(sessions: [Date] = [remoteStart], displays: [DisplayID] = [79], controller: String? = "iPhone",
+private func snugLog(sessions: [Date] = [remoteStart], displays: [DisplayID] = [32, 33], controller: String? = "iPhone",
                      captures: [Bool?]? = nil) -> [String] {
     let signals = (captures ?? sessions.map { _ in true }).map { capture in
         let evidence = UUSignals(overlayVisible: false, controllers: .unrecognized, captureActive: capture).description
@@ -37,8 +37,7 @@ private func snugLog(sessions: [Date] = [remoteStart], displays: [DisplayID] = [
 }
 
 private func facts(version: String? = UUCheck.verifiedVersion, server: UUCheck.Server? = UUCheck.Server(pid: serverPID, start: nil), servers: [String] = ["Contents/Helpers/UURemoteServer"],
-                   linkers: [String: [String]] = [UUCheck.captureFramework: ["Contents/Frameworks/libstreamer.dylib"],
-                                                  UUCheck.encoderFramework: ["Contents/Frameworks/libstreamer.dylib"]],
+                   linkers: [String: [String]] = [UUCheck.captureFramework: ["Contents/Frameworks/libstreamer.dylib"]],
                    capture: [CaptureLogRecord]?, snug: [String] = snugLog(), online: Set<DisplayID> = [],
                    now: ControllerTable? = .unrecognized) -> UUCheck.Facts {
     UUCheck.Facts(hours: 4, since: remoteStart - 4 * 3600, version: version, appRunning: true, server: server, serverExecutables: servers,
@@ -49,13 +48,13 @@ private func item(_ title: String, in items: [RemoteCheck.Item]) -> RemoteCheck.
 
 @Suite("UU远程 兼容自检 UUCheck")
 struct UUCheckTests {
-    @Test("一切照旧：没有问题，切到 Snug 的屏认得出（取的是第一路的屏，第二路的主屏不盖掉它）")
+    @Test("一切照旧：没有问题，切到 Snug 的屏认得出")
     func healthy() throws {
-        let items = UUCheck.evaluate(facts(capture: try records("2257")))
+        let items = UUCheck.evaluate(facts(capture: try records("2224")))
         #expect(!items.contains { $0.status == .fail || $0.status == .warn })
-        #expect(item("推流日志", in: items)?.detail.contains("推流开始 2 次") == true)
+        #expect(item("推流日志", in: items)?.detail.contains("推流开始 6 次、停止 6 次") == true)
         #expect(item("推流屏", in: items)?.status == .ok)
-        #expect(item("推流屏", in: items)?.detail.contains("Snug 的屏 #79") == true)
+        #expect(item("推流屏", in: items)?.detail == "推过 #1、#32、#33，其中 Snug 的屏 #32、#33：切到 Snug 的屏认得出")
         #expect(RemoteCheck.report(items, remote: UURemote.identity, hours: 4, at: remoteStart).contains("结论：未发现兼容问题"))
     }
 
@@ -67,17 +66,15 @@ struct UUCheckTests {
 
     @Test("版本和上次核对的不同：报告里写出对照")
     func newerVersion() throws {
-        let items = UUCheck.evaluate(facts(version: "9.9.9", capture: try records("2257")))
+        let items = UUCheck.evaluate(facts(version: "9.9.9", capture: try records("2224")))
         #expect(items.first?.detail == "版本 9.9.9（上次核对的是 \(UUCheck.verifiedVersion)）；核对范围：最近 4 小时")
     }
 
-    @Test("后台进程改了名、不再链接抓屏框架：都是问题；只少了编码框架：需留意")
+    @Test("后台进程改了名、不再链接抓屏框架：都是问题")
     func binaries() throws {
-        let capture = try records("2257")
+        let capture = try records("2224")
         #expect(item("后台进程", in: UUCheck.evaluate(facts(servers: [], capture: capture)))?.status == .fail)
         #expect(item("推流框架", in: UUCheck.evaluate(facts(linkers: [:], capture: capture)))?.status == .fail)
-        let noEncoder = [UUCheck.captureFramework: ["Contents/Frameworks/libstreamer.dylib"]]
-        #expect(item("推流框架", in: UUCheck.evaluate(facts(linkers: noEncoder, capture: capture)))?.status == .warn)
     }
 
     @Test("Snug 记到了远程，UU 日志里却没有可认的推流开始：日志写法变了")
@@ -103,22 +100,28 @@ struct UUCheckTests {
 
     @Test("Snug 记到的远程对不上推流开始：需留意")
     func unmatchedSession() throws {
-        let items = UUCheck.evaluate(facts(capture: try records("2257"), snug: snugLog(sessions: [remoteStart, remoteStart + 3600])))
+        let items = UUCheck.evaluate(facts(capture: try records("2224"), snug: snugLog(sessions: [remoteStart, remoteStart + 3600])))
         #expect(item("推流日志", in: items)?.status == .warn)
         #expect(item("推流日志", in: items)?.detail.contains("2 次远程里 1 次对得上") == true)
     }
 
     @Test("推流开始前没有屏描述：认不出在推哪块屏；只推过别的屏：待下次核对")
     func streamedDisplay() throws {
-        let starts = try records("2257").filter { $0.event == .captureStarted }
+        let starts = try records("2224").filter { if case .captureStarted = $0.event { true } else { false } }
         #expect(item("推流屏", in: UUCheck.evaluate(facts(capture: starts)))?.status == .fail)
-        #expect(item("推流屏", in: UUCheck.evaluate(facts(capture: try records("2257"), snug: snugLog(displays: []))))?.status == .info)
+        #expect(item("推流屏", in: UUCheck.evaluate(facts(capture: try records("2224"), snug: snugLog(displays: []))))?.status == .info)
     }
 
     @Test("设为主屏的那块常驻、建屏的日志早在回看之前：此刻在线的 Snug 屏也算")
     func residentMain() throws {
-        let items = UUCheck.evaluate(facts(capture: try records("2257"), snug: snugLog(displays: []), online: [79]))
+        let items = UUCheck.evaluate(facts(capture: try records("2224"), snug: snugLog(displays: []), online: [32]))
         #expect(item("推流屏", in: items)?.status == .ok)
+    }
+
+    @Test("认不出声音流（登记声音输出的那句日志没了）：推流屏需留意")
+    func soundStreamMissing() throws {
+        let noSound = try records("2224").filter { if case .soundAdded = $0.event { false } else { true } }
+        #expect(item("推流屏", in: UUCheck.evaluate(facts(capture: noSound)))?.status == .warn)
     }
 
     @Test("只认此刻的 UURemoteServer 进程：更新前旧进程的推流和远程不替新版本作证")
@@ -126,8 +129,8 @@ struct UUCheckTests {
         let restart = remoteStart + 3600
         let capture = [
             CaptureLogRecord(date: remoteStart, event: .displayDescribed(79), processID: 100),
-            CaptureLogRecord(date: remoteStart, event: .captureStarted, processID: 100),
-            CaptureLogRecord(date: restart + 60, event: .captureStarted, processID: 200),
+            CaptureLogRecord(date: remoteStart, event: .captureStarted(stream: 1), processID: 100),
+            CaptureLogRecord(date: restart + 60, event: .captureStarted(stream: 2), processID: 200),
         ]
         let server = UUCheck.Server(pid: 200, start: restart)
         let items = UUCheck.evaluate(facts(server: server, capture: capture, snug: snugLog(sessions: [remoteStart, restart + 60])))
@@ -143,7 +146,7 @@ struct UUCheckTests {
 
     @Test("连接检测：推流信号未知的连入不计；一次都没亮是问题，亮了一部分需留意")
     func detection() throws {
-        let capture = try records("2257")
+        let capture = try records("2224")
         func status(_ values: [Bool?]) -> RemoteCheck.Status? {
             item("连接检测", in: UUCheck.evaluate(facts(capture: capture, snug: snugLog(captures: values))))?.status
         }
@@ -155,7 +158,7 @@ struct UUCheckTests {
 
     @Test("连接检测：远程过、日志里却认不出连入（Snug 改了日志写法），或信号快照读不出，需留意，不悄悄略过")
     func detectionUnreadable() throws {
-        let capture = try records("2257")
+        let capture = try records("2224")
         let noDetections = snugLog(captures: [])
         #expect(item("连接检测", in: UUCheck.evaluate(facts(capture: capture, snug: noDetections)))?.status == .warn)
         let garbled = snugLog(captures: []) + [logLine(remoteStart, "检测到 UU 连入（信号=改了写法 距上次在场 0.00s）")]
@@ -168,7 +171,7 @@ struct UUCheckTests {
             logLine(remoteStart, ConnectionTracker.logLine(.connected(controllers: []), remote: "甲", evidence: "信号=一", sincePresent: 0, quietLeft: nil)),
             logLine(remoteStart, SessionTransition.began(controllers: ["甲的设备"]).logLine),
         ]
-        let items = UUCheck.evaluate(facts(capture: try records("2257"), snug: other))
+        let items = UUCheck.evaluate(facts(capture: try records("2224"), snug: other))
         #expect(item("连接检测", in: items) == nil)
         #expect(item("控制端", in: items) == nil)
         #expect(item("推流日志", in: items)?.status == .ok)
@@ -176,7 +179,7 @@ struct UUCheckTests {
 
     @Test("控制端：远程过却一次都没认出需留意；此刻表上有名字也算认出")
     func controllers() throws {
-        let capture = try records("2257")
+        let capture = try records("2224")
         #expect(item("控制端", in: UUCheck.evaluate(facts(capture: capture, snug: snugLog(controller: nil))))?.status == .warn)
         let live = UUCheck.evaluate(facts(capture: capture, snug: snugLog(controller: nil), now: .shown(["iPhone"])))
         #expect(item("控制端", in: live)?.status == .ok)

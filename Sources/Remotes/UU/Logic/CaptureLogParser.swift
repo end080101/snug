@@ -1,23 +1,23 @@
-// 解析 `log stream --style ndjson` 里 UURemoteServer 的推流与编码事件。
-// 这些行来自 ScreenCaptureKit / VideoToolbox 的调试日志，格式不是公开接口，所以只认几条稳定的关键字，
-// 认不出的行一律忽略。格式变了，认不出开始事件时推流信号缺席，认不出停止事件时推流会一直显示在进行，后果见 ConnectionTracker
+// 解析 `log stream --style ndjson` 里 UURemoteServer 抓屏的几类事件（屏的描述、抓屏流的登记输出、开推、停、释放），交给 CaptureStreams。
+// 这些行来自 ScreenCaptureKit 的调试日志，格式不是公开接口，所以只认几条稳定的关键字，
+// 认不出的行一律忽略。格式变了，认不出开始事件时推流信号缺席，停止和释放都认不出时推流会一直显示在进行，后果见 ConnectionTracker。
+// ScreenCaptureKit 自己停流时还会打一句不带地址的「Stopping stream due to」，紧跟着每路流都有带地址的停止（2026-11-12 四次都是），不另外认
 import Foundation
 import SnugCore
 
+/// stream：SCStream 对象的地址。同一进程里同时开着的流各不相同，停了以后可能给新开的流用
 package enum CaptureLogEvent: Equatable, Sendable {
     /// -[SCDisplay initWithDict:] … displayID=N：ScreenCaptureKit 描述了一块屏。
     /// UU 枚举全部屏幕时每块都会出现一次，为要推的那块建过滤器时再出现一次，紧接着推流开始
     case displayDescribed(DisplayID)
-    /// -[SCStream startCaptureWithCompletionHandler:]
-    case captureStarted
-    /// -[SCStream stopCaptureWithCompletionHandler:] 或「Stopping stream due to stream frameStatus」
-    case captureStopped
-    /// VTCompressionSessionCreateWithOptions：新建编码会话
-    case encoderCreated
-    /// 编码会话结束，带「encoded N dropped M duration D [ms]」摘要：真正推过流的会话
-    case encoderEnded(encoded: Int, dropped: Int, durationMs: Int)
-    /// 编码会话结束但没有摘要：UU 试探编码参数时建了就扔的会话，不代表推流结束
-    case encoderProbeEnded
+    /// -[SCStream addStreamOutput:type:…] 0x… type=N，N 不是 0（画面）而是 1（声音）或 2（麦克风）：这路流带声音
+    case soundAdded(stream: UInt64)
+    /// -[SCStream startCaptureWithCompletionHandler:] 0x…
+    case captureStarted(stream: UInt64)
+    /// -[SCStream stopCaptureWithCompletionHandler:] 0x…
+    case captureStopped(stream: UInt64)
+    /// -[SCStream dealloc] 0x…：这路流的对象释放了。紧跟在停之后（11-23 六路流都是 6～36 毫秒），停的那句没记到时靠它收尾
+    case released(stream: UInt64)
 }
 
 package struct CaptureLogRecord: Equatable, Sendable {
@@ -35,7 +35,7 @@ package struct CaptureLogRecord: Equatable, Sendable {
 
 package struct CaptureLogParser {
     /// classify 认的几类行都含其中一个词。log 子进程按它过滤：Snug 少收、少解析，回看几个小时的日志也只有几百行
-    static let keywords = ["SCDisplay initWithDict:", "CaptureWithCompletionHandler:]", "Stopping stream due to", "VTCompressionSession"]
+    static let keywords = ["SCDisplay initWithDict:", "CaptureWithCompletionHandler:]", "addStreamOutput:type:", "SCStream dealloc]"]
     /// `log stream` / `log show` 的 --predicate
     package static let predicate = "process == \"\(UURemote.serverProcess)\" AND ("
         + keywords.map { "eventMessage CONTAINS \"\($0)\"" }.joined(separator: " OR ") + ")"
@@ -62,22 +62,22 @@ package struct CaptureLogParser {
     }
 
     static func classify(_ message: String) -> CaptureLogEvent? {
-        if message.contains("SCDisplay initWithDict:") { return displayID(in: message).map { .displayDescribed($0) } }
-        if message.contains("startCaptureWithCompletionHandler:]") { return .captureStarted }
-        // 「…stopCaptureWithCompletionHandler:]_block_invoke_2…error=」是停流回调里的报错，同一次停流已经记过
-        if message.contains("stopCaptureWithCompletionHandler:]:") { return .captureStopped }
-        if message.contains("Stopping stream due to") { return .captureStopped }
-        if message.contains("VTCompressionSessionCreate") { return .encoderCreated }
-        guard message.contains("VTCompressionSessionInvalidate") else { return nil }
-        guard let summary = message.range(of: "encoded ") else { return .encoderProbeEnded }
-        let numbers = message[summary.lowerBound...].split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
-        guard numbers.count >= 3 else { return .encoderProbeEnded }
-        return .encoderEnded(encoded: numbers[0], dropped: numbers[1], durationMs: numbers[2])
+        if message.contains("SCDisplay initWithDict:") {
+            return token(after: "displayID=", in: message, \.isNumber).flatMap { DisplayID($0) }.map { .displayDescribed($0) }
+        }
+        // 只认方法名后面紧跟「:行号 0x地址」的那句：停流回调里的报错（…]_block_invoke_2…error=）、登记输出的收尾（…]:828）都不带地址
+        guard let stream = token(after: " 0x", in: message, \.isHexDigit).flatMap({ UInt64($0, radix: 16) }) else { return nil }
+        if message.contains("startCaptureWithCompletionHandler:]:") { return .captureStarted(stream: stream) }
+        if message.contains("stopCaptureWithCompletionHandler:]:") { return .captureStopped(stream: stream) }
+        if message.contains("SCStream dealloc]:") { return .released(stream: stream) }
+        guard message.contains("addStreamOutput:type:"),
+              let type = token(after: " type=", in: message, \.isNumber).flatMap({ Int($0) }) else { return nil }
+        return type == 0 ? nil : .soundAdded(stream: stream)
     }
 
-    private static func displayID(in message: String) -> DisplayID? {
-        guard let key = message.range(of: "displayID=") else { return nil }
-        return DisplayID(message[key.upperBound...].prefix { $0.isNumber })
+    /// key 之后连着的一串 kind 字符；没有 key 为 nil
+    private static func token(after key: String, in message: String, _ kind: (Character) -> Bool) -> Substring? {
+        message.range(of: key).map { message[$0.upperBound...].prefix(while: kind) }
     }
 }
 

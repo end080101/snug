@@ -1,5 +1,5 @@
 // 推流信号：起一个 `/usr/bin/log stream` 子进程，只看 UURemoteServer 推流相关的几类日志，逐行交给 CaptureLogParser。
-// 每次（重新）启动先用 `log show` 回看 replayWindow：UU 的常驻推流只在远程开头打一次「开始」，
+// 每次（重新）启动先用 `log show` 回看 replayWindow：UU 的声音流只在远程开头开推一次，
 // 远程中途打开 Snug（升级、崩溃后自启）或子进程重启时不回看，就会以为没在推。回看完成前推流状态报「未知」。
 // 子进程挂了按退避重启（1→2→5→10→30→60s），跑满 60s 算稳定、退避清零；每次退出与重启都记日志。
 // UURemoteServer 换了进程（崩溃重启），旧的推流状态作废：它崩溃时不会留下停流的日志。回看也只认当前进程打的日志。
@@ -22,7 +22,7 @@ final class CaptureLogWatcher {
     private var failures = 0
     private var launchedAt = Date.distantPast
     private var wanted = false
-    private var state = CaptureSessionState()
+    private var streams = CaptureStreams()
     /// 回看还没做完：这期间收到的实时记录先攒在这里
     private var buffered: [CaptureLogRecord]?
     private var serverPID: pid_t?
@@ -46,7 +46,7 @@ final class CaptureLogWatcher {
     func sample(at date: Date) -> (active: Bool?, display: DisplayID?) {
         guard isRunning, buffered == nil else { return (nil, nil) }
         noteServerProcess()
-        return (state.isActive(at: date), state.streamingDisplay(at: date))
+        return (streams.isActive(at: date), streams.streamingDisplay(at: date))
     }
 
     /// UURemoteServer 换了进程（或没了），旧的推流状态作废
@@ -55,7 +55,7 @@ final class CaptureLogWatcher {
         guard pid != serverPID else { return }
         if serverPID != nil {
             Log.warn("UURemoteServer 进程变了（\(serverPID.map(String.init) ?? "-") → \(pid.map(String.init) ?? "没在运行")），推流状态重来")
-            state = CaptureSessionState()
+            streams = CaptureStreams()
         }
         serverPID = pid
     }
@@ -100,7 +100,7 @@ final class CaptureLogWatcher {
         }
         process = p
         launchedAt = Date()
-        state = CaptureSessionState()
+        streams = CaptureStreams()
         buffered = []
         serverPID = UURemoteApp.serverPID()
         Log.info("推流日志监听已启动（log pid \(p.processIdentifier)\(failures > 0 ? "，第 \(failures) 次重启" : "")），回看 \(Self.replayWindow)")
@@ -112,7 +112,7 @@ final class CaptureLogWatcher {
         if buffered != nil {
             buffered?.append(contentsOf: records)
         } else {
-            for r in records { state.apply(r) }
+            for r in records { streams.apply(r) }
         }
     }
 
@@ -153,10 +153,10 @@ final class CaptureLogWatcher {
     private func finishReplay(_ history: [CaptureLogRecord]?, generation gen: Int) {
         guard gen == generation, let live = buffered else { return }
         buffered = nil
-        state = CaptureSessionState.resumed(history: history ?? [], live: live, server: serverPID)
+        streams = CaptureStreams.resumed(history: history ?? [], live: live, server: serverPID)
         let now = Date()
-        let summary = state.isActive(at: now)
-            ? "UU 正在推流（屏 \(state.streamingDisplay(at: now).map(String.init) ?? "未知")）" : "UU 没在推流"
+        let summary = streams.isActive(at: now)
+            ? "UU 正在推流（屏 \(streams.streamingDisplay(at: now).map(String.init) ?? "未知")）" : "UU 没在推流"
         // 只数当前进程的：上一个进程的记录不参与回放，日志里要看得出来
         let mine = history.map { h in h.filter { serverPID != nil && $0.processID == serverPID }.count }
         Log.info("推流日志回看完成（\(history.map { "\($0.count) 条，当前 UURemoteServer 的 \(mine ?? 0) 条" } ?? "失败，只看实时日志")）：\(summary)")

@@ -3,7 +3,7 @@ import Foundation
 import RemoteUU
 import SnugCore
 
-/// UU：三路信号（覆盖窗口、控制端表格、推流日志）。推流屏走正式的推流状态（CaptureSessionState），不是直接填
+/// UU：三路信号（覆盖窗口、控制端表格、推流日志）。推流屏走正式的推流表（CaptureStreams），不是直接填
 struct UUDriver: RemoteDriver {
     let identity = UURemote.identity
     let namesControllers = true
@@ -20,11 +20,11 @@ struct UUDriver: RemoteDriver {
     }
 
     func connected(controllers: [String]) -> RemoteObservation {
-        signals(.shown(controllers), capture: [.captureStarted])
+        signals(.shown(controllers), capture: [.captureStarted(stream: 1)])
     }
 
     func streaming(_ display: DisplayID) -> RemoteObservation {
-        signals(.unrecognized, capture: [.displayDescribed(display), .captureStarted])
+        signals(.unrecognized, capture: [.displayDescribed(display), .captureStarted(stream: 1)])
     }
 
     /// UU 随时认新屏（连上后建的屏也选得到），不报
@@ -46,10 +46,10 @@ struct UUDriver: RemoteDriver {
     /// 按顺序回放这几条推流事件，再在最后一条之后问推流状态
     private func signals(_ table: ControllerTable, capture events: [CaptureLogEvent]) -> RemoteObservation {
         let start = Date(timeIntervalSinceReferenceDate: 0)
-        var state = CaptureSessionState()
-        for (i, event) in events.enumerated() { state.apply(CaptureLogRecord(date: start + Double(i) * 0.1, event: event)) }
+        var streams = CaptureStreams()
+        for (i, event) in events.enumerated() { streams.apply(CaptureLogRecord(date: start + Double(i) * 0.1, event: event)) }
         let now = start + 1
-        return UUSignals(overlayVisible: false, controllers: table, captureActive: state.isActive(at: now))
-            .observation(streamedDisplay: state.streamingDisplay(at: now))
+        return UUSignals(overlayVisible: false, controllers: table, captureActive: streams.isActive(at: now))
+            .observation(streamedDisplay: streams.streamingDisplay(at: now))
     }
 }

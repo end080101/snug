@@ -1,6 +1,6 @@
 // --check-remote uu [小时]：UU远程 兼容自检（scripts/snug remote-check uu 调）。收集事实交给 UUCheck 判定、打出报告，
 // 并把原始材料写进 ~/Library/Logs/Snug-uu-check/（每次覆盖，见 RemoteCheckTools）：UU 的推流日志、上一次远程前后 UURemoteServer 的全部日志、
-// 这段时间的 Snug 日志、UU 的界面树、哪些程序链接了抓屏与编码框架。哪项不对直接看材料，不用再一步步复现。
+// 这段时间的 Snug 日志、UU 的界面树、哪些程序链接了抓屏框架。哪项不对直接看材料，不用再一步步复现。
 // 只读：不点 UU、不碰屏幕
 import AppKit
 import RemoteUU
@@ -20,9 +20,7 @@ package enum UUCheckRun {
 
         let installed = RemoteCheckTools.installedApp(bundleID: UURemote.bundleID)
         let bundle = installed?.url, version = installed?.version
-        let needles = [UUCheck.captureFramework, UUCheck.encoderFramework].reduce(into: [String: Data]()) {
-            $0[$1] = Data("/System/Library/Frameworks/\($1).framework/".utf8)
-        }
+        let needles = [UUCheck.captureFramework: Data("/System/Library/Frameworks/\(UUCheck.captureFramework).framework/".utf8)]
         let scan = bundle.map { RemoteCheckTools.scanBundle($0, for: needles) }
         let servers = scan?.programs.filter { ($0 as NSString).lastPathComponent == UURemote.serverProcess } ?? []
         let linkers = scan?.hits ?? [:]
