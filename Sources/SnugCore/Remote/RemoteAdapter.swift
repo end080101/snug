@@ -62,16 +62,16 @@ public struct RemoteObservation: Equatable, Sendable {
     public var streamedDisplay: DisplayID?
     /// 写进连入、断开日志的信号快照：排查误判时才知道是哪一路信号在变
     public var evidence: String
-    /// 这家远控认得的显示器：只在启动时认屏的远控（RemoteIdentity.seesScreensOnlyAtLaunch）报它这次启动认到的。
+    /// 这家远控此刻选得到的显示器：只在启动时认屏的远控（RemoteIdentity.seesScreensOnlyAtLaunch）报，按它这次启动认到的推算。
     /// nil = 不知道（没在运行、读不到、远控随时认新屏）
-    public var knownDisplays: Set<DisplayID>?
+    public var reachableDisplays: Set<DisplayID>?
 
-    public init(present: Bool, controllers: [String], streamedDisplay: DisplayID?, evidence: String, knownDisplays: Set<DisplayID>? = nil) {
+    public init(present: Bool, controllers: [String], streamedDisplay: DisplayID?, evidence: String, reachableDisplays: Set<DisplayID>? = nil) {
         self.present = present
         self.controllers = controllers
         self.streamedDisplay = streamedDisplay
         self.evidence = evidence
-        self.knownDisplays = knownDisplays
+        self.reachableDisplays = reachableDisplays
     }
 }
 
@@ -85,9 +85,9 @@ public struct RemoteReading: Equatable, Sendable {
         self.observation = observation
     }
 
-    /// 这几块 Snug 屏里这家远控看不到的：它启动后才建的，要重启它才选得到。不知道它认得哪些时为空
+    /// 这几块 Snug 屏里这家远控选不到的：它启动后才建的，要重启它才选得到。不知道它选得到哪些时为空
     public func unseen(_ snugDisplays: Set<DisplayID>) -> Set<DisplayID> {
-        observation.knownDisplays.map { snugDisplays.subtracting($0) } ?? []
+        observation.reachableDisplays.map { snugDisplays.subtracting($0) } ?? []
     }
 }
 

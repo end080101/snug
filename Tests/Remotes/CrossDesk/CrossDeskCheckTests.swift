@@ -30,7 +30,7 @@ private func facts(version: String? = CrossDeskRemote.verifiedVersion, processes
                    log: [String]? = [started] + displays + session, snug: [String] = [snugDetected],
                    online: Set<DisplayID> = [367]) -> CrossDeskCheck.Facts {
     CrossDeskCheck.Facts(hours: 4, since: at("07:00:00.000"), version: version, processes: processes, foundInProgram: found,
-                         sharingNow: sharingNow, log: log, timeZone: zone, snugLog: snug, onlineSnugDisplays: online)
+                         sharingNow: sharingNow, log: log, timeZone: zone, snugLog: snug, onlineDisplays: online.union([1]), onlineSnugDisplays: online)
 }
 
 private func item(_ title: String, in items: [RemoteCheck.Item]) -> RemoteCheck.Item? { items.first { $0.title == title } }
@@ -111,10 +111,12 @@ struct CrossDeskCheckTests {
         #expect(item("远程记录", in: CrossDeskCheck.evaluate(facts(log: old, snug: [])))?.detail.contains("没有远程") == true)
     }
 
-    @Test("认屏：此刻在线的 Snug 屏不在 CrossDesk 启动时认到的里面要重启；只认最近一次启动；启动的日志滚动掉了、没记下屏各自说明")
+    @Test("认屏：此刻在线的 Snug 屏不在 CrossDesk 启动时认到的里面、也没有空出来的格要重启；重建换了编号的落在空格上算选得到；只认最近一次启动；启动的日志滚动掉了、没记下屏各自说明")
     func displaySeen() throws {
         let unseen = try #require(item("认屏", in: CrossDeskCheck.evaluate(facts(online: [367, 368]))))
         #expect(unseen.status == .warn && unseen.detail.contains("#368") && unseen.detail.contains("重启 CrossDesk"))
+        let renumbered = try #require(item("认屏", in: CrossDeskCheck.evaluate(facts(online: [368]))))
+        #expect(renumbered.status == .ok && renumbered.detail.contains("#368") && renumbered.detail.contains("空出来的格"))
         let restarted = [started] + displays + session + ["[2026-11-23 09:20:00.000] [crossdesk] [info] Logger initialized", displays[0]]
         #expect(item("认屏", in: CrossDeskCheck.evaluate(facts(log: restarted)))?.status == .warn)
         #expect(item("认屏", in: CrossDeskCheck.evaluate(facts(online: [])))?.status == .info)

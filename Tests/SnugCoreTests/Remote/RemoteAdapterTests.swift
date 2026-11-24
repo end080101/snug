@@ -4,11 +4,11 @@ import Testing
 
 @Suite("远控端口 RemoteAdapter")
 struct RemoteAdapterTests {
-    @Test("远控看不到的 Snug 屏：它认得的里面没有的那几块；不知道它认得哪些（nil）时一块都不算")
+    @Test("远控选不到的 Snug 屏：它选得到的里面没有的那几块；不知道它选得到哪些（nil）时一块都不算")
     func unseenScreens() {
-        func reading(_ known: Set<DisplayID>?) -> RemoteReading {
+        func reading(_ reachable: Set<DisplayID>?) -> RemoteReading {
             RemoteReading(remote: fakeRemote, observation: RemoteObservation(present: false, controllers: [], streamedDisplay: nil, evidence: "",
-                                                                             knownDisplays: known))
+                                                                             reachableDisplays: reachable))
         }
         #expect(reading([1, 3, 367]).unseen([367, 368]) == [368])
         #expect(reading([1, 3]).unseen([]).isEmpty)

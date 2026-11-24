@@ -29,11 +29,12 @@ package enum CrossDeskCheck {
         package var timeZone: TimeZone
         /// Snug 日志的原文（滚动过的旧日志在前）
         package var snugLog: [String]
-        /// 此刻在线的 Snug 的屏
+        /// 此刻在线的屏：全部（含实体屏），和其中 Snug 的
+        package var onlineDisplays: Set<DisplayID>
         package var onlineSnugDisplays: Set<DisplayID>
 
         package init(hours: Int, since: Date, version: String?, processes: [Int32], foundInProgram: Set<String>, sharingNow: [Int32]?,
-                     log: [String]?, timeZone: TimeZone, snugLog: [String], onlineSnugDisplays: Set<DisplayID>) {
+                     log: [String]?, timeZone: TimeZone, snugLog: [String], onlineDisplays: Set<DisplayID>, onlineSnugDisplays: Set<DisplayID>) {
             self.hours = hours
             self.since = since
             self.version = version
@@ -43,6 +44,7 @@ package enum CrossDeskCheck {
             self.log = log
             self.timeZone = timeZone
             self.snugLog = snugLog
+            self.onlineDisplays = onlineDisplays
             self.onlineSnugDisplays = onlineSnugDisplays
         }
     }
@@ -146,7 +148,7 @@ package enum CrossDeskCheck {
         return String(format: "；断开到放断言最长 %.1f 秒（Snug 收尾晚这么久）", longest)
     }
 
-    /// CrossDesk 只在启动时认屏：此刻在线的 Snug 屏不在它认到的里面，就选不到
+    /// CrossDesk 只在启动时认屏：此刻在线的 Snug 屏不在它认到的里面、也落不到空出来的格上，就选不到（规则见 CrossDeskLaunchDisplays）
     private static func displays(_ instance: ArraySlice<CrossDeskLogLine>, _ f: Facts) -> RemoteCheck.Item? {
         guard let start = instance.first, start.event == .started else {
             return RemoteCheck.Item(status: .info, title: "认屏", detail: "CrossDesk 最近一次启动的日志已滚动掉，看不出它认到了哪几块屏")
@@ -161,10 +163,16 @@ package enum CrossDeskCheck {
         guard !snug.isEmpty else {
             return RemoteCheck.Item(status: .info, title: "认屏", detail: "\(when)认到 \(list)；此刻没有 Snug 的屏，待下次核对")
         }
-        let unseen = snug.filter { !found.contains($0) }
+        let reachable = CrossDeskLaunchDisplays.reachable(found: Set(found), online: f.onlineDisplays.union(f.onlineSnugDisplays))
+        let unseen = snug.filter { !reachable.contains($0) }
         guard unseen.isEmpty else {
             return RemoteCheck.Item(status: .warn, title: "认屏",
-                                    detail: "\(when)认到 \(list)，此刻在线的 Snug 屏 \(unseen.map { "#\($0)" }.joined(separator: "、")) 不在其中：CrossDesk 选不到它，要重启 CrossDesk")
+                                    detail: "\(when)认到 \(list)，此刻在线的 Snug 屏 \(unseen.map { "#\($0)" }.joined(separator: "、")) 不在其中、也没有空出来的格：CrossDesk 选不到它，要重启 CrossDesk")
+        }
+        let renumbered = snug.filter { !found.contains($0) }
+        guard renumbered.isEmpty else {
+            return RemoteCheck.Item(status: .ok, title: "认屏",
+                                    detail: "\(when)认到 \(list)；Snug 屏 \(renumbered.map { "#\($0)" }.joined(separator: "、")) 是重建后换的编号，按序号落在空出来的格上，选得到")
         }
         return RemoteCheck.Item(status: .ok, title: "认屏", detail: "\(when)认到 \(list)，此刻在线的 Snug 屏都在其中")
     }

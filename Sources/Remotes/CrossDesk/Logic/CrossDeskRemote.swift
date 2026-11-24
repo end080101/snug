@@ -22,9 +22,9 @@ package enum CrossDeskRemote {
     }
 
     /// owners：持「共享桌面」断言的进程；查不了电源断言为 nil（不算在场）。
-    /// known：CrossDesk 这次启动认到的屏（见 CrossDeskLaunchDisplays）；不知道为 nil
-    package static func observation(sharing owners: [Int32]?, known: Set<DisplayID>? = nil) -> RemoteObservation {
+    /// reachable：CrossDesk 此刻选得到的屏（见 CrossDeskLaunchDisplays）；不知道为 nil
+    package static func observation(sharing owners: [Int32]?, reachable: Set<DisplayID>? = nil) -> RemoteObservation {
         let evidence = owners.map { $0.isEmpty ? "共享断言=无" : "共享断言=有（进程 \($0.map(String.init).joined(separator: "、"))）" } ?? "共享断言=查不了"
-        return RemoteObservation(present: owners?.isEmpty == false, controllers: [], streamedDisplay: nil, evidence: evidence, knownDisplays: known)
+        return RemoteObservation(present: owners?.isEmpty == false, controllers: [], streamedDisplay: nil, evidence: evidence, reachableDisplays: reachable)
     }
 }

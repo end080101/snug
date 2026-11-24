@@ -1,8 +1,9 @@
 // CrossDesk 的适配器：每拍查一次电源断言判在场（见 CrossDeskRemote），同步；
-// 再看一眼日志新长出来的行，跟着 CrossDesk 这次启动认到了哪几块屏（它只在启动时认屏）
+// 再看一眼日志新长出来的行，跟着 CrossDesk 这次启动认到了哪几块屏（它只在启动时认屏），推算此刻选得到哪几块
 import Foundation
 import RemoteCrossDesk
 import SnugCore
+import SnugSystem
 
 @MainActor
 package final class CrossDeskRemoteAdapter: RemoteAdapter {
@@ -21,7 +22,7 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
     package func stop() {}
 
     package func sample(wallClock: Date) -> RemoteObservation {
-        CrossDeskRemote.observation(sharing: sharingOwners(), known: knownDisplays())
+        CrossDeskRemote.observation(sharing: sharingOwners(), reachable: reachableDisplays())
     }
 
     private func sharingOwners() -> [Int32]? {
@@ -37,8 +38,8 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
         }
     }
 
-    /// CrossDesk 这次启动认到的屏；没在运行、还没读到为 nil
-    private func knownDisplays() -> Set<DisplayID>? {
+    /// CrossDesk 此刻选得到的屏；没在运行、还没读到、读不到在线的屏为 nil
+    private func reachableDisplays() -> Set<DisplayID>? {
         let now = Set(CrossDeskHost.processes().map(\.processIdentifier))
         if let before = hosts, before != now {
             launch.restarted()
@@ -57,6 +58,7 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
             if !tailFailed { Log.error("读不了 CrossDesk 的日志（\(error)）：看不出它认到了哪几块屏") }
             tailFailed = true
         }
-        return now.isEmpty ? nil : launch.displays
+        guard !now.isEmpty, let online = Screens.online() else { return nil }
+        return launch.reachable(online: Set(online))
     }
 }

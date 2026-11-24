@@ -47,14 +47,14 @@ struct RemoteContractTests {
         }
     }
 
-    @Test("认得哪些屏：只在启动时认屏的远控要报（连上后不建屏、看不到的屏要提示重启），别的一直不报", arguments: drivers)
-    func knownDisplays(driver: any RemoteDriver) {
-        let knowing = driver.knowing([1, 367])
-        #expect((knowing != nil) == driver.identity.seesScreensOnlyAtLaunch)
-        if let knowing { #expect(knowing.knownDisplays == [1, 367]) }
+    @Test("选得到哪些屏：只在启动时认屏的远控要报（连上后不建屏、选不到的屏要提示重启），别的一直不报", arguments: drivers)
+    func reachableDisplays(driver: any RemoteDriver) {
+        let reaching = driver.reaching([1, 367])
+        #expect((reaching != nil) == driver.identity.seesScreensOnlyAtLaunch)
+        if let reaching { #expect(reaching.reachableDisplays == [1, 367]) }
         if !driver.identity.seesScreensOnlyAtLaunch {
             for observation in [driver.idle(), driver.unreadable(), driver.connected(controllers: ["iPhone"]), driver.streaming(79)] {
-                #expect(observation.knownDisplays == nil)
+                #expect(observation.reachableDisplays == nil)
             }
         }
     }

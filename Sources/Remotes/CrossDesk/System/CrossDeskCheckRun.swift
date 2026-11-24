@@ -39,7 +39,8 @@ package enum CrossDeskCheckRun {
 
         let facts = CrossDeskCheck.Facts(hours: hours, since: since, version: version, processes: processes,
                                          foundInProgram: Set(scan?.hits.keys.map { $0 } ?? []), sharingNow: sharingNow, log: log, timeZone: zone,
-                                         snugLog: snugLines.map(String.init), onlineSnugDisplays: RemoteCheckTools.onlineSnugDisplays())
+                                         snugLog: snugLines.map(String.init), onlineDisplays: Set(Screens.online() ?? []),
+                                         onlineSnugDisplays: RemoteCheckTools.onlineSnugDisplays())
         return RemoteCheckTools.conclude(CrossDeskCheck.evaluate(facts), remote: CrossDeskRemote.identity, hours: hours, at: now, files: files)
     }
 }

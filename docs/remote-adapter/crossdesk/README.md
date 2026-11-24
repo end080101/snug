@@ -31,7 +31,8 @@
 - 空闲时显示器变化直接忽略（`sck_impl.mm:876`），抓屏中只更新已有槽位。
 - 编号对不上时按位置回退（`sck_impl.mm:560-617`）：开始抓屏时先按这一格记的 displayID 找，找不到就取系统此刻屏幕列表（ScreenCaptureKit 的顺序）里同一序号的那块，再把这一格改记成它。Snug 每次重建屏都会换 displayID（11-23 本机：Snug 重启 #22 → #23，开关「提前准备」#21 → #22），屏数不变、新屏排在原来的序号上时 CrossDesk 照样推得到。**未验证**，见实测 B8。
   - ScreenCaptureKit 的顺序：11-23 本机两次 CrossDesk 启动，Snug 的屏都排第 0（#21、#22），实体屏在后。CrossDesk 连上先推第 0 块，所以 Snug 的屏在它启动前就在时，一连上就是 Snug 的屏（两份样本，**未验证**是否总这样）。
-  - Snug 判「CrossDesk 看不到某块屏」按 displayID（`CrossDeskLaunchDisplays`）：只会多报、不会漏报。上面的回退若成立，Snug 重启后的「重启 CrossDesk」提示是虚惊，要按 B8 的结果决定是否改成按序号判。
+  - ✅ 11-23 用 crossdesk-cli 连回本机实测（B8）：Snug 重启 #24 → #25 后连第 0 格，CrossDesk 日志 `display mapping refreshed: slot=0, old_id=24, new_id=25`，推的正是新的 Snug 屏。
+  - 所以 Snug 判「CrossDesk 选不到某块屏」按格子推算（`CrossDeskLaunchDisplays.reachable`）：认到的还在线的都选得到；新屏不多于空出来的格也选得到；多了一律算选不到（哪块落哪格看系统排序，宁可多报）。
 - **开机顺序**：CrossDesk 比 Snug 的屏先起来，手机就只看到实体屏，重启 CrossDesk 才能选到（nexmoe 11-23 真机复现）。CrossDesk 启动后 0.21 秒就枚举完，Snug 建屏要 1.6 秒。
 - **每次连接都要重新选屏**：最后一台控制端断开后，被控端把选中的屏重置成 0 号（`session_device_manager.cpp:866`）；iOS 断开时也重置（`RemoteSessionModel.swift:739`）。
 - 控制端能改被控屏的分辨率（`display_resolution_mac.h:145-174`），最后一台断开时恢复。改到 Snug 的屏上会和 Snug 抢，**未实测**。
@@ -232,7 +233,7 @@ PR 一个提交 `28e1ae5`，31 个文件，+480 −46；`scripts/snug check` 原
 - B5 隐私屏遇到换档：本机画面是否露出
 - B6 「提前准备」打开时的会话收尾：窗口回到实体屏，屏的编号前后一致，不再每 2 秒 settle
 - B7 断开再连，是否每次都要重新选 Snug 屏
-- B8 Snug 重启而 CrossDesk 不动：还能不能推到 Snug 屏（验证 3.1 的位置回退；CrossDesk 日志该有 `display mapping refreshed: slot=0, old_id=<旧>, new_id=<新>`）。推得到的话，Snug 此时的「重启 CrossDesk」提示是虚惊，判法要改
+- B8 Snug 重启而 CrossDesk 不动：还能不能推到 Snug 屏 ✅ 11-23 crossdesk-cli 实测推得到（见 3.1），判法已改成按格子推算，Snug 重启后不再提示重启 CrossDesk
 - B9 控制端的分辨率菜单改 Snug 屏，Snug 会不会改回
 - B10 提前准备的屏、没人远程：鼠标越过边缘滑进去，是否退回边缘 ✅ 11-23 本机：挪到 -400,400 后退回 0,400；外接屏照常
 - B11 相对鼠标：手机屏顶上是否出现「手势未生效」卡，切到绝对鼠标后是否收起
@@ -240,6 +241,21 @@ PR 一个提交 `28e1ae5`，31 个文件，+480 −46；`scripts/snug check` 原
 - B13 没开「提前准备」时用 CrossDesk 连：Snug 不建屏，状态提示去打开 ✅ 11-23 本机（同名断言模拟连入）：不建屏，设置顶部出提示，日志记一句
 - B14 CrossDesk 1.7.7：Snug 撤掉正在推的屏时，它自动换推哪块屏（1.7.7 加了自动恢复）
 - B15 提前准备的屏：远程结束后屏上的窗口 ✅ 11-23 本机（同名断言模拟连入）：用户开在屏上的窗口挪回主屏；关掉「提前准备」时同样先挪窗口再撤屏
+
+### 8.1 用 crossdesk-cli 连回本机（11-23）
+
+CrossDesk 的终端控制端 `crossdesk-cli`（npm `@chunkdash/crossdesk-cli`，装在草稿区）能用 9 位设备 ID 连回本机自己，`agent --stdio` 模式下按 JSON 发连接、截图、选屏、鼠标键盘动作。要先在 CrossDesk 里关掉「断开即锁屏」（`~/.cache/CrossDesk/config.ini` 的 `lock_on_disconnect`），测完改回。密码只走 `--password-fd`，不落盘。
+
+坑：主机端画面静止时不出新帧，CLI 又要求截图和动作用的画面不超过 2 秒，所以每次新连接后几秒内截图、紧接着发一个动作；画面一变（点开、滚动）帧就又流起来。CLI 的点击是「移动、10ms 后按下、40ms 后抬起」，和 iOS 绝对鼠标的点按同形；滑动用 `sequence` 里的一串 `move`（间隔 ≤ 260ms、每步 < 80 点）；长按用原地不动、600ms 的 `drag`。
+
+实测结果（测试版 Snug + CrossDesk 1.7.7）：
+- 共享断言判在场：真连接当场认出，断开 1.5–2 秒认出断开，15 秒内重连算同一次远程
+- 连上推第 0 格，就是 Snug 的屏（Snug 的屏在 CrossDesk 启动前就在时）
+- B8 ✅（见 3.1）
+- 点按 ✅（切「全部」分段、点 App 放上屏）；单指滑 ✅（不按键的移动合成滑动，App 网格滚了 145 点）；长按松手 ✅（访达弹出右键菜单）
+- 关闭按钮：发现并修了「指针窗口挡住核对」（`3e81b72`）。CrossDesk 点按前先发移动，指针先到了按钮上，窗口服务器里指针也是个窗口、总在最前，核对取到它就退回普通点击；修后先放回原位再关 ✅
+- 相对鼠标提醒 ✅：连续几下从上一下停的地方开始，手机屏顶上出「手势未生效」；从远处落下一下即收起
+- 没测到：隐私遮罩（CLI 连接不开隐私屏，`privacy filter requested=0`），所以 B4 的遮罩部分、B5 仍要手机测
 
 ## 9. 材料
 
