@@ -232,14 +232,17 @@ private final class TapSession: @unchecked Sendable {
         }
     }
 
+    /// 指针那一层：窗口服务器画指针用的窗口，总在最前、跟着指针走，但不接点击
+    private static let pointerLevel = Int(CGWindowLevelForKey(.cursorWindow))
+
     /// 窗口服务器里此刻在屏上的窗口，从前到后
-    private static func onScreen() -> [(id: UInt32, frame: CGRect, level: Int)] {
+    private static func onScreen() -> [(id: UInt32, frame: CGRect, isPointer: Bool)] {
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
         return (list ?? []).compactMap { info in
             guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let bounds = info[kCGWindowBounds as String] as? NSDictionary,
                   let frame = CGRect(dictionaryRepresentation: bounds as CFDictionary) else { return nil }
-            return (id, frame, (info[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0)
+            return (id, frame, ((info[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0) >= pointerLevel)
         }
     }
 

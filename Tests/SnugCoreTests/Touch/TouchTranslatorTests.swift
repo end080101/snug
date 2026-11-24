@@ -68,14 +68,14 @@ struct TouchTranslatorTests {
         let window = CGRect(x: 0, y: 22, width: 540, height: 900)
         let button = CloseButton(frame: CGRect(x: 8, y: 30, width: 14, height: 14), window: 7, windowFrame: window)
         let tap = CGPoint(x: 15, y: 37)
-        typealias Shown = [(id: UInt32, frame: CGRect, level: Int)]
-        let onTop: Shown = [(7, window, 0), (3, CGRect(x: -800, y: 0, width: 2000, height: 2000), 0)]
-        let rounded: Shown = [(7, CGRect(x: 1, y: 22, width: 540, height: 901), 0)]   // 取整差一点
-        let covered: Shown = [(9, CGRect(x: 0, y: 22, width: 540, height: 892), 3), (7, window, 0)]   // 被别的窗口盖住（浮动面板）
-        let dragged: Shown = [(7, CGRect(x: 0, y: 200, width: 540, height: 900), 0)]   // 被拖走了，那里是桌面
-        let fullScreen: Shown = [(7, CGRect(x: 0, y: 0, width: 540, height: 950), 0)]   // 进了全屏
-        // 指针在窗口服务器里也是个窗口（最高一层），远控点下去前把它挪到了这一点（CrossDesk 点按前先发移动，11-23 实测）
-        let pointer: Shown = [(2, CGRect(x: 10, y: 32, width: 28, height: 40), CloseButton.pointerLevel), (7, window, 0)]
+        typealias Shown = [(id: UInt32, frame: CGRect, isPointer: Bool)]
+        let onTop: Shown = [(7, window, false), (3, CGRect(x: -800, y: 0, width: 2000, height: 2000), false)]
+        let rounded: Shown = [(7, CGRect(x: 1, y: 22, width: 540, height: 901), false)]   // 取整差一点
+        let covered: Shown = [(9, CGRect(x: 0, y: 22, width: 540, height: 892), false), (7, window, false)]   // 被别的窗口盖住（浮动面板）
+        let dragged: Shown = [(7, CGRect(x: 0, y: 200, width: 540, height: 900), false)]   // 被拖走了，那里是桌面
+        let fullScreen: Shown = [(7, CGRect(x: 0, y: 0, width: 540, height: 950), false)]   // 进了全屏
+        // 指针在窗口服务器里也是个窗口（最高一层，系统层按层级认出），远控点下去前把它挪到了这一点（CrossDesk 点按前先发移动，11-23 实测）
+        let pointer: Shown = [(2, CGRect(x: 10, y: 32, width: 28, height: 40), true), (7, window, false)]
         #expect(button.isFrontmost(at: tap, onScreen: onTop))
         #expect(button.isFrontmost(at: tap, onScreen: pointer))
         #expect(button.isFrontmost(at: CGPoint(x: 15, y: 37.5), onScreen: rounded))
