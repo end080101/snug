@@ -211,13 +211,13 @@ private final class TapSession: @unchecked Sendable {
     }
 
     /// 窗口服务器里此刻在屏上的窗口，从前到后
-    private static func onScreen() -> [(id: UInt32, frame: CGRect)] {
+    private static func onScreen() -> [(id: UInt32, frame: CGRect, level: Int)] {
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
         return (list ?? []).compactMap { info in
             guard let id = (info[kCGWindowNumber as String] as? NSNumber)?.uint32Value,
                   let bounds = info[kCGWindowBounds as String] as? NSDictionary,
                   let frame = CGRect(dictionaryRepresentation: bounds as CFDictionary) else { return nil }
-            return (id, frame)
+            return (id, frame, (info[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0)
         }
     }
 

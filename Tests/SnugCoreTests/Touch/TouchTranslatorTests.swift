@@ -63,18 +63,21 @@ struct TouchTranslatorTests {
         #expect(t.handle(input(.release, 100, 300, 3.1), in: region).commands == [.replayPress, .replayCurrent])
     }
 
-    @Test("关闭按钮点下去时再核对：这一点最上面的还是那个窗口、还在原来的位置才算；被拖走、被盖住、进了全屏都不算")
+    @Test("关闭按钮点下去时再核对：这一点最上面的还是那个窗口、还在原来的位置才算；被拖走、被盖住、进了全屏都不算；指针自己不算遮挡")
     func closeButtonVerified() {
         let window = CGRect(x: 0, y: 22, width: 540, height: 900)
         let button = CloseButton(frame: CGRect(x: 8, y: 30, width: 14, height: 14), window: 7, windowFrame: window)
         let tap = CGPoint(x: 15, y: 37)
-        typealias Shown = [(id: UInt32, frame: CGRect)]
-        let onTop: Shown = [(7, window), (3, CGRect(x: -800, y: 0, width: 2000, height: 2000))]
-        let rounded: Shown = [(7, CGRect(x: 1, y: 22, width: 540, height: 901))]   // 取整差一点
-        let covered: Shown = [(9, CGRect(x: 0, y: 22, width: 540, height: 892)), (7, window)]   // 被别的窗口盖住
-        let dragged: Shown = [(7, CGRect(x: 0, y: 200, width: 540, height: 900))]   // 被拖走了，那里是桌面
-        let fullScreen: Shown = [(7, CGRect(x: 0, y: 0, width: 540, height: 950))]   // 进了全屏
+        typealias Shown = [(id: UInt32, frame: CGRect, level: Int)]
+        let onTop: Shown = [(7, window, 0), (3, CGRect(x: -800, y: 0, width: 2000, height: 2000), 0)]
+        let rounded: Shown = [(7, CGRect(x: 1, y: 22, width: 540, height: 901), 0)]   // 取整差一点
+        let covered: Shown = [(9, CGRect(x: 0, y: 22, width: 540, height: 892), 3), (7, window, 0)]   // 被别的窗口盖住（浮动面板）
+        let dragged: Shown = [(7, CGRect(x: 0, y: 200, width: 540, height: 900), 0)]   // 被拖走了，那里是桌面
+        let fullScreen: Shown = [(7, CGRect(x: 0, y: 0, width: 540, height: 950), 0)]   // 进了全屏
+        // 指针在窗口服务器里也是个窗口（最高一层），远控点下去前把它挪到了这一点（CrossDesk 点按前先发移动，11-23 实测）
+        let pointer: Shown = [(2, CGRect(x: 10, y: 32, width: 28, height: 40), CloseButton.pointerLevel), (7, window, 0)]
         #expect(button.isFrontmost(at: tap, onScreen: onTop))
+        #expect(button.isFrontmost(at: tap, onScreen: pointer))
         #expect(button.isFrontmost(at: CGPoint(x: 15, y: 37.5), onScreen: rounded))
         #expect(!button.isFrontmost(at: tap, onScreen: covered))
         #expect(!button.isFrontmost(at: tap, onScreen: dragged))

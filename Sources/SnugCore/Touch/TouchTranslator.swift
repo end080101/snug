@@ -43,9 +43,14 @@ public struct CloseButton: Equatable, Sendable {
         self.windowFrame = windowFrame
     }
 
-    /// 这一点上最上面的窗口还是它、而且还在读按钮时的位置。onScreen：窗口服务器给的屏上窗口，从前到后
-    public func isFrontmost(at point: CGPoint, onScreen: [(id: UInt32, frame: CGRect)]) -> Bool {
-        guard frame.contains(point), let top = onScreen.first(where: { $0.frame.contains(point) }) else { return false }
+    /// 指针那一层：窗口服务器画指针用的窗口，总在最前、跟着指针走，但不接点击
+    public static let pointerLevel = Int(CGWindowLevelForKey(.cursorWindow))
+
+    /// 这一点上最上面的窗口还是它、而且还在读按钮时的位置。onScreen：窗口服务器给的屏上窗口（编号、位置、层），从前到后。
+    /// 指针自己不算：远控点下去之前往往先把指针挪到了这一点（CrossDesk 点按前先发移动），它盖在按钮上但不挡点击
+    public func isFrontmost(at point: CGPoint, onScreen: [(id: UInt32, frame: CGRect, level: Int)]) -> Bool {
+        guard frame.contains(point),
+              let top = onScreen.first(where: { $0.level < Self.pointerLevel && $0.frame.contains(point) }) else { return false }
         return top.id == window && top.frame.matches(windowFrame)
     }
 }
