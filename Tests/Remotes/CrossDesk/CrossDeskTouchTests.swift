@@ -42,6 +42,21 @@ private func tapping(at p: CGPoint, _ t: Double) -> [PointerEvent] {
     [PointerEvent(.move, at: p, time: t), PointerEvent(.leftDown, at: p, time: t + 0.0005), PointerEvent(.leftUp, at: p, time: t + 0.001)]
 }
 
+/// 从 2 秒起滑 count 下，每下 6 步、停 0.4 秒，下一下从上一下停住的那一点开始
+/// （相对鼠标从光标停的地方接着挪；绝对鼠标手指按住没抬再接着滑也是这样）。返回下一个空闲时刻
+private func slidesFromWhereTheyStopped(_ run: inout Run, count: Int) -> Double {
+    var t = 2.0, y = 400.0
+    for _ in 0..<count {
+        for step in 0..<6 {
+            run.feed([e(.move, 300, y, t)])
+            t += 0.016
+            if step < 5 { y += 15 }
+        }
+        t += 0.4
+    }
+    return t
+}
+
 /// 让整理认出「绝对鼠标」：点一下，过一会儿在 80 点开外开始一下（开头跳到手指落点）
 private func fingerWarmUp() -> [PointerEvent] {
     [e(.move, 100, 100, 0), e(.leftDown, 100, 100, 0.0005), e(.leftUp, 100, 100, 0.001), e(.move, 300, 400, 1)]
@@ -102,16 +117,16 @@ struct CrossDeskTouchTests {
         #expect(run.inputs.isEmpty)
     }
 
-    @Test("一下的开头跳到别处（手指落点）：认作绝对鼠标；连续 3 下开头都在上一下抬起那一点（光标处）：认作相对鼠标")
+    @Test("一下的开头跳到别处（手指落点）：认作绝对鼠标；连续 3 下开头都在上一个事件那一点（光标处）：认作相对鼠标")
     func feedVotes() {
         var run = Run()
         run.feed(fingerWarmUp())
         #expect(run.touch.feed == .finger)
-        // 相对鼠标：点在光标处，点完光标停在原处，下一下从这里开始；第一下前面是预热的移动，不算
+        // 相对鼠标：点在光标处，点完光标停在原处，下一下从这里开始（预热的最后一个移动也在这一点）
         let p = CGPoint(x: 300, y: 400)
-        for t in [2.0, 3, 4] { run.feed(tapping(at: p, t)) }
+        for t in [2.0, 3] { run.feed(tapping(at: p, t)) }
         #expect(run.touch.feed == .finger)
-        run.feed(tapping(at: p, 5))
+        run.feed(tapping(at: p, 4))
         #expect(run.touch.feed == .cursor)
         #expect(run.touch.advice?.contains("绝对鼠标") == true)
         // 又从手指落点开始：回到绝对鼠标，提醒收起
@@ -125,7 +140,7 @@ struct CrossDeskTouchTests {
         var run = Run()
         run.feed(fingerWarmUp())
         let p = CGPoint(x: 300, y: 400), q = CGPoint(x: 320, y: 400)
-        for t in [2.0, 3, 4] { run.feed(tapping(at: p, t)) }
+        for t in [2.0, 3] { run.feed(tapping(at: p, t)) }
         // 挪开的那一下清零，之后在 q 再点三下才够
         for t in [5.0, 6, 7] { run.feed(tapping(at: q, t)) }
         #expect(run.touch.feed == .finger)
@@ -133,19 +148,25 @@ struct CrossDeskTouchTests {
         #expect(run.touch.feed == .cursor)
     }
 
-    @Test("绝对鼠标慢慢读长文：滑、按住不动超过 0.3 秒、原地接着滑，反复几次仍是绝对鼠标，每次都合成滑动")
-    func slidePauseSlideStaysFinger() {
+    @Test("只滑不点的相对鼠标：连续 3 下滑动都从上一下停住的地方开始，认作相对鼠标、提醒切换（CrossDesk 手机端默认就是相对鼠标）")
+    func slideOnlyCursorFeed() {
         var run = Run()
         run.feed(fingerWarmUp())
-        // 每一轮从上一轮停住的那一点接着滑（绝对鼠标下手指按住没抬，坐标不变）
-        var t = 2.0, y = 400.0
-        for _ in 0..<4 {
-            for step in 0..<6 { run.feed([e(.move, 300, y, t)]); t += 0.016; if step < 5 { y += 15 } }
-            t += 0.4
-        }
-        run.advance(to: t + 1)
+        _ = slidesFromWhereTheyStopped(&run, count: 3)
+        #expect(run.touch.feed == .cursor)
+        #expect(run.touch.advice != nil)
+    }
+
+    @Test("绝对鼠标按住不动再接着滑，连着几次也会被认成相对鼠标（分不出来）；下一下手指落到别处就恢复，接着合成滑动")
+    func fingerRecoversAfterMisread() {
+        var run = Run()
+        run.feed(fingerWarmUp())
+        let t = slidesFromWhereTheyStopped(&run, count: 3)
+        #expect(run.touch.feed == .cursor)
+        run.feed([e(.move, 300, 900, t), e(.move, 300, 880, t + 0.016)])
         #expect(run.touch.feed == .finger)
-        #expect(run.kinds.filter { $0 == .recognized(.slide) }.count == 4)
+        #expect(run.touch.advice == nil)
+        #expect(run.kinds.suffix(3) == [.press, .recognized(.slide), .drag])
     }
 
     @Test("隔太久（10 秒以上，本机的鼠标可能动过光标）、一下没结束的，开头不拿来判模式")
