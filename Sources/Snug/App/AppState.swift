@@ -22,6 +22,8 @@ final class AppState {
     var previewing = false
     /// 此刻同时连着的控制端
     var controllers: [String] = []
+    /// 登记的远控（启动时从 Remotes 取一次）：界面提到远控时按这份说，不写死哪一家
+    var remotes: [RemoteIdentity] = []
     /// 这次远程归哪家远控（界面上的名字）；不在远程时为 nil
     var remoteName: String?
     /// 这次远程的远控只在自己启动时认屏：没提前准备时远程中不建屏（ScreenPlan），状态里提示去打开
@@ -86,6 +88,12 @@ final class AppState {
     var libraryScreens: [ScreenID] {
         config.screens.map(\.id).filter { id in desks.desks[id].map { $0.display != nil && !$0.behavior.touch } == true }
     }
+
+    /// 界面上提到远控时的名字：这次远程的那家；不在远程时是登记的全部（「UU远程、CrossDesk」），哪家都能用
+    var remoteNames: String { remoteName ?? remotes.map(\.displayName).joined(separator: "、") }
+
+    /// 连上时先推主屏的远控（界面上的名字）：设为主屏的那块，用它们时每次连接即进入
+    var mainScreenRemotes: [String] { remotes.filter(\.opensOnMainScreen).map(\.displayName) }
 
     /// 只在值真的变了时才写，免得每拍都让界面重算
     func update<T: Equatable>(_ keyPath: ReferenceWritableKeyPath<AppState, T>, _ value: T) {

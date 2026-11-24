@@ -16,21 +16,25 @@ public struct RemoteIdentity: Equatable, Sendable {
     public let normalizer: any TouchNormalizer.Type
     /// 这家只在自己启动时认显示器，之后建的屏它选不到：设置里给出「提前准备虚拟屏」，让屏在它启动前就在
     public let seesScreensOnlyAtLaunch: Bool
+    /// 这家连上时先推 Mac 的主屏：设为主屏的那块，每次连接即进入（界面上讲「设为主屏」时点它的名字）
+    public let opensOnMainScreen: Bool
 
     public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource,
-                normalizer: any TouchNormalizer.Type = DirectTouch.self, seesScreensOnlyAtLaunch: Bool = false) {
+                normalizer: any TouchNormalizer.Type = DirectTouch.self, seesScreensOnlyAtLaunch: Bool = false, opensOnMainScreen: Bool = false) {
         self.logName = logName
         self.displayName = displayName
         self.bundleIDs = bundleIDs
         self.injector = injector
         self.normalizer = normalizer
         self.seesScreensOnlyAtLaunch = seesScreensOnlyAtLaunch
+        self.opensOnMainScreen = opensOnMainScreen
     }
 
     /// 元类型不能自动比较：整理按类型本身比
     public static func == (a: Self, b: Self) -> Bool {
         a.logName == b.logName && a.displayName == b.displayName && a.bundleIDs == b.bundleIDs && a.injector == b.injector
             && ObjectIdentifier(a.normalizer) == ObjectIdentifier(b.normalizer) && a.seesScreensOnlyAtLaunch == b.seesScreensOnlyAtLaunch
+            && a.opensOnMainScreen == b.opensOnMainScreen
     }
 }
 

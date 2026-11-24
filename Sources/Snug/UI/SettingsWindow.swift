@@ -99,7 +99,7 @@ struct ScreensPage: View {
                 confirmingMain = nil
             }
         } message: {
-            Text(MainScreenNotice.detail)
+            Text(MainScreenNotice.detail(state.mainScreenRemotes))
         }
         .confirmationDialog("提前准备虚拟屏？", isPresented: $confirmingReady) {
             Button("打开") { intents.setKeepScreensReady(true) }
@@ -123,15 +123,22 @@ enum ReadyNotice {
     }
 }
 
-/// 设为主屏的代价：设置里确认时讲清楚（README「设为主屏」同一套说法）
+/// 设为主屏的代价：设置里确认时讲清楚（README「设为主屏」同一套说法）。
+/// 「每次连接即进入」只对连上时先推主屏的远控成立（RemoteIdentity.opensOnMainScreen），按它们的名字说
 enum MainScreenNotice {
-    static let detail = """
-        此屏将常驻并作为 Mac 的主屏，立即生效；UU远程 每次连接即进入此屏。
+    static func detail(_ remotes: [String]) -> String {
+        let names = remotes.joined(separator: "、")
+        let entry = remotes.isEmpty ? "" : "；\(names) 每次连接即进入此屏"
+        let reason = remotes.isEmpty ? "可随时在 App 资源库或菜单栏取消。"
+            : "原因：\(names) 在连接时选定主屏，Snug 仅能在连接后察觉，须预先设定。可随时在 App 资源库或菜单栏取消。"
+        return """
+            此屏将常驻并作为 Mac 的主屏，立即生效\(entry)。
 
-        影响：当前主屏上的窗口随即移至此屏；此后程序坞、新窗口、系统提示与锁屏登录框均显示于此屏，本机不可见。适用于未接显示器或仅远程使用的 Mac。
+            影响：当前主屏上的窗口随即移至此屏；此后程序坞、新窗口、系统提示与锁屏登录框均显示于此屏，本机不可见。适用于未接显示器或仅远程使用的 Mac。
 
-        原因：UU远程 在连接时选定主屏，Snug 仅能在连接后察觉，须预先设定。可随时在 App 资源库或菜单栏取消。
-        """
+            \(reason)
+            """
+    }
 }
 
 /// 设置窗口上弹出的表单

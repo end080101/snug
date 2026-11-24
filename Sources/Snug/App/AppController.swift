@@ -51,6 +51,7 @@ final class AppController: Sendable {
         catalog = AppCatalog(apps: apps, windows: windows, excluding: Set(remotes.flatMap(\.identity.bundleIDs)))
         touch = TouchTap(remotes: remotes.map(\.identity))
         state.config = store.config
+        state.remotes = remotes.map(\.identity)
         state.previewing = preview
         state.devices = devices
         state.accessibilityTrusted = AX.isTrusted

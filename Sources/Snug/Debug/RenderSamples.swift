@@ -61,6 +61,7 @@ enum RenderSamples {
         s.launchAtLogin = true
         s.devices = devices
         s.config = sampleConfig()
+        s.remotes = Remotes.all.map(\.identity)
         return s
     }
 
@@ -198,8 +199,8 @@ enum RenderSamples {
 
     private static var about: [RenderSample] {
         [
-            RenderSample(name: "about") { AnyView(AboutView()) },
-            RenderSample(name: "about-dark", dark: true) { AnyView(AboutView()) },
+            RenderSample(name: "about") { AnyView(AboutView(remotes: Remotes.all.map(\.identity.displayName))) },
+            RenderSample(name: "about-dark", dark: true) { AnyView(AboutView(remotes: Remotes.all.map(\.identity.displayName))) },
         ] + [
             ("about-update-downloading-dark", true, { (u: inout UpdateState) in
                 u.check = .available(sampleFeed)
@@ -248,6 +249,7 @@ enum RenderSamples {
             RenderSample(name: granted ? "welcome-granted" : "welcome") {
                 let s = AppState()
                 s.accessibilityTrusted = granted
+                s.remotes = Remotes.all.map(\.identity)
                 return AnyView(WelcomeView(state: s, onDone: {}))
             }
         }

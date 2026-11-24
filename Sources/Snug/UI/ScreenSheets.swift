@@ -64,12 +64,12 @@ struct AddScreenSheet: View {
                             .frame(width: MacTokens.Size.nameFieldWidth)
                     } label: {
                         Text("名字")
-                        Text("显示在 UU远程 的屏幕列表里")
+                        Text("显示在远控的屏幕列表里")
                     }
                 }
             }
             .sheetForm()
-            Tip(symbol: "info.circle", text: "UU远程 一次只让一台设备控制。新加的屏留给横竖切换，或者换另一台设备时用。")
+            Tip(symbol: "info.circle", text: "同一时间只推一块屏。新加的屏留给横竖切换，或者换另一台设备时用。")
             if kind == .computer {
                 Tip(symbol: "exclamationmark.triangle", text: "没接显示器的 Mac，加任何一块屏都会顶掉系统的默认屏。")
             }
@@ -154,7 +154,7 @@ struct ScreenDetailSheet: View {
                 } footer: {
                     VStack(alignment: .leading, spacing: MacTokens.Space.xs) {
                         if case .existing(let saved) = other, saved.enabled {
-                            Text("转为\(saved.orientation.title)屏后，在 UU远程 的屏幕列表中选择「\(saved.name)」。")
+                            Text("转为\(saved.orientation.title)屏后，在 \(state.remoteNames) 的屏幕列表中选择「\(saved.name)」。")
                         } else if other == .limitReached {
                             Text("已达到 \(ScreenConfig.limit) 块屏幕上限，腾出位置后可添加另一方向。")
                         }

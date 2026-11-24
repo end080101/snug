@@ -9,6 +9,7 @@ package enum UURemote {
     package static let serverProcess = "UURemoteServer"
 
     /// 交给核心的身份：日志名「UU」让日志和抽出适配层之前逐字一样
+    /// 连上时先推主屏：UU 只在连上那一刻选一次屏，选的是当时的主屏（11-18 实测，issue #28）
     package static let identity = RemoteIdentity(logName: "UU", displayName: "UU远程", bundleIDs: [bundleID],
-                                                injector: InjectedEventSource(executableName: serverProcess))
+                                                injector: InjectedEventSource(executableName: serverProcess), opensOnMainScreen: true)
 }
