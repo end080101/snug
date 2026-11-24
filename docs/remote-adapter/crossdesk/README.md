@@ -88,16 +88,16 @@ iOS 方言（`RemoteTouchInputView.swift:160-196,299-371,422-462,492-546`；`Rem
 
 ## 4. 真机录制
 
-主人的 iPhone（App Store 版）连 Mac 实体屏，不是 Snug 的屏。工具 `recordings/crossdesk_events.swift`：只听不改，只记带 CROSSDES 标记的鼠标事件；第二份起每行带 `ts=`（CGEvent 时间戳）。
+主人的 iPhone（App Store 版）连 Mac 实体屏，不是 Snug 的屏。工具 `recordings/crossdesk_events.swift`：只听不改，只记带 CROSSDES 标记的鼠标事件；第二份起每行带 `ts=`（CGEvent 时间戳）。两份录制是回放测试的夹具，放在 `Tests/Remotes/CrossDesk/Fixtures/`。
 
-### 4.1 相对鼠标：`recordings/ios-relative.log`（878 个事件）
+### 4.1 相对鼠标：`ios-1.7.6-relative.log`（878 个事件）
 
 - 单指滑：只有 move，每段第一个点等于上一段光标停的位置。
 - 点按 10 次：move、按下、抬起，从按下到抬起不超过 8ms。
 - 长按拖 3 次：按下后 0.648、0.800、0.772 秒才拖出 10pt，离 Snug 判「选择」的 0.5 秒门槛只多 0.15–0.3 秒。
 - 双指滑：0 个滚轮事件。主人确认手机上是整个画面在平移。
 
-### 4.2 绝对鼠标：`recordings/ios-absolute.log`（815 个事件）
+### 4.2 绝对鼠标：`ios-1.7.6-absolute.log`（815 个事件）
 
 - 单指滑：只有 move，坐标直接跳到手指处，开始和结束都没有信号。
 - 相邻 move 的间隔：
@@ -219,5 +219,5 @@ PR 一个提交 `28e1ae5`，31 个文件，+480 −46；`scripts/snug check` 原
 ## 9. 材料
 
 - CrossDesk 源码：tag `v1.7.6-20261112` 与 `mcp@acf678d`，GitHub 上可直接看。
-- 录制与抓取工具：`recordings/`。
+- 抓取工具：`recordings/`；录制：`Tests/Remotes/CrossDesk/Fixtures/`。
 - 原始调研报告（三路研究、两版方案、核实、合成、两路审查）和实验留在本机，不进仓库；有出入时以本文为准。

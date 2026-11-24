@@ -76,3 +76,35 @@ public struct DirectTouch: TouchNormalizer {
         }
     }
 }
+
+/// 标准手指输入的语法，写成可以逐条核对的样子：契约测试和各家的回放测试拿它查整理交出的输入。
+/// 一次手势：press，若干 drag，最多一个 recognized（在 release 之前），release；手势之间不重叠，时间不倒退
+public struct TouchGrammar: Sendable {
+    private var pressed = false
+    private var recognized = false
+    private var lastTime = -Double.infinity
+
+    public init() {}
+
+    /// 合语法返回 nil，否则返回哪里不对
+    public mutating func check(_ input: TouchInput) -> String? {
+        defer { lastTime = max(lastTime, input.time) }
+        if input.time < lastTime { return "时间倒退：\(input.kind) @\(input.time) 早于 \(lastTime)" }
+        switch input.kind {
+        case .press:
+            if pressed { return "上一下还没抬起又按下 @\(input.time)" }
+            pressed = true
+            recognized = false
+        case .drag:
+            if !pressed { return "没按下就拖动 @\(input.time)" }
+        case .recognized:
+            if !pressed { return "没按下就认出手势 @\(input.time)" }
+            if recognized { return "一下里认出了两次手势 @\(input.time)" }
+            recognized = true
+        case .release:
+            if !pressed { return "没按下就抬起 @\(input.time)" }
+            pressed = false
+        }
+        return nil
+    }
+}

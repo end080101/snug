@@ -42,7 +42,7 @@ let package = Package(
         .executableTarget(name: "SnugRelease", dependencies: ["SnugCore"]),
         .testTarget(name: "SnugCoreTests", dependencies: ["SnugCore"]),
         .testTarget(name: "RemoteUUTests", dependencies: ["RemoteUU", "SnugCore"], path: "Tests/Remotes/UU", resources: [.copy("Fixtures")]),
-        .testTarget(name: "RemoteCrossDeskTests", dependencies: ["RemoteCrossDesk", "SnugCore"], path: "Tests/Remotes/CrossDesk"),
+        .testTarget(name: "RemoteCrossDeskTests", dependencies: ["RemoteCrossDesk", "SnugCore"], path: "Tests/Remotes/CrossDesk", resources: [.copy("Fixtures")]),
         // 契约测试：每家远控一个驱动，跑同一组断言（接入新远控时的验收清单）
         .testTarget(name: "RemoteContractTests", dependencies: ["SnugCore", "RemoteUU", "RemoteCrossDesk"]),
     ]
