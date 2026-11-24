@@ -12,10 +12,10 @@ enum TouchEvents {
 
     /// 监听的掩码：各家整理要看的事件种类（只有直通时是鼠标左键三种）
     static func mask(for kinds: Set<PointerEvent.Kind>) -> CGEventMask {
-        kinds.reduce(CGEventMask(0)) { $0 | (1 << type(of: $1).rawValue) }
+        kinds.reduce(CGEventMask(0)) { $0 | (1 << eventType(of: $1).rawValue) }
     }
 
-    static func type(of kind: PointerEvent.Kind) -> CGEventType {
+    static func eventType(of kind: PointerEvent.Kind) -> CGEventType {
         switch kind {
         case .move: .mouseMoved
         case .leftDown: .leftMouseDown
