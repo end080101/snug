@@ -28,3 +28,4 @@
 - [宣传片](feedback-promo-video.md) — 在 kineto 做：发布会式快节奏、代码画为主、场景可演绎细节必须真；给 kineto 只给方向
 - [工程审美](feedback-engineering-taste.md) — 干净优雅、架构好维护好扩展；不过度防御几乎不可能的事
 - [批量搜索](feedback-batch-search.md) — 大量查资料留给 workflow 一轮做，会话里不一步步调网络搜索
+- [致谢口径](feedback-contributor-credit.md) — 外部贡献按实际份量写，先讲我们做的，再谢他那一块（#58 是初版适配）
