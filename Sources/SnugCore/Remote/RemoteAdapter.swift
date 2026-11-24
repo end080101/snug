@@ -14,20 +14,23 @@ public struct RemoteIdentity: Equatable, Sendable {
     public let injector: InjectedEventSource
     /// 这家注入的指针事件怎么整理成标准手指输入（手势层，见 TouchNormalizer）；远控发的就是手指的按下、拖动、抬起时直通
     public let normalizer: any TouchNormalizer.Type
+    /// 这家只在自己启动时认显示器，之后建的屏它选不到：设置里给出「提前准备虚拟屏」，让屏在它启动前就在
+    public let seesScreensOnlyAtLaunch: Bool
 
     public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource,
-                normalizer: any TouchNormalizer.Type = DirectTouch.self) {
+                normalizer: any TouchNormalizer.Type = DirectTouch.self, seesScreensOnlyAtLaunch: Bool = false) {
         self.logName = logName
         self.displayName = displayName
         self.bundleIDs = bundleIDs
         self.injector = injector
         self.normalizer = normalizer
+        self.seesScreensOnlyAtLaunch = seesScreensOnlyAtLaunch
     }
 
     /// 元类型不能自动比较：整理按类型本身比
     public static func == (a: Self, b: Self) -> Bool {
         a.logName == b.logName && a.displayName == b.displayName && a.bundleIDs == b.bundleIDs && a.injector == b.injector
-            && ObjectIdentifier(a.normalizer) == ObjectIdentifier(b.normalizer)
+            && ObjectIdentifier(a.normalizer) == ObjectIdentifier(b.normalizer) && a.seesScreensOnlyAtLaunch == b.seesScreensOnlyAtLaunch
     }
 }
 

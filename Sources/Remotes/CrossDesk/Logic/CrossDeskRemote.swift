@@ -11,8 +11,10 @@ package enum CrossDeskRemote {
     package static let injectorProcess = "CrossDesk"
     /// 有人远程时 CrossDesk 持有的电源断言名
     package static let sharingAssertion = "CrossDesk is sharing the desktop"
+    /// 只在启动时认屏：抓屏模块初始化时枚举一次显示器、按当时的块数登记视频流，之后加的屏选不到，要重启 CrossDesk（1.7.6、1.7.7 同）
     package static let identity = RemoteIdentity(logName: "CrossDesk", displayName: "CrossDesk", bundleIDs: [bundleID],
-                                                injector: InjectedEventSource(executableName: injectorProcess), normalizer: CrossDeskTouch.self)
+                                                injector: InjectedEventSource(executableName: injectorProcess), normalizer: CrossDeskTouch.self,
+                                                seesScreensOnlyAtLaunch: true)
 
     /// 电源断言（进程号 → 断言名）里持「共享桌面」断言的进程，按进程号排
     package static func sharingOwners(in assertions: [Int32: [String]]) -> [Int32] {

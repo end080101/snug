@@ -20,6 +20,8 @@ struct ScreensPage: View {
     @State private var explaining = false
     /// 选了要设为主屏、等确认的那块（渲染样例用初值）
     @State var confirmingMain: ScreenID?
+    /// 要打开「提前准备虚拟屏」、等确认
+    @State private var confirmingReady = false
 
     var body: some View {
         Form {
@@ -56,10 +58,15 @@ struct ScreensPage: View {
                 .padding(.top, MacTokens.Space.xs)
             }
             Section {
-                Toggle(isOn: Binding(get: { state.config.keepScreensReady }, set: { intents.setKeepScreensReady($0) })) {
-                    SettingLabel("提前准备虚拟屏", detail: "Snug 启动时建屏。打开后重新启动 CrossDesk。", tile: MacTokens.IconTile.mainScreen)
+                // 装了只在启动时认屏的远控才要；已经开着的照样显示，删了那家远控也关得掉
+                if !state.launchOnlyRemotes.isEmpty || state.config.keepScreensReady {
+                    Toggle(isOn: Binding(get: { state.config.keepScreensReady }, set: { on in
+                        if on { confirmingReady = true } else { intents.setKeepScreensReady(false) }
+                    })) {
+                        SettingLabel("提前准备虚拟屏", detail: ReadyNotice.detail(state.launchOnlyRemotes), tile: MacTokens.IconTile.mainScreen)
+                    }
+                    .toggleStyle(.switch)
                 }
-                .toggleStyle(.switch)
                 LabeledContent {
                     // 设主屏立即生效、影响本机，先讲清代价再设；改回「不改」不用问
                     Picker("设为主屏", selection: Binding(get: { state.config.mainScreen }, set: { id in
@@ -94,6 +101,25 @@ struct ScreensPage: View {
         } message: {
             Text(MainScreenNotice.detail)
         }
+        .confirmationDialog("提前准备虚拟屏？", isPresented: $confirmingReady) {
+            Button("打开") { intents.setKeepScreensReady(true) }
+        } message: {
+            Text(ReadyNotice.confirm(state.launchOnlyRemotes))
+        }
+    }
+}
+
+/// 提前准备虚拟屏：为谁、代价是什么（措辞到门面那一轮再定）
+enum ReadyNotice {
+    /// 开关下面那一行
+    static func detail(_ remotes: [String]) -> String {
+        remotes.isEmpty ? "Snug 启动时就建好屏" : "Snug 启动时就建好屏，打开后重新启动 \(remotes.joined(separator: "、"))"
+    }
+
+    /// 打开前确认
+    static func confirm(_ remotes: [String]) -> String {
+        let names = remotes.isEmpty ? "远控" : remotes.joined(separator: "、")
+        return "\(names) 只在自己启动时认显示器，连上以后才建的屏它选不到。打开后，开着的屏会一直在线，没人远程时也在；重新启动 \(names)，它才选得到这些屏。"
     }
 }
 
@@ -282,7 +308,7 @@ struct TouchPage: View {
                     SettingLabel("截图", detail: "小横条左侧的相机键 · 截当前窗口到剪贴板", tile: MacTokens.IconTile.screenshot)
                 }
             } footer: {
-                Text("手机和平板屏支持字号放大。UU远程 由 Snug 翻译手势，CrossDesk 使用自身触控。")
+                Text("手机和平板屏支持字号放大和手势翻译。")
                     .font(.callout).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
