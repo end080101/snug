@@ -36,15 +36,12 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false, preview: true).isEmpty)
     }
 
-    @Test("user 提前准备虚拟屏，重启 Snug 或远控断开后仍能选到屏幕")
+    @Test("提前准备虚拟屏：存盘读回后还开着；没人远程也要所有开着的屏（常驻、不当主屏），远程中一样；没权限一块不要，关掉就不要")
     func screensReadyBeforeConnection() throws {
-        // Given two enabled screens and no remote session
         var c = config()
         #expect(!c.keepScreensReady)
-        // When the user enables the setting and restarts Snug
         c.keepScreensReady = true
         c = try JSONDecoder().decode(AppConfig.self, from: JSONEncoder().encode(c))
-        // Then enabled screens stay available as secondary displays when idle
         let idle = ScreenPlan.wishes(config: c, remote: false, trusted: true)
         #expect(idle.map(\.id) == [.phone, c.screens[1].id])
         #expect(idle.map(\.main) == [false, false])

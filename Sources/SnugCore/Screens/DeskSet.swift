@@ -556,9 +556,9 @@ public final class DeskSet {
     }
 
     /// 远程结束、屏还留着：提前准备的屏上，Snug 放的窗口归位、用户在上面开的挪回主屏（本机看不见这些屏）；
-    /// 设为主屏的那块屏上的东西原样留着，下次连上接着用（主人定）。这次远程的提示、监视都收掉
+    /// 设为主屏的那块屏上的东西原样留着，下次连上接着用（主人定）；预览自测的屏也不动（开发者正看着）。这次远程的提示、监视都收掉
     private func endSession() async {
-        for wish in wishes where !wish.main {
+        for wish in wishes where wish.prepared && !wish.main {
             // 又连上了：屏上的窗口留给这一次，不再归位；提示、监视照样收掉（属于上一次）
             guard !screens.isRemote else { break }
             guard let desk = desks[wish.id], desk.wanted, desk.state.display != nil else { continue }

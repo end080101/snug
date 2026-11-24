@@ -733,6 +733,35 @@ struct DeskSetTests {
         #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
     }
 
+    @Test("提前准备的屏，远程结束：窗口放上来时换宽了一档的屏，归位后换回基准宽度")
+    func preparedScreenRestoresWidth() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        rig.windows.setMinSize(finder.key, width: 740)
+        await rig.pull(finder)
+        rig.journal.clear()
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+        #expect(rig.journal.all.last == "width 101 540")
+    }
+
+    @Test("预览自测的屏（不是提前准备的）：远程结束时不动，窗口照旧放着（开发者正看着）")
+    func previewScreenUntouchedAtSessionEnd() async throws {
+        let rig = try Rig()
+        rig.set.setWishes([rig.desk.wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        rig.desk.setRemote(false)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+    }
+
     @Test("提前准备的屏，远程结束后又连上（同一拍里）：屏上的窗口留给这一次，不归位")
     func preparedScreenReconnects() async throws {
         let rig = try Rig()
