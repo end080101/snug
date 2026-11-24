@@ -49,7 +49,8 @@ package struct CrossDeskTouch: TouchNormalizer {
 
     /// 相对鼠标拿不到手指位置：请用户在手机端改成绝对鼠标（措辞到门面那一轮再定）
     package var advice: String? {
-        feed == .cursor ? "手机端用的是「相对鼠标」，单指滑只能挪光标。在 CrossDesk 手机端的设置里改成「绝对鼠标」，就能像 iPhone 一样滑动" : nil
+        // 按钮名照 CrossDesk 手机端（1.7.7）：会话里的浮动按钮在「相对鼠标」「绝对鼠标」间切换，设置页里叫「绝对位置」
+        feed == .cursor ? "手机端用的是「相对鼠标」，单指滑只能挪光标。点会话里的「相对鼠标」按钮切成「绝对鼠标」（设置里叫「绝对位置」）" : nil
     }
     /// 连续几下开头落在上一个事件的位置上
     private var cursorRun = 0
