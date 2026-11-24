@@ -14,7 +14,7 @@
 
 [![最新版本](https://img.shields.io/github/v/release/zephyr4123/snug?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-%E9%80%9A%E7%94%A8-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![已公证](https://img.shields.io/badge/Apple-%E5%B7%B2%E5%85%AC%E8%AF%81-black?logo=apple) [![许可证 MIT](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-green)](LICENSE)
 
-[下载](#-下载) · [原生体验](#-每台设备原生体验) · [多设备](#-一台-mac所有设备) · [App 资源库](#-app-资源库) · [截图](#-截图) · [对比](#-与其他方案的对比) · [安装](#-安装) · [使用](#-使用方式) · [限制](#-已知限制) · [开发](#-开发)
+[下载](#-下载) · [快速上手](#-快速上手) · [原生体验](#-每台设备原生体验) · [多设备](#-一台-mac所有设备) · [App 资源库](#-app-资源库) · [截图](#-截图) · [对比](#-与其他方案的对比) · [安装](#-安装) · [使用](#-使用方式) · [限制](#-已知限制) · [开发](#-开发)
 
 <br>
 
@@ -24,7 +24,7 @@
 </div>
 
 > [!IMPORTANT]
-> **新增 CrossDesk**：已支持免费、开源的远控软件 [CrossDesk](https://github.com/kunkundi/crossdesk)，屏幕、原生手势与 App 资源库同 UU远程；连接前的设置参见 [CrossDesk 使用说明](docs/remotes/crossdesk.md)。
+> **新增 CrossDesk**：已支持免费、开源的远控软件 [CrossDesk](https://github.com/kunkundi/crossdesk)，屏幕、原生手势与 App 资源库同 UU远程；首次使用参见[快速上手](#-快速上手)。
 >
 > **致 UU远程 VIP 用户**：UU远程 自 2026 年 12 月 1 日起将多屏、虚拟屏等功能纳入 VIP。Snug 基于虚拟屏架构，若你恰为 UU远程 VIP 用户，欢迎一试。
 >
@@ -48,6 +48,23 @@
 两个渠道的安装包完全相同。Snug 仅需安装于被控 Mac；控制端使用 UU远程 或 CrossDesk。
 
 > Windows 被控端：参见 [社区移植](#-社区移植)。
+
+## 🚀 快速上手
+
+按所用远控操作；首次设置后，日常直接连接即可。
+
+| 步骤 | <img src="https://dl.zephyrxiang.com/snug/media/remote-uu.7b92201d.png" width="20" align="absmiddle" alt=""> UU远程 | <img src="https://dl.zephyrxiang.com/snug/media/remote-crossdesk.0ffdb226.png" width="20" align="absmiddle" alt=""> CrossDesk |
+| :--- | :--- | :--- |
+| 1. 远控 | Mac 与手机均安装 [UU远程](https://uuyc.163.com/) | Mac 与手机均安装 [CrossDesk](https://github.com/kunkundi/crossdesk) |
+| 2. Snug | 在 Mac 上安装并打开 Snug，按欢迎页授予辅助功能权限 | 同左 |
+| 3. 屏幕 | 无需操作，连接后自动建立 | 在设置「屏幕」页开启「提前准备虚拟屏」，屏幕随即上线；再退出并重新打开 Mac 上的 CrossDesk |
+| 4. 手机 | 无需操作 | 鼠标模式选「绝对鼠标」（默认为「相对鼠标」） |
+| 5. 连接 | 连接 Mac，在屏幕列表中选择「Snug 手机屏」 | 连接 Mac，在悬浮菜单的「显示器」中选择「Snug 手机屏」 |
+| 6. 使用 | 手机屏显示 App 资源库，轻点 App 或窗口即铺满全屏 | 同左 |
+
+- **平板、电脑或横屏手机**：先在设置「屏幕」页添加对应屏幕，连接后选择该屏
+- **CrossDesk 何时再重启**：仅在菜单栏提示「重启 CrossDesk 以识别新屏幕」时，如新增屏幕后、Mac 重启后 CrossDesk 先于 Snug 启动时
+- 更多用法参见 [使用方式](#-使用方式)；CrossDesk 的细节参见 [CrossDesk 使用说明](docs/remotes/crossdesk.md)
 
 ## ✨ 每台设备，原生体验
 
@@ -265,8 +282,6 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 4. **切换窗口**：轻点底部指示条返回 App 资源库；另选窗口时，原窗口自动归位
 5. **结束远程**：窗口归位、字号复原，Snug 屏幕随之移除；设为主屏的屏幕连同其上的窗口保留，提前准备的屏幕亦保留
 
-> **CrossDesk**：CrossDesk 仅在启动时识别显示器。首次使用前，在设置「屏幕」页开启「提前准备虚拟屏」，待屏幕上线后重新启动 CrossDesk；手机端选「绝对鼠标」。详见 [CrossDesk 使用说明](docs/remotes/crossdesk.md)
-
 > 💡 建议将 UU远程 画质调至最高：画质较低时画面模糊，平板上尤为明显。
 
 ## 🔒 隔离与还原
@@ -348,7 +363,7 @@ Snug 免费开源。如果它帮到了你，欢迎请我喝杯咖啡，支持后
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow)（MIT）：小弟调调，授权引导与拖拽授权面板
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay)（MIT）：huberdf，`CGVirtualDisplay` 接口声明
 - [CrossDesk](https://github.com/kunkundi/crossdesk)（GPL-3.0）：kunkundi，免费、开源的远控软件；Snug 仅按其公开行为对接，不含其代码
-- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）；Nexmoe（#58，接入 CrossDesk）
+- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）；Nexmoe（#58，CrossDesk 初版适配）
 - 虚拟屏的实现参考了 [DeskPad](https://github.com/Stengo/DeskPad)、[Side Screen](https://github.com/tranvuongquocdat/SideScreen) 与 Chromium 的相关代码
 
 ## ⭐ Star 趋势

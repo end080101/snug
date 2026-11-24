@@ -14,7 +14,7 @@ Display and touch enhancements for remote Macs<br>A dedicated screen for every d
 
 [![Latest release](https://img.shields.io/github/v/release/zephyr4123/snug?label=release&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-Universal-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Notarized](https://img.shields.io/badge/Apple-Notarized-black?logo=apple) [![License MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-[Download](#-download) · [Native Experience](#-native-on-every-device) · [Every Device](#-one-mac-every-device) · [App Library](#-app-library) · [Screenshots](#-screenshots) · [Comparison](#-compared-with-alternatives) · [Installation](#-installation) · [Usage](#-usage) · [Limitations](#-known-limitations) · [Development](#-development)
+[Download](#-download) · [Quick Start](#-quick-start) · [Native Experience](#-native-on-every-device) · [Every Device](#-one-mac-every-device) · [App Library](#-app-library) · [Screenshots](#-screenshots) · [Comparison](#-compared-with-alternatives) · [Installation](#-installation) · [Usage](#-usage) · [Limitations](#-known-limitations) · [Development](#-development)
 
 <br>
 
@@ -24,7 +24,7 @@ Display and touch enhancements for remote Macs<br>A dedicated screen for every d
 </div>
 
 > [!IMPORTANT]
-> **New: CrossDesk**: [CrossDesk](https://github.com/kunkundi/crossdesk), a free and open-source remote desktop app, is now supported, with the same screens, native gestures, and App Library as UU Remote. Setup before connecting: [CrossDesk guide](docs/remotes/crossdesk.md) (in Chinese).
+> **New: CrossDesk**: [CrossDesk](https://github.com/kunkundi/crossdesk), a free and open-source remote desktop app, is now supported, with the same screens, native gestures, and App Library as UU Remote. First-time setup: [Quick Start](#-quick-start).
 >
 > **For UU Remote VIP members**: from December 1, 2026, UU Remote moves multi-display and virtual display features to VIP. Snug is built on virtual displays; if you happen to be a UU Remote VIP member, give it a try.
 >
@@ -48,6 +48,23 @@ Display and touch enhancements for remote Macs<br>A dedicated screen for every d
 Identical packages from both sources. Snug runs only on the Mac being controlled; the controlling device, an Android phone, iPhone, tablet, or computer, needs only UU Remote or CrossDesk, with no Snug app to install.
 
 > Windows hosts: see [Community Ports](#-community-ports).
+
+## 🚀 Quick Start
+
+Follow the column for your remote desktop app; after the first setup, just connect as usual.
+
+| Step | <img src="https://dl.zephyrxiang.com/snug/media/remote-uu.7b92201d.png" width="20" align="absmiddle" alt=""> UU Remote | <img src="https://dl.zephyrxiang.com/snug/media/remote-crossdesk.0ffdb226.png" width="20" align="absmiddle" alt=""> CrossDesk |
+| :--- | :--- | :--- |
+| 1. Remote app | Install [UU Remote](https://uuyc.163.com/) on the Mac and the phone | Install [CrossDesk](https://github.com/kunkundi/crossdesk) on the Mac and the phone |
+| 2. Snug | Install and open Snug on the Mac; grant Accessibility permission as the welcome screen guides | Same |
+| 3. Screens | Nothing to do; created on connection | Turn on 「提前准备虚拟屏」 (Prepare virtual screens in advance) on the Screens page of Settings, which brings the screens online; then quit and reopen CrossDesk on the Mac |
+| 4. Phone | Nothing to do | Set the mouse mode to absolute (relative by default) |
+| 5. Connect | Connect to the Mac and choose "Snug 手机屏" in the screen list | Connect to the Mac and choose "Snug 手机屏" from the displays in the floating menu |
+| 6. Use | The phone screen shows the App Library; tap an app or window to fill the screen | Same |
+
+- **Tablet, computer, or landscape phone**: add the screen on the Screens page of Settings first, then choose it after connecting
+- **When to restart CrossDesk again**: only when the menu bar shows 「重启 CrossDesk 以识别新屏幕」 (restart CrossDesk to detect new screens), such as after adding a screen, or when CrossDesk starts before Snug after the Mac restarts
+- More in [Usage](#-usage); CrossDesk details in the [CrossDesk guide](docs/remotes/crossdesk.md) (in Chinese)
 
 ## ✨ Native on Every Device
 
@@ -265,8 +282,6 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 4. **Switch windows**: tap the bottom indicator bar to return to the App Library; choosing another window returns the previous one to its place
 5. **End the session**: windows returned, text sizes restored, Snug's screens removed, except the one set as main display, which keeps its windows, and screens kept ready in advance
 
-> **CrossDesk**: CrossDesk detects displays only at launch. Before first use, turn on 「提前准备虚拟屏」 (Prepare virtual screens in advance) on the Screens page of Settings, then restart CrossDesk once the screens are online; choose absolute mouse mode on the phone. Details in the [CrossDesk guide](docs/remotes/crossdesk.md) (in Chinese)
-
 > 💡 Set UU Remote's picture quality to the highest: lower settings blur the picture, especially on tablets.
 
 ## 🔒 Isolation and Restoration
@@ -348,7 +363,7 @@ We are equally grateful to the following projects and contributors:
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow) (MIT): by jaywcjlove (小弟调调), the permission onboarding and drag-to-authorize panel
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay) (MIT): by huberdf, the `CGVirtualDisplay` interface declarations
 - [CrossDesk](https://github.com/kunkundi/crossdesk) (GPL-3.0): by kunkundi, a free and open-source remote desktop app; Snug interfaces with it based on its observable behavior and contains none of its code
-- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README); Nexmoe (#58, CrossDesk support)
+- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README); Nexmoe (#58, initial CrossDesk adapter)
 - The virtual display implementation draws on [DeskPad](https://github.com/Stengo/DeskPad), [Side Screen](https://github.com/tranvuongquocdat/SideScreen), and Chromium
 
 ## ⭐ Star History

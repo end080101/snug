@@ -14,7 +14,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/zephyr4123/snug?label=release&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-Universal-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Notarized](https://img.shields.io/badge/Apple-Notarized-black?logo=apple) [![License MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
-[ダウンロード](#-ダウンロード) · [ネイティブな体験](#-すべてのデバイスでネイティブに) · [あらゆるデバイス](#-1-台の-mac-をあらゆるデバイスで) · [App ライブラリ](#-app-ライブラリ) · [スクリーンショット](#-スクリーンショット) · [比較](#-他の方法との比較) · [インストール](#-インストール) · [使い方](#-使い方) · [制限事項](#-既知の制限) · [開発](#-開発)
+[ダウンロード](#-ダウンロード) · [クイックスタート](#-クイックスタート) · [ネイティブな体験](#-すべてのデバイスでネイティブに) · [あらゆるデバイス](#-1-台の-mac-をあらゆるデバイスで) · [App ライブラリ](#-app-ライブラリ) · [スクリーンショット](#-スクリーンショット) · [比較](#-他の方法との比較) · [インストール](#-インストール) · [使い方](#-使い方) · [制限事項](#-既知の制限) · [開発](#-開発)
 
 <br>
 
@@ -24,7 +24,7 @@
 </div>
 
 > [!IMPORTANT]
-> **CrossDesk に対応**：無料・オープンソースのリモートデスクトップアプリ [CrossDesk](https://github.com/kunkundi/crossdesk) に対応しました。画面、ネイティブなジェスチャー、App ライブラリは UU远程 と同じです。接続前の設定は [CrossDesk の使い方](docs/remotes/crossdesk.md)（中国語）を参照してください。
+> **CrossDesk に対応**：無料・オープンソースのリモートデスクトップアプリ [CrossDesk](https://github.com/kunkundi/crossdesk) に対応しました。画面、ネイティブなジェスチャー、App ライブラリは UU远程 と同じです。初回の設定は[クイックスタート](#-クイックスタート)を参照してください。
 >
 > **UU远程 の VIP 会員の方へ**：2026 年 12 月 1 日より、UU远程 はマルチディスプレイおよび仮想ディスプレイ機能を VIP に移行します。Snug は仮想ディスプレイ上に構築されています。もし UU远程 の VIP 会員であれば、ぜひお試しください。
 >
@@ -48,6 +48,23 @@
 どちらの入手先も同一のパッケージです。Snug は操作対象の Mac 上でのみ動作します。操作する側のデバイス（Android スマートフォン、iPhone、タブレット、パソコン）には UU远程 または CrossDesk だけがあれば十分で、Snug のインストールは不要です。
 
 > Windows ホストの場合：[コミュニティ移植版](#-コミュニティ移植版)を参照してください。
+
+## 🚀 クイックスタート
+
+お使いのリモートアプリの列に沿って設定します。初回の設定後は、普段どおり接続するだけです。
+
+| 手順 | <img src="https://dl.zephyrxiang.com/snug/media/remote-uu.7b92201d.png" width="20" align="absmiddle" alt=""> UU远程 | <img src="https://dl.zephyrxiang.com/snug/media/remote-crossdesk.0ffdb226.png" width="20" align="absmiddle" alt=""> CrossDesk |
+| :--- | :--- | :--- |
+| 1. アプリ | Mac とスマートフォンに [UU远程](https://uuyc.163.com/) をインストール | Mac とスマートフォンに [CrossDesk](https://github.com/kunkundi/crossdesk) をインストール |
+| 2. Snug | Mac に Snug をインストールして開き、ウェルカム画面の案内に従ってアクセシビリティ権限を許可 | 同左 |
+| 3. 画面 | 操作不要。接続時に自動で作成 | 設定の「画面」ページで「提前准备虚拟屏」（仮想画面を事前に準備）をオンにすると画面がオンラインになります。続いて Mac の CrossDesk を終了して再度開く |
+| 4. スマートフォン | 操作不要 | マウスモードを絶対マウスに設定（既定は相対マウス） |
+| 5. 接続 | Mac に接続し、画面リストで「Snug 手机屏」を選択 | Mac に接続し、フローティングメニューのディスプレイ一覧で「Snug 手机屏」を選択 |
+| 6. 使用 | スマートフォン画面に App ライブラリが表示され、アプリやウィンドウをタップすると画面いっぱいに表示 | 同左 |
+
+- **タブレット、コンピュータ、横向きのスマートフォン**：先に設定の「画面」ページで画面を追加し、接続後にその画面を選びます
+- **CrossDesk を再起動するタイミング**：メニューバーに「重启 CrossDesk 以识别新屏幕」（新しい画面を認識するため CrossDesk を再起動）と表示されたときのみ。画面を追加した後や、Mac の再起動後に CrossDesk が Snug より先に起動したときなど
+- 詳しくは[使い方](#-使い方)、CrossDesk の詳細は [CrossDesk の使い方](docs/remotes/crossdesk.md)（中国語）
 
 ## ✨ すべてのデバイスでネイティブに
 
@@ -265,8 +282,6 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 4. **ウィンドウを切り替え**：下部のインジケータバーをタップして App ライブラリに戻ります。別のウィンドウを選ぶと、前のウィンドウは元の場所に戻ります
 5. **セッションを終了**：ウィンドウが戻り、文字サイズが復元され、Snug の画面が削除されます。ただしメインディスプレイに設定した画面はそのウィンドウを保持し、事前に準備した画面も残ります
 
-> **CrossDesk**：CrossDesk は起動時にのみディスプレイを認識します。初回は設定の「画面」ページで「提前准备虚拟屏」（仮想画面を事前に準備）をオンにし、画面がオンラインになってから CrossDesk を再起動してください。スマートフォン側では絶対マウスモードを選びます。詳しくは [CrossDesk の使い方](docs/remotes/crossdesk.md)（中国語）
-
 > 💡 UU远程 の画質を最高に設定してください：設定が低いと、特にタブレットで映像がぼやけます。
 
 ## 🔒 分離と復元
@@ -348,7 +363,7 @@ Snug は無料のオープンソースです。お役に立てたなら、コー
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow)（MIT）：jaywcjlove（小弟调调）作、権限オンボーディングとドラッグして許可するパネル
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay)（MIT）：huberdf 作、`CGVirtualDisplay` インターフェースの宣言
 - [CrossDesk](https://github.com/kunkundi/crossdesk)（GPL-3.0）：kunkundi 作、無料・オープンソースのリモートデスクトップアプリ。Snug は公開されている挙動に基づいて連携しており、そのコードは含みません
-- コミュニティの PR 作者：bubble、gencheng liu、Rongzheng Liu（#10、全画面 Space での UU远程 ウィンドウの読み取り）；yupeng（#26、ディスプレイをまたぐウィンドウをメインディスプレイ経由でルーティング）；李小双（#30、#36、切断直後のセッション終了と、画面削除前および再接続待ち中のポインタの画面外への移動）；LI Long（#31、マルチディスプレイのウィンドウ復元とメニューバー配置の調査）；11ze（#39、バックグラウンドのスキャンとアクセシビリティ読み取りの負荷軽減）；eltociear（#40、日本語版 README）；Nexmoe（#58、CrossDesk への対応）
+- コミュニティの PR 作者：bubble、gencheng liu、Rongzheng Liu（#10、全画面 Space での UU远程 ウィンドウの読み取り）；yupeng（#26、ディスプレイをまたぐウィンドウをメインディスプレイ経由でルーティング）；李小双（#30、#36、切断直後のセッション終了と、画面削除前および再接続待ち中のポインタの画面外への移動）；LI Long（#31、マルチディスプレイのウィンドウ復元とメニューバー配置の調査）；11ze（#39、バックグラウンドのスキャンとアクセシビリティ読み取りの負荷軽減）；eltociear（#40、日本語版 README）；Nexmoe（#58、CrossDesk の初期アダプター）
 - 仮想ディスプレイの実装は [DeskPad](https://github.com/Stengo/DeskPad)、[Side Screen](https://github.com/tranvuongquocdat/SideScreen)、Chromium を参考にしています
 
 ## ⭐ スター履歴
