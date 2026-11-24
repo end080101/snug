@@ -170,21 +170,15 @@ final class AppController: Sendable {
         state.update(\.connection, session.isConnected ? .connected : (session.inEpisode ? .reconnecting : .idle))
         state.update(\.controllers, session.controllers)
         state.update(\.remoteName, session.owner?.displayName)
-        let launchOnly = session.owner?.seesScreensOnlyAtLaunch == true
-        if launchOnly, !state.remoteLaunchOnly, !store.config.keepScreensReady, let owner = session.owner {
-            Log.info("\(owner.logName) 只在启动时认屏、没开「提前准备虚拟屏」：这次远程不建屏")
-        }
-        state.update(\.remoteLaunchOnly, launchOnly)
     }
 
     /// 只在启动时认屏的远控，它启动后才建的 Snug 屏选不到：状态里提示重启它（没人远程时也提示，好在连之前就重启）
     private func noteUnseenScreens(_ readings: [RemoteReading]) {
-        let snug = Set(state.desks.desks.values.compactMap(\.display))
-        let blind = readings.first { !$0.unseen(snug).isEmpty }
+        let blind = RemoteReading.blind(readings, owner: session.owner, snugDisplays: Set(state.desks.desks.values.compactMap(\.display)))
         let name = blind?.remote.displayName
         guard name != state.screensUnseenBy else { return }
         if let blind {
-            Log.info("\(blind.remote.logName) 看不到 Snug 的屏 \(blind.unseen(snug).sorted().map { "#\($0)" }.joined(separator: "、"))：重启它才选得到")
+            Log.info("\(blind.remote.logName) 看不到 Snug 的屏 \(blind.displays.sorted().map { "#\($0)" }.joined(separator: "、"))：重启它才选得到")
         } else if let gone = state.screensUnseenBy {
             Log.info("\(gone) 看得到 Snug 的屏了（或不再需要）")
         }
@@ -212,8 +206,14 @@ final class AppController: Sendable {
 
     /// 按此刻的配置和会话算出要哪些屏，交给 DeskSet（结论没变就什么都不做）
     func applyPlan() {
-        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, seesNewScreens: session.owner?.seesScreensOnlyAtLaunch != true,
+        let seesNewScreens = session.owner?.seesScreensOnlyAtLaunch != true
+        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, seesNewScreens: seesNewScreens,
                                           trusted: state.accessibilityTrusted, preview: preview))
+        let withheld = !ScreenPlan.withheld(config: store.config, remote: session.inEpisode, seesNewScreens: seesNewScreens, preview: preview).isEmpty
+        if withheld, !state.screensWithheld, let owner = session.owner {
+            Log.info("\(owner.logName) 只在启动时认屏、没开「提前准备虚拟屏」：这次远程不建屏")
+        }
+        state.update(\.screensWithheld, withheld)
     }
 
     /// 权限是用户在系统设置里给的，随时会变：刚给上时把上次没放回去的窗口放回去

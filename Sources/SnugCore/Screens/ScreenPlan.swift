@@ -17,11 +17,23 @@ public enum ScreenPlan {
     /// trusted：没有辅助功能权限放不了窗口、翻译不了手势，一块都不建；preview：不等远程，建出所有开着的屏（--preview-screens）
     public static func wishes(config: AppConfig, remote: Bool, seesNewScreens: Bool = true, trusted: Bool, preview: Bool = false) -> [ScreenWish] {
         guard trusted else { return [] }
-        let shown = config.screens.filter(\.enabled).prefix(ScreenConfig.limit)
-        return shown.filter { (remote && seesNewScreens) || preview || config.keepScreensReady || $0.id == config.mainScreen }.map { screen in
+        let held = Set(withheld(config: config, remote: remote, seesNewScreens: seesNewScreens, preview: preview))
+        return shown(config).filter { (remote || preview || config.keepScreensReady || $0.id == config.mainScreen) && !held.contains($0.id) }.map { screen in
+            // 预览时屏不是因为「提前准备」才在的：远程结束不收拾（开发者正看着），和不开提前准备的预览一样
             ScreenWish(id: screen.id, spec: spec(of: screen), fit: fit(of: screen), behavior: behavior(screen.device.kind),
-                       main: config.mainScreen == screen.id, prepared: config.keepScreensReady)
+                       main: config.mainScreen == screen.id, prepared: config.keepScreensReady && !preview)
         }
+    }
+
+    /// 这次远程因为远控只在启动时认屏、又没提前准备而不建的屏（设为主屏的那块照常常驻，不算）：
+    /// 状态里据此提示打开「提前准备虚拟屏」再重启远控，日志也记一句。参数同 wishes
+    public static func withheld(config: AppConfig, remote: Bool, seesNewScreens: Bool, preview: Bool = false) -> [ScreenID] {
+        guard remote, !seesNewScreens, !preview, !config.keepScreensReady else { return [] }
+        return shown(config).map(\.id).filter { $0 != config.mainScreen }
+    }
+
+    private static func shown(_ config: AppConfig) -> ArraySlice<ScreenConfig> {
+        config.screens.filter(\.enabled).prefix(ScreenConfig.limit)
     }
 
     /// 配置里的一项 → 屏的身份：竖横各一个产品号，像素上限和方向一致（V4、V5）

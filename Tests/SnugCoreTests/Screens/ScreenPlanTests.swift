@@ -56,19 +56,37 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).map(\.resident) == [true, false])
     }
 
-    @Test("远控只在启动时认屏：没提前准备时远程中不建屏（设为主屏的那块照常常驻）；提前准备了照常")
+    @Test("远控只在启动时认屏：没提前准备时远程中不建屏、报出没建的（设为主屏的那块照常常驻，不算）；提前准备了照常、不报")
     func launchOnlyRemote() {
         var c = config()
+        let all = c.screens.filter(\.enabled).map(\.id)
         #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).isEmpty)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false) == all)
         #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: true).isEmpty)
+        #expect(ScreenPlan.withheld(config: c, remote: false, seesNewScreens: false).isEmpty)
         c.mainScreen = .phone
         #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).map(\.id) == [.phone])
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false) == [all[1]])
+        // 只开着设为主屏的那块：什么都没少建，不该提示去打开提前准备
+        c.screens[1].enabled = false
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false).isEmpty)
+        c.screens[1].enabled = true
         c.mainScreen = nil
         c.keepScreensReady = true
         #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false).isEmpty)
         // 预览自测不看远控
         c.keepScreensReady = false
         #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true, preview: true).count == 2)
+        #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false, preview: true).isEmpty)
+    }
+
+    @Test("预览自测开着提前准备：屏不算提前准备的（远程结束不收拾，开发者正看着）")
+    func previewNotPrepared() {
+        var c = config()
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true, preview: true).allSatisfy { !$0.prepared })
     }
 
     @Test("类别 → 行为：手机、平板是触屏，电脑不是；手势总开关不改行为（翻不翻译由界面层按开关定）")

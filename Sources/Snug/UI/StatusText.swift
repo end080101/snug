@@ -38,7 +38,7 @@ struct StatusText: Equatable {
         // 措辞到门面那一轮再定
         if let remote = s.screensUnseenBy { return "重启 \(remote) 才选得到 Snug 的屏" }
         if s.connection == .idle { return nil }
-        if s.remoteLaunchOnly, !s.config.keepScreensReady, let remote = s.remoteName {
+        if s.screensWithheld, let remote = s.remoteName {
             return "\(remote) 只在启动时认屏：打开「提前准备虚拟屏」，再重启 \(remote)"
         }
         if s.gesturesFailed { return "手势转换未启用" }
