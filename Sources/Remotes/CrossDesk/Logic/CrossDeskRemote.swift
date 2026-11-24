@@ -6,7 +6,7 @@ import SnugCore
 
 package enum CrossDeskRemote {
     package static let bundleID = "cn.crossdesk.app"
-    package static let verifiedVersion = "v1.7.6-20261112"
+    package static let verifiedVersion = "v1.7.7-20261124"
     /// 被远程时注入鼠标事件的进程：主程序自己（CGEventPost，事件带 CROSSDES 记号）
     package static let injectorProcess = "CrossDesk"
     /// 有人远程时 CrossDesk 持有的电源断言名
