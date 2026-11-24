@@ -778,6 +778,7 @@ struct DeskSetTests {
         #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
     }
 
+    // MARK: 设为主屏常驻（issue #28）
 
     @Test("设为主屏的那块常驻：远程结束时不撤、仍是主屏，屏上的窗口原样留着（账也留着，下次连上接着用）；没设主屏的那块照旧撤")
     func persistentMainSurvivesSessionEnd() async throws {

@@ -65,6 +65,11 @@ enum RenderSamples {
         return s
     }
 
+    /// 登记的远控里只在启动时认屏的那几家（「提前准备虚拟屏」按它们显示）
+    private static var launchOnlyRemotes: [String] {
+        Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
+    }
+
     /// 远程中，开着的屏都建好了；手机在看第一块屏
     private static func connected(_ s: AppState) {
         s.connection = .connected
@@ -90,12 +95,12 @@ enum RenderSamples {
             },
             page("settings-screens-main") { s in s.config.mainScreen = computerID },
             page("settings-screens-unseen") { s in
-                s.launchOnlyRemotes = Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
+                s.launchOnlyRemotes = launchOnlyRemotes
                 s.config.keepScreensReady = true
                 s.screensUnseenBy = s.launchOnlyRemotes.first
             },
             page("settings-screens-ready") { s in
-                s.launchOnlyRemotes = Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
+                s.launchOnlyRemotes = launchOnlyRemotes
                 s.config.keepScreensReady = true
             },
             page("settings-screens-legacy") { s in s.config = AppConfig() },
