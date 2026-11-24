@@ -48,6 +48,8 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
             Log.info("CrossDesk 进程：\(now.isEmpty ? "没在运行" : now.sorted().map(String.init).joined(separator: "、"))")
         }
         hosts = now
+        // 没在运行就不读：读到的只是上一个实例的格子
+        guard !now.isEmpty else { return nil }
         do {
             let before = slots.displays
             for line in try tail.poll() { slots.take(line) }
@@ -58,7 +60,7 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
             if !tailFailed { Log.error("读不了 CrossDesk 的日志（\(error)）：看不出它认到了哪几块屏") }
             tailFailed = true
         }
-        guard !now.isEmpty, let online = Screens.online() else { return nil }
+        guard let online = Screens.online() else { return nil }
         return slots.unreachable(online: Set(online))
     }
 }
