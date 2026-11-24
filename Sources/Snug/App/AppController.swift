@@ -237,6 +237,8 @@ final class AppController: Sendable {
 
     private func desksChanged(_ desks: DeskSet.State) {
         state.desks = desks
+        // 屏都撤了（一次远程结束）：资源库的数据清空，下次露出时显示「正在读取」，不拿上次的旧列表
+        if desks.desks.isEmpty { catalog.reset() }
         // 截图所在的屏没了：浮着的截图、裁剪中的、正给它截的一并收掉，不然下次连上还盖着旧截图
         screenshots.dismiss(outside: Set(desks.desks.compactMap { $0.value.display == nil ? nil : $0.key }))
         syncGestures()

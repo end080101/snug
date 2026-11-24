@@ -222,6 +222,22 @@ public final class DeskSet {
 
     // MARK: 屏上的意图
 
+    /// 电脑屏资源库里的「切换」：这块屏上的窗口原地提到前面（见 Desk.focus）。点下去时窗口已经离开这块屏，
+    /// 就照「放到这块屏」放过来（记账、可还原），不让点了没反应。和别的动作一样，开始时清掉上一条提示
+    public func focus(_ window: WindowInfo, on id: ScreenID) {
+        guard !state.quitting.contains(window.key.pid), !state.closing.contains(window.key) else {
+            return Log.info("\(window.app) 正在退出或关窗口，不切换到 \(window.label)")
+        }
+        guard let desk = desks[id] else { return }
+        desk.setNotice(nil)
+        lane.run {
+            guard await desk.focus(window) else {
+                Log.info("切换到 \(window.label)：已不在屏（\(id)）上，改成放过来")
+                return self.pull(window, on: id)
+            }
+        }
+    }
+
     /// 把这个窗口放上这块屏（原来那个先放回原位）。正在退出的 App 的窗口不放：它退完会记住屏上那个窄位置。
     /// 窗口正放在别的屏上就转过来；电脑屏只把窗口挪过来，不铺满、不调字号
     public func pull(_ window: WindowInfo, on id: ScreenID) {

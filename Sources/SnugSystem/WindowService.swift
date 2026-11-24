@@ -196,7 +196,7 @@ public final class WindowService: WindowControl {
     // MARK: App 资源库（AppCatalog 读）
 
     /// 每个普通窗口在哪块屏、露没露着（见 WindowSpot），连不在当前桌面的（别的桌面、全屏空间、最小化）一起。
-    /// 电脑屏的资源库要分清「在这块屏、露着」和「在这块屏的全屏空间里，被资源库所在的桌面盖住」。
+    /// 电脑屏的资源库要分清「在这块屏、露着」和「在这块屏的全屏空间里，屏切回普通桌面时被盖住」。
     /// 问窗口服务器，不经过 App；全系统的窗口表一次拷全，不按进程分开读
     public func spots() async -> [WindowKey: WindowSpot] {
         let displays = Self.onlineDisplays()

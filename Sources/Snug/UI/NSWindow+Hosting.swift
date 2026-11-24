@@ -1,4 +1,4 @@
-// 更新窗口的搭法：SwiftUI 视图做内容，窗口高度跟着内容（进度变化）自动变；present、摆到哪块屏，设置、关于、资源库窗口也用
+// 更新窗口的搭法：SwiftUI 视图做内容，窗口高度跟着内容（进度变化）自动变；present、摆到哪块屏，设置、关于窗口也用
 import AppKit
 import SnugCore
 import SnugSystem

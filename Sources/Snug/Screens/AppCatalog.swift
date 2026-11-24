@@ -1,9 +1,9 @@
-// App 资源库的统一数据源：在跑的 App 和各自的窗口、本机装着的 App、App 图标，各块屏上的资源库和电脑屏的资源库窗口
+// App 资源库的统一数据源：在跑的 App 和各自的窗口、本机装着的 App、App 图标，各块屏上的资源库（手机、平板屏的面板，电脑屏的浮层）
 // 都只从这里读，控制器决定「点一个 App 做什么」也看这里。系统读取在 SnugSystem（AppService、WindowService）。
 // 谁露着资源库谁就要它（want），露着的有一个就每 1.5 秒刷新在跑的 App：每次从没人要到有人要，第一次按最近用过重排，
 // 之后只增删、不换位置（见 AppList.keepingOrder）；装着的 App 每次有人要时读一次。都收起就停；
 // 要它的都在放窗口时暂停（列表被盖住，刷了也看不见，还和搬窗口排同一条队）；
-// 电脑屏的资源库窗口还要每个窗口在哪块屏（spots）：有它要时在同一轮里紧跟着列表读，一次拷全系统的窗口表；
+// 电脑屏的资源库还要每个窗口在哪块屏（spots）：有它要时在同一轮里紧跟着列表读，一次拷全系统的窗口表；
 // 一次远程结束就清空，下次从头读。退掉的 App、关掉的窗口，DeskSet 一确认就从这里去掉，不等下一轮
 import AppKit
 import Observation
@@ -20,7 +20,7 @@ final class AppCatalog {
     private(set) var installed: [InstalledApp]
     /// 第一次刷新完成前显示「正在读取」，不显示「没有」
     private(set) var loaded: Bool
-    /// 每个窗口在哪块屏、露没露着（电脑屏的资源库标在每个窗口后面）。只在有人要时跟着刷新读
+    /// 每个窗口在哪块屏、露没露着（电脑屏的资源库据此分组，其他位置的写明在哪）。只在有人要时跟着刷新读
     private(set) var spots: [WindowKey: WindowSpot]
 
     /// 不出现在资源库里的 App：各家远控自己（见 AppList.sorted）
@@ -29,7 +29,7 @@ final class AppCatalog {
     @ObservationIgnored private let windows: WindowService?
     @ObservationIgnored private var refreshing: Task<Void, Never>?
     @ObservationIgnored private var scanning: Task<Void, Never>?
-    /// 谁在要（屏号或资源库窗口）：在不在忙（忙着就不用为它刷）、要不要窗口在哪块屏
+    /// 谁在要（各块屏的面板、浮层）：在不在忙（忙着就不用为它刷）、要不要窗口在哪块屏
     @ObservationIgnored private var demand: [String: Demand] = [:]
     private var paused: Bool { demand.values.allSatisfy(\.busy) }
     /// 不忙的里面有要窗口在哪块屏的：没有就不拷全系统的窗口表
@@ -63,7 +63,7 @@ final class AppCatalog {
         self.spots = spots
     }
 
-    /// 露着资源库：busy 是这块屏正在放窗口、打开 App（列表被盖住）；spots 是还要每个窗口在哪块屏（电脑屏的资源库窗口）
+    /// 露着资源库：busy 是这块屏正在放窗口、打开 App（列表被盖住）；spots 是还要每个窗口在哪块屏（电脑屏的资源库）
     func want(_ owner: String, busy: Bool = false, spots: Bool = false) {
         let hadSpots = locating
         demand[owner] = Demand(busy: busy, spots: spots)
@@ -140,8 +140,8 @@ final class AppCatalog {
         scanning = nil
     }
 
-    /// 一次远程结束：清空，在途的刷新结果作废，下次露出时显示「正在读取」，不拿上次的旧列表。需求不在这里清：各块屏的面板撤掉时各自 release，
-    /// 电脑屏的资源库窗口跟着它的屏关掉时 release（这一刻它可能还没关完，需求还在就接着刷新，等它 release 再停）
+    /// 一次远程结束：清空，在途的刷新结果作废，下次露出时显示「正在读取」，不拿上次的旧列表。需求不在这里清：各块屏的面板、浮层撤掉时各自 release
+    /// （这一刻它们可能还没撤完，需求还在就接着刷新，等它 release 再停）
     func reset() {
         forgotten += 1
         reorder = true

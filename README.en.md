@@ -118,7 +118,7 @@ Snug's computer screen is created at the controlling computer's resolution, matc
 - **Pixel for pixel**: the notch area on MacBooks left clear, no scaling
 - **Computer controls preserved**: no gesture remapping or text enlargement; mouse and trackpad unchanged
 - **Set as main display** (optional, off by default): every connection lands directly on this screen, along with the menu bar, the Dock, and the windows from the original main display, for seamless continuity; see [Set as Main Display](#set-as-main-display)
-- **App Library**: opened from the menu bar; moves windows from other screens to this one, with one-click restore; see [App Library](#-app-library)
+- **App Library**: opened from a slim tab on the screen's left edge; switches between this screen's windows and moves windows from other screens to this one, with one-click restore; see [App Library](#-app-library)
 
 ## 🧩 One Mac, Every Device
 
@@ -169,7 +169,7 @@ Optional, off by default; at the bottom of the Screens page in Settings. The cho
 
 ## 🗂 App Library
 
-The home page of phone and tablet screens (「App 资源库」), for managing the Mac's apps from a mobile device: find, open, switch, create, close, and quit, all without returning to the desk. On computer screens, opened from the menu bar.
+The home page of phone and tablet screens (「App 资源库」), for managing the Mac's apps from a mobile device: find, open, switch, create, close, and quit, all without returning to the desk. On computer screens, opened from a slim tab on the left edge.
 
 - **Running** (「运行中」): one card per running app, with its windows listed beneath; every window included, on any display or Space, full-screen or minimized
 - **All** (「全部」): a grid of every app on the Mac, sorted by name; tapping an app that isn't running launches it
@@ -181,9 +181,9 @@ The home page of phone and tablet screens (「App 资源库」), for managing th
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/phone-landscape-library.30220d6f.png" width="54%" alt="iPhone in landscape: apps on the left, the selected app's windows on the right"> <img src="https://dl.zephyrxiang.com/snug/media/ipad-landscape-library.b0f8b829.png" width="39%" alt="iPad in landscape: apps on the left, the selected app's windows on the right"><br><sub>Two columns · Landscape phone · Tablet</sub></p>
 
-- **Computer screens**: no library panel; an App Library window opened from the menu bar instead. Shows the screen each window is on, full-screen windows included; moves any window to this screen and restores moved windows with one click. Essential when the remote side cannot see other screens or drag windows across
+- **Computer screens**: during a session, a slim tab sits on the screen's left edge; tap it to open the App Library. Windows are grouped by where they are, 「这块屏」 (This screen), 「其他位置」 (Elsewhere), and 「没有窗口」 (No windows), for one-click switching, moving to this screen, and opening; moved windows restore with one click. Essential when the remote side cannot see other screens or drag windows across
 
-<p align="center"><img src="https://dl.zephyrxiang.com/snug/media/mac-library.796eed17.png" width="60%" alt="The App Library on a computer screen: each window's screen, one click to move a window over, one click to restore moved windows"><br><sub>Computer screen: the App Library from the menu bar</sub></p>
+<p align="center"><img src="https://dl.zephyrxiang.com/snug/media/mac-library-panel.686cc617.png" width="38%" alt="The App Library on a computer screen: opened from the left-edge tab, windows grouped by location, one click to switch, move over, or restore"><br><sub>Computer screen: the App Library from the left-edge tab</sub></p>
 
 | Action | How |
 | :--- | :--- |
@@ -278,7 +278,7 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 
 1. **Add screens** (as needed): a single portrait screen, "Snug 手机屏" (Snug Phone Screen), by default; tablet, computer, or landscape phone screens added on the Screens page of Settings, each with its model
 2. **Switch screens**: once connected, choose the matching screen in the remote desktop app's screen list
-3. **Pick an app or window**: on phone and tablet screens, tap an app or window in the App Library to fill the screen; on computer screens, open the App Library from the menu bar
+3. **Pick an app or window**: on phone and tablet screens, tap an app or window in the App Library to fill the screen; on computer screens, tap the slim tab on the left edge to open the App Library
 4. **Switch windows**: tap the bottom indicator bar to return to the App Library; choosing another window returns the previous one to its place
 5. **End the session**: windows returned, text sizes restored, Snug's screens removed, except the one set as main display, which keeps its windows, and screens kept ready in advance
 
@@ -363,7 +363,7 @@ We are equally grateful to the following projects and contributors:
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow) (MIT): by jaywcjlove (小弟调调), the permission onboarding and drag-to-authorize panel
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay) (MIT): by huberdf, the `CGVirtualDisplay` interface declarations
 - [CrossDesk](https://github.com/kunkundi/crossdesk) (GPL-3.0): by kunkundi, a free and open-source remote desktop app; Snug interfaces with it based on its observable behavior and contains none of its code
-- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README); Nexmoe (#58, initial CrossDesk adapter)
+- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README); Nexmoe (#58, initial CrossDesk adapter); rangerTao (#57, pinpointing false disconnects when switching screens in UU Remote, and the fix approach; #61, the idea and first version of the side switcher on computer screens)
 - The virtual display implementation draws on [DeskPad](https://github.com/Stengo/DeskPad), [Side Screen](https://github.com/tranvuongquocdat/SideScreen), and Chromium
 
 ## ⭐ Star History

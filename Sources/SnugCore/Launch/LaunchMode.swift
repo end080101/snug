@@ -13,7 +13,7 @@ public enum RenderTarget: String, CaseIterable, Equatable, Sendable {
     case menu
     /// 手机、平板屏上的 App 资源库（竖屏、横屏、平板，几种状态）
     case screens
-    /// 电脑屏的 App 资源库窗口
+    /// 电脑屏的 App 资源库（浮层的几种状态、小竖条四态）
     case library
 }
 

@@ -86,7 +86,7 @@ App 将本机已安装的 Snug 按同样方式切块，只按字节范围从最�
 | `SnugSystem` | 系统层：`CGVirtualDisplay` 建屏与撤屏、辅助进程切换分辨率档位、设主屏与还原排列 `DisplayArrangementService`、辅助功能接口移动窗口、按进程发送字号快捷键、手势事件监听 `TouchTap`、ScreenCaptureKit 截图、远控自检的取证工具 `RemoteCheckTools` |
 | `RemoteUU`、`RemoteUUSystem` | UU远程 的适配器：纯逻辑一个目标、调系统一个目标（见「远控适配层」） |
 | `RemoteCrossDesk`、`RemoteCrossDeskSystem` | CrossDesk 的适配器：按「共享桌面」电源断言判在场、手势整理（绝对鼠标的方言）、跟读日志推算各格推的屏（它只在启动时认屏）、兼容自检与诊断命令 |
-| `Snug` | 应用层：登记远控 `Remotes`、AppController、应用内更新 `Updater`、Snug 屏上的 App 资源库（`Screens/`）、指示条与截图裁剪、设置（屏幕、触控、通用三页）、添加屏幕与屏幕详情、关于、电脑屏的 App 资源库窗口、欢迎页、菜单栏 |
+| `Snug` | 应用层：登记远控 `Remotes`、AppController、应用内更新 `Updater`、Snug 屏上的 App 资源库（`Screens/`）、指示条与截图裁剪、设置（屏幕、触控、通用三页）、添加屏幕与屏幕详情、关于、电脑屏的 App 资源库（`Computer/`）、欢迎页、菜单栏 |
 
 发布工具 `SnugRelease` 只依赖 `SnugCore`，由 `scripts/snug` 调用。
 
@@ -133,7 +133,7 @@ SNUG_WRITE_TOKENS=1 swift test --filter DesignTokensTests
 
 | 参数 | 作用 |
 | :--- | :--- |
-| `--render-<界面> <目录>` | 将界面渲染为 PNG：`settings` / `welcome` / `about` / `legacy` / `menu` / `screens` / `library` / `update`（不启动监控，不改动屏幕）。`screens` 是 Snug 屏上的面板，覆盖手机竖横、平板竖横；`library` 是电脑屏的 App 资源库窗口 |
+| `--render-<界面> <目录>` | 将界面渲染为 PNG：`settings` / `welcome` / `about` / `legacy` / `menu` / `screens` / `library` / `update`（不启动监控，不改动屏幕）。`screens` 是 Snug 屏上的面板，覆盖手机竖横、平板竖横；`library` 是电脑屏的 App 资源库浮层和小竖条 |
 | `--preview-screens` | 正常启动，但不等待连接即创建屏幕列表中开着的屏，无需控制端即可查看屏上的列表（**会真实创建屏幕**；设了主屏的同样会设） |
 | `--dump-remote <远控>` | 打印从这家远控读取到的原始信号与当前屏幕；UU远程（`uu`）是界面里的文字、表格与行、认出的控制端 |
 | `--check-remote <远控> [小时]` | 远控兼容自检（`scripts/snug remote-check` 调用）：输出报告，有问题时以非零状态退出；回看默认 4 小时，最多 72 |

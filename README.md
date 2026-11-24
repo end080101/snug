@@ -118,7 +118,7 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 - **像素级对应**：带刘海的 MacBook 避让顶部区域，画面不缩放
 - **保留电脑操作**：不转换手势，不放大字号，鼠标与触控板保持原样
 - **设为主屏**（可选，默认不启用）：每次连接直接进入此屏，菜单栏、程序坞与原主屏窗口随之迁入，工作无缝接续，参见 [设为主屏](#设为主屏)
-- **App 资源库**：从菜单栏打开，将其他屏幕的窗口移至此屏，支持一键还原，参见 [App 资源库](#-app-资源库)
+- **App 资源库**：屏幕左边缘的小竖条打开，切换本屏窗口，将其他屏幕的窗口移至此屏，支持一键还原，参见 [App 资源库](#-app-资源库)
 
 ## 🧩 一台 Mac，所有设备
 
@@ -169,7 +169,7 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 
 ## 🗂 App 资源库
 
-手机屏与平板屏的首页，在移动端管理 Mac 上的 App：查找、打开、切换、新建、关闭与退出，无需回到电脑前。电脑屏的 App 资源库从菜单栏打开。
+手机屏与平板屏的首页，在移动端管理 Mac 上的 App：查找、打开、切换、新建、关闭与退出，无需回到电脑前。电脑屏的 App 资源库从屏幕左边缘的小竖条打开。
 
 - **运行中**：每个运行中的 App 一张卡片，窗口列于其下；窗口无论位于哪块屏幕、哪个桌面空间，全屏或最小化，均可在此找到
 - **全部**：本机全部 App 的图标网格，按名称排序；轻点未运行的 App 即打开
@@ -181,9 +181,9 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/phone-landscape-library.30220d6f.png" width="54%" alt="iPhone 横屏：App 资源库左栏为 App，右栏为所选 App 的窗口"> <img src="https://dl.zephyrxiang.com/snug/media/ipad-landscape-library.b0f8b829.png" width="39%" alt="iPad 横屏：App 资源库左栏为 App，右栏为所选 App 的窗口"><br><sub>左右两栏 · 横屏手机 · 平板</sub></p>
 
-- **电脑屏**：无资源库面板，从菜单栏打开 App 资源库窗口；标注每个窗口所在屏幕（含全屏窗口），一键移至此屏，移入的窗口一键还原。远端无法看到其他屏幕、无法拖动窗口时，以此移入与还原
+- **电脑屏**：远程时屏幕左边缘有一根小竖条，轻点弹出 App 资源库；窗口按所在位置分为「这块屏」「其他位置」「没有窗口」三组，分别一键切换、移至此屏、打开，移入的窗口一键还原。远端无法看到其他屏幕、无法拖动窗口时，以此切换与移入
 
-<p align="center"><img src="https://dl.zephyrxiang.com/snug/media/mac-library.796eed17.png" width="60%" alt="电脑屏 App 资源库：标注窗口所在屏幕，一键移至此屏，移入的窗口一键还原"><br><sub>电脑屏：从菜单栏打开 App 资源库</sub></p>
+<p align="center"><img src="https://dl.zephyrxiang.com/snug/media/mac-library-panel.686cc617.png" width="38%" alt="电脑屏 App 资源库：左边缘小竖条打开，窗口按所在位置分组，一键切换、移至此屏、还原"><br><sub>电脑屏：左边缘小竖条打开 App 资源库</sub></p>
 
 | 操作 | 方式 |
 | :--- | :--- |
@@ -278,7 +278,7 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 
 1. **添加屏幕**（按需）：默认仅一块竖屏「Snug 手机屏」；平板、电脑或横屏手机，在设置「屏幕」页添加并选定型号
 2. **切换屏幕**：连接后，在远控的屏幕列表中选择对应屏幕
-3. **选择 App 或窗口**：手机屏、平板屏上，在 App 资源库中轻点 App 或窗口，即铺满全屏；电脑屏从菜单栏打开 App 资源库
+3. **选择 App 或窗口**：手机屏、平板屏上，在 App 资源库中轻点 App 或窗口，即铺满全屏；电脑屏轻点左边缘的小竖条打开 App 资源库
 4. **切换窗口**：轻点底部指示条返回 App 资源库；另选窗口时，原窗口自动归位
 5. **结束远程**：窗口归位、字号复原，Snug 屏幕随之移除；设为主屏的屏幕连同其上的窗口保留，提前准备的屏幕亦保留
 
@@ -363,7 +363,7 @@ Snug 免费开源。如果它帮到了你，欢迎请我喝杯咖啡，支持后
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow)（MIT）：小弟调调，授权引导与拖拽授权面板
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay)（MIT）：huberdf，`CGVirtualDisplay` 接口声明
 - [CrossDesk](https://github.com/kunkundi/crossdesk)（GPL-3.0）：kunkundi，免费、开源的远控软件；Snug 仅按其公开行为对接，不含其代码
-- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）；Nexmoe（#58，CrossDesk 初版适配）
+- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）；Nexmoe（#58，CrossDesk 初版适配）；rangerTao（#57，UU远程 切屏误判断线的定位与修复思路；#61，电脑屏侧边切换的思路与初版）
 - 虚拟屏的实现参考了 [DeskPad](https://github.com/Stengo/DeskPad)、[Side Screen](https://github.com/tranvuongquocdat/SideScreen) 与 Chromium 的相关代码
 
 ## ⭐ Star 趋势

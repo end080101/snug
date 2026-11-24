@@ -81,12 +81,6 @@ final class AppState {
     /// 没人远程时谁都没在看（常驻的主屏）
     func watching(_ id: ScreenID) -> Bool { screensInUse && (streamedDisplay == nil || watchedScreen == id) }
 
-    /// 菜单栏「App 资源库」能往哪些屏放：就绪的电脑屏，按屏幕列表的顺序。手机、平板屏有自己的面板，
-    /// Mac 样式的窗口开在它们上面也放不下
-    var libraryScreens: [ScreenID] {
-        config.screens.map(\.id).filter { id in desks.desks[id].map { $0.display != nil && !$0.behavior.touch } == true }
-    }
-
     /// 界面上提到远控时的名字：这次远程的那家；不在远程时是登记的全部（「UU远程、CrossDesk」），哪家都能用
     var remoteNames: String { remoteName ?? remotes.map(\.displayName).joined(separator: "、") }
 
@@ -164,8 +158,6 @@ protocol TouchIntents: AnyObject, Sendable {
     func showList()
     func returnToPlaced()
     func putBack()
-    /// 电脑屏资源库里的「还原」：把 Snug 挪过来的这个窗口放回原处
-    func putBack(_ window: WindowKey)
     func zoom(by delta: Int)
     /// 换这块屏的型号
     func setDevice(_ device: DeviceChoice)
@@ -189,6 +181,4 @@ protocol Navigation: AnyObject, Sendable {
     func openWelcome()
     func openAbout(on display: DisplayID?)
     func openUpdate()
-    /// 电脑屏的 App 资源库：在哪块屏的菜单栏点，就在哪块屏打开
-    func openLibrary(on display: DisplayID?)
 }

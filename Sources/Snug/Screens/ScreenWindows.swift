@@ -1,4 +1,4 @@
-// 手机、平板屏上 Snug 自己的面板，每块屏一组（ScreenPanels 跟着屏幕列表建、拆；电脑屏没有面板，资源库从菜单栏打开）：
+// 手机、平板屏上 Snug 自己的面板，每块屏一组（ScreenPanels 跟着屏幕列表建、拆；电脑屏的资源库另见 ComputerScreens）：
 // 盖满整块屏的 App 资源库，窗口放上来后底部的小横条；开着截图键时还有截图后浮在小横条上方的缩略图或提示，
 // 以及裁剪时盖满整块屏的裁剪界面。
 // 跟着这块屏的 Desk 状态走：屏在才建，列表该露就露、该收就收，屏幕一变（含换档）就重新摆位置。
@@ -40,7 +40,6 @@ final class ScreenPanels {
         for id in touch where panels[id] == nil {
             panels[id] = ScreenWindows(id: id, state: state, catalog: catalog, intents: intents(id))
         }
-        if state.desks.desks.isEmpty { catalog.reset() }
     }
 }
 
@@ -52,13 +51,13 @@ final class ScreenWindows {
     private let pages = TouchPages()
     private let intents: any TouchIntents
     private var display: DisplayID?
-    private var list: TouchPanel?
-    private var homeBar: TouchPanel?
+    private var list: ScreenPanel?
+    private var homeBar: ScreenPanel?
     private var homeBarView: HomeBarView?
     /// 截图后浮在小横条上方的那一块（缩略图或提示），和它此刻显示的是什么
-    private var overlay: TouchPanel?
+    private var overlay: ScreenPanel?
     private var overlayShown: OverlayShown?
-    private var cropPanel: TouchPanel?
+    private var cropPanel: ScreenPanel?
     private var screenObserver: (any NSObjectProtocol)?
     private var closed = false
 
@@ -159,7 +158,7 @@ final class ScreenWindows {
             return
         }
         let scale = ScreenFit.scale(screen: screen.frame.size)
-        let panel = overlay ?? TouchPanel(content: NSView(), opaque: false)
+        let panel = overlay ?? ScreenPanel(content: NSView(), opaque: false)
         overlay = panel
         let preview = if case .preview = shot { true } else { false }
         let shown = OverlayShown(overlay: shot, scale: scale)
@@ -187,7 +186,7 @@ final class ScreenWindows {
             cropPanel = nil
             return
         }
-        let panel = cropPanel ?? TouchPanel(content: FirstMouseHostingView(rootView: CropView(
+        let panel = cropPanel ?? ScreenPanel(content: FirstMouseHostingView(rootView: CropView(
             image: NSImage(data: image.png) ?? NSImage(), pixelSize: image.size,
             onCancel: { [weak self] in self?.intents.cancelCrop() },
             onDone: { [weak self] selection in self?.intents.finishCrop(selection) }).screenPanel(id, state: state)))
@@ -199,12 +198,12 @@ final class ScreenWindows {
     private func build(on id: DisplayID) {
         Log.info("屏（\(self.id)）的列表、小横条建在 #\(id) 上")
         display = id
-        list = TouchPanel(content: FirstMouseHostingView(rootView: TouchHomeView(screen: self.id, state: state, catalog: catalog, pages: pages,
+        list = ScreenPanel(content: FirstMouseHostingView(rootView: TouchHomeView(screen: self.id, state: state, catalog: catalog, pages: pages,
                                                                                  intents: intents).screenPanel(self.id, state: state)))
         let bar = HomeBarView()
         bar.onActivate = { [weak self] in self?.intents.showList() }
         bar.onCapture = { [weak self] in self?.intents.takeScreenshot() }
-        homeBar = TouchPanel(content: bar)
+        homeBar = ScreenPanel(content: bar)
         homeBarView = bar
     }
 
@@ -237,40 +236,6 @@ final class ScreenWindows {
         let overlay: ScreenshotOverlay
         let scale: CGFloat
     }
-}
-
-/// 不抢焦点、所有桌面都在、盖住菜单栏的面板。截图的浮层是圆角卡片，面板透明（opaque 传 false）
-final class TouchPanel: NSPanel {
-    init(content: NSView, opaque: Bool = true) {
-        super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        // 菜单栏是 24，菜单栏右边的图标是 25：再高一级才盖得住
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
-        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle, .fullScreenAuxiliary]
-        hidesOnDeactivate = false
-        isReleasedWhenClosed = false
-        hasShadow = false
-        isOpaque = opaque
-        backgroundColor = opaque ? TouchTokens.Color.backgroundNSColor : .clear
-        contentView = content
-    }
-
-    /// 平时点面板不让它变成键盘焦点：手机上的键盘输入要留给放上来的窗口；搜索、选型号时才打开
-    var acceptsKeys = false {
-        didSet {
-            // 交还键盘：收起再摆回去才会让出焦点（resignKey 只是通知，调了也还是焦点）
-            guard !acceptsKeys, isKeyWindow, isVisible else { return }
-            orderOut(nil)
-            orderFrontRegardless()
-        }
-    }
-
-    override var canBecomeKey: Bool { acceptsKeys }
-    override var canBecomeMain: Bool { false }
-}
-
-/// 面板不是键盘焦点，第一下点击也要直接生效
-final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
 
 /// 底部小横条：点一下，或者往上滑，回到 App 资源库。中间是 SF Symbols 的 chevron.compact.up；

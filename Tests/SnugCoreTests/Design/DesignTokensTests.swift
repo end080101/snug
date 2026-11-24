@@ -104,6 +104,13 @@ private struct TokenRenderer {
         if let ref = spec["ref"] as? String { return try paletteColor(ref, path) }
         // 系统语义色：是 NSColor 的名字就直接用，系统没有对应的（分组表单的底这类）按外观取
         if let system = spec["system"] as? String, system.range(of: "^[a-zA-Z]+Color$", options: .regularExpression) != nil {
+            // 系统色加透明度（强调色的浅底）：跟着系统色走，深浅外观各一个透明度
+            if let alpha = spec["alpha"] as? [String: Double] {
+                let light = try require(alpha["light"], "\(path).alpha.light")
+                let dark = try require(alpha["dark"], "\(path).alpha.dark")
+                return "SwiftUI.Color(nsColor: .dynamic(light: .\(system).withAlphaComponent(\(number(NSNumber(value: light)))), "
+                    + "dark: .\(system).withAlphaComponent(\(number(NSNumber(value: dark))))))"
+            }
             return "SwiftUI.Color(nsColor: .\(system))"
         }
         let light = try require(spec["light"] as? String, "\(path).light")

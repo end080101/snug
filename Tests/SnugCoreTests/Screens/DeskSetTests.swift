@@ -361,6 +361,44 @@ struct DeskSetTests {
         #expect(rig.windows.window(finder.key)?.frame == (try rig.centeredOnSecond(finderHome.size)))
     }
 
+    @Test("电脑屏的「切换」：这块屏上的窗口原地提到前面，全屏的保持全屏，不挪、不记账")
+    func focusRaisesInPlace() async throws {
+        let rig = try Rig()
+        await rig.readyTwo(computer)
+        let bounds = try #require(rig.displays.bounds(102))
+        rig.windows.add(safari.key, frame: bounds, fullScreen: true, info: safari)
+        rig.set.focus(safari, on: second)
+        await rig.set.idle()
+        #expect(rig.journal.all == ["focus \(safari.key.id)"])
+        #expect(rig.windows.window(safari.key)?.frame == bounds)
+        #expect(rig.windows.window(safari.key)?.fullScreen == true)
+        #expect(rig.brought(safari, on: second) == nil)
+    }
+
+    @Test("「切换」时窗口已经离开这块屏（被挪走、最小化了）：照「放到这块屏」放过来、记账，不是点了没反应")
+    func focusFallsBackToPull() async throws {
+        let rig = try Rig()
+        await rig.readyTwo(computer)
+        rig.set.focus(ghostty, on: second)
+        await rig.set.idle()
+        #expect(rig.windows.window(ghostty.key)?.frame == (try rig.centeredOnSecond(ghosttyHome.size)))
+        #expect(rig.brought(ghostty, on: second)?.original == ghosttyHome)
+    }
+
+    @Test("「切换」时窗口已经关了：出「窗口已关闭」，什么都不动；下一个动作开始时提示清掉")
+    func focusGoneWindow() async throws {
+        let rig = try Rig()
+        await rig.readyTwo(computer)
+        rig.windows.vanish(ghostty.key)
+        rig.set.focus(ghostty, on: second)
+        await rig.set.idle()
+        #expect(rig.set.state.desks[second]?.notice == .windowGone(app: ghostty.app))
+        #expect(rig.journal.all.isEmpty)
+        rig.set.focus(finder, on: second)
+        await rig.set.idle()
+        #expect(rig.set.state.desks[second]?.notice == nil)
+    }
+
     @Test("撤电脑屏：挪过来的窗口按账放回原处（不挪到主屏正中），账销掉")
     func retireComputerPutsBroughtBack() async throws {
         let rig = try Rig()
@@ -390,6 +428,25 @@ struct DeskSetTests {
         await rig.set.idle()
         #expect(rig.windows.window(safari.key)?.fullScreen == true)
         #expect(rig.brought(safari, on: second) == nil)
+    }
+
+    @Test("挪过来的窗口在这块屏上被点成了全屏（资源库在全屏空间里也打得开）：「还原」先退出全屏再按账放回，不是挪不动还销了账")
+    func putBackExitsFullScreenFirst() async throws {
+        let rig = try Rig()
+        await rig.readyTwo(computer)
+        rig.set.pull(ghostty, on: second)
+        await rig.set.idle()
+        await rig.windows.setFullScreen(ghostty.key, true)
+        rig.windows.setFrame(ghostty.key, try #require(rig.displays.bounds(102)))
+        rig.journal.clear()
+        rig.set.putBack(ghostty.key, on: second)
+        await rig.set.idle()
+        let off = try #require(rig.journal.all.firstIndex { $0.hasPrefix("fullscreen \(ghostty.key.id) off") })
+        let move = try #require(rig.journal.all.firstIndex { $0.hasPrefix("move \(ghostty.key.id) ") })
+        #expect(off < move)
+        #expect(rig.windows.window(ghostty.key)?.fullScreen == false)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.brought(ghostty, on: second) == nil)
     }
 
     @Test("挪过来的窗口被用户挪去了别的屏：定期核对时销账，撤屏时不拽回来")

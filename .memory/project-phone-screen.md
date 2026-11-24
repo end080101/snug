@@ -33,6 +33,10 @@ metadata:
 - 手动打开会弹设置窗口，用辅助功能点 `first button of window "通用" whose subrole is "AXCloseButton"` 关掉
 - 主人可能正在用这台 Mac：别抢焦点、别切主屏的桌面空间、别发全局键盘事件（用辅助功能设值或 `CGEvent.postToPid`）；锁屏时辅助功能读不到窗口，停手等主人
 - 辅助功能的坑：SwiftUI 设置页开关 AXPress 没反应，要提窗口再点；面板窗口序号跟着焦点变，按横坐标选；手机屏 App 列表懒加载，可见区外的行位置是 (0,982) 0×0；`tell application "TextEdit"` 会卡在自动化授权，一律走 System Events；别点桌面墙纸（会触发「显示桌面」）；别把自己的终端窗口放上屏
+- 截不了屏（终端没录屏权限，关掉沙箱也不行）：界面用辅助功能读树（草稿区写个 `AXUIElementCopyAttributeValue` 递归打印的小程序），露没露、谁压谁用 `CGWindowListCopyWindowInfo(.optionOnScreenOnly)`（不要权限，按前后顺序）。全局键盘事件只在确认焦点在 Snug 的面板上、且主人说了不用电脑时发：焦点不在就会打进主人的 Ghostty（Esc 会打断会话），先把访达点到前台兜底
+- **合成按键绝不带修饰键标志**：11-24 给 Ctrl+← 的按下、松开都设了 Control+Fn，系统一直当它们按着，之后的按键全成了 Ctrl+键，Fn 还唤起了主人常驻的 Typeless 语音输入。每个事件 `flags = []`，发前发后查 `CGEventSource.flagsState(.hidSystemState)`，卡住就发空 flagsChanged 松开并停手；切桌面这类操作别用合成按键
+- 主人日常输入法是简体拼音（`SCIM.ITABC`）。拼音在不激活 Snug 的面板里照常能用，要按真实键码打（unicode 字符串绕过输入法）
+- 在 Snug 之外进全屏、退全屏时 CGWindowList 一时读不到窗口，电脑屏的定期核对会当成「关了」销掉还原记录（11-24 两次实测，main 上 11-18 起就有；全屏窗口的「还原」因此真机测不到）
 - 系统按「这组屏幕」记每个窗口的位置和大小，换排布时套回来，没放上屏的窗口也可能被改大小（11-18）
 - 每个新身份第一次上线多一份 ICC，测完列给主人清
 

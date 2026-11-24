@@ -6,6 +6,7 @@ import SwiftUI
 enum MacTokens {
     enum Color {
         static let accent = SwiftUI.Color(nsColor: .controlAccentColor)
+        static let accentFill = SwiftUI.Color(nsColor: .dynamic(light: .controlAccentColor.withAlphaComponent(0.14), dark: .controlAccentColor.withAlphaComponent(0.22)))
         static let controlBackground = SwiftUI.Color(nsColor: .controlColor)
         static let controlBorder = SwiftUI.Color(nsColor: .dynamic(light: NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 0.12), dark: NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.1)))
         static let danger = SwiftUI.Color(nsColor: .systemRed)
@@ -48,6 +49,7 @@ enum MacTokens {
         static let control: CGFloat = 6
         static let group: CGFloat = 10
         static let iconTile: CGFloat = 6
+        static let libraryTab: CGFloat = 10
         static let menu: CGFloat = 10
         static let sheet: CGFloat = 12
         static let statusTile: CGFloat = 10
@@ -57,14 +59,18 @@ enum MacTokens {
         static let aboutWidth: CGFloat = 420
         static let helpPopoverWidth: CGFloat = 300
         static let iconTile: CGFloat = 24
-        static let libraryGridIcon: CGFloat = 56
-        static let libraryGridItem: CGFloat = 96
-        static let libraryRowIcon: CGFloat = 28
-        static let librarySidebar: CGFloat = 200
-        enum LibraryWindow {
-            static let height: CGFloat = 520
-            static let width: CGFloat = 760
+        static let libraryGridIcon: CGFloat = 48
+        static let libraryGridItem: CGFloat = 78
+        enum LibraryPanel {
+            static let maxHeight: CGFloat = 600
+            static let width: CGFloat = 360
         }
+        static let libraryRowIcon: CGFloat = 28
+        enum LibraryTab {
+            static let height: CGFloat = 64
+            static let width: CGFloat = 20
+        }
+        static let libraryTabSymbol: CGFloat = 13
         static let menuRowHeight: CGFloat = 24
         static let menuWidth: CGFloat = 280
         static let nameFieldWidth: CGFloat = 200

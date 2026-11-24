@@ -327,6 +327,21 @@ public final class Desk {
         return got
     }
 
+    /// 电脑屏上的「切换」：窗口还在这块屏上（露着，或在这块屏的全屏空间里）就原地提到前面，不挪、不改大小、不退出全屏。
+    /// 返回 false：窗口已经不在这块屏上（被挪走、最小化了），交给调用方照「放到这块屏」放过来。
+    /// 屏没好、读不到窗口（关了、App 没响应）写好提示，返回 true
+    func focus(_ window: WindowInfo) async -> Bool {
+        guard readyDisplay(for: "切换到 \(window.label)") != nil, let bounds = screens.bounds(id) else {
+            state.notice = .screenNotReady
+            return true
+        }
+        guard let look = await reach(window) else { return true }
+        guard !look.minimized, bounds.contains(CGPoint(x: look.frame.midX, y: look.frame.midY)) else { return false }
+        await windows.focus(window.key)
+        Log.info("切换到 \(window.label)\(look.fullScreen ? "（全屏）" : "")")
+        return true
+    }
+
     /// 电脑屏：把窗口挪到这块屏上居中，大小不超过这块屏；不铺满、不调字号。先记账再动手：远端的人看不见别的屏、拖不回去，
     /// 靠资源库里的「还原」放回原处，撤屏、崩溃后也按账放回。还记着原处的（挪过来后又最小化、进了全屏）接着用原来那份，
     /// 从别的屏转过来的用跟过来的那份；挪不过来就按账放回
@@ -373,6 +388,8 @@ public final class Desk {
     /// 电脑屏资源库里的「还原」：按账放回原处。放不回去（App 卡住）就留在屏上、账留着，提示一下，可以再点
     func putBackBrought(_ window: WindowKey) async {
         guard let record = brought[window] else { return }
+        // 在这块屏上被点成了全屏（资源库在全屏空间里也打得开）：全屏的窗口不吃挪动，先退出全屏再放回，原来全屏的放回后再进
+        if await windows.look(window)?.fullScreen == true { await windows.setFullScreen(window, false) }
         brought[window] = await putBack(record)
         if let left = brought[window] { state.notice = .windowUnresponsive(app: left.app) }
     }

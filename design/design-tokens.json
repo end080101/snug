@@ -3,7 +3,7 @@
     "name": "Snug 设计令牌",
     "version": "0.1.0",
     "date": "2026-11-17",
-    "about": "界面上的字号、颜色、间距、圆角、尺寸、动效只从这里取。分两套：mac 管 Mac 上的界面（菜单栏菜单、设置、关于、欢迎、电脑屏的 App 资源库窗口），touch 管手机和平板屏上的面板（App 资源库、小横条、型号页、截图）。原型 design/prototype 用 tokens-to-css.mjs 把这份文件转成 CSS 变量；Swift 代码以后按同一份文件生成常量。",
+    "about": "界面上的字号、颜色、间距、圆角、尺寸、动效只从这里取。分两套：mac 管 Mac 上的界面（菜单栏菜单、设置、关于、欢迎、电脑屏的小竖条与 App 资源库浮层），touch 管手机和平板屏上的面板（App 资源库、小横条、型号页、截图）。原型 design/prototype 用 tokens-to-css.mjs 把这份文件转成 CSS 变量；Swift 代码以后按同一份文件生成常量。",
     "rules": [
       "颜色带 system 的，Swift 里用对应的系统语义色，不写死数值；light / dark 只给原型预览用，取自 macOS 26 实际渲染或苹果公布的 iOS 26 系统色",
       "touch 的数值是 Snug 屏上的点。手机竖屏 540 点宽，1 个点在手机上约 0.82 个点，所以比 iOS 原生的数大约 1.25 倍；平板屏（V10）不缩放，照样用这些数，在 iPad 上约大 1.24 倍，实测字大、舒服",
@@ -36,6 +36,7 @@
       "secondaryLabel":   { "system": "secondaryLabelColor",    "light": "rgba(0,0,0,0.55)",   "dark": "rgba(255,255,255,0.55)", "note": "比系统默认的 0.5 略深，浅灰底上过 4.5:1" },
       "tertiaryLabel":    { "system": "tertiaryLabelColor",     "light": "rgba(0,0,0,0.26)",   "dark": "rgba(255,255,255,0.25)", "note": "只给占位和禁用，不给要读的字" },
       "accent":           { "system": "controlAccentColor",     "light": "#0088FF", "dark": "#0091FF", "note": "跟随用户在系统设置里选的强调色" },
+      "accentFill":       { "system": "controlAccentColor", "alpha": { "light": 0.14, "dark": 0.22 }, "light": "rgba(0,136,255,0.14)", "dark": "rgba(0,145,255,0.22)", "note": "电脑屏资源库：行悬停、搜索高亮、小竖条开着时的浅底。是强调色加透明度，跟着系统强调色走" },
       "controlBackground":{ "system": "controlColor",           "light": "#FFFFFF", "dark": "#5B5B5B", "note": "按钮、弹出菜单的底" },
       "controlBorder":    { "system": "控件描边",                 "light": "rgba(0,0,0,0.12)", "dark": "rgba(255,255,255,0.10)" },
       "fill":             { "system": "quaternarySystemFill",   "light": "rgba(0,0,0,0.05)",  "dark": "rgba(255,255,255,0.07)", "note": "选中行、分段控件底" },
@@ -68,7 +69,8 @@
       "control": 6,
       "sheet": 12,
       "window": 16,
-      "menu": 10
+      "menu": 10,
+      "libraryTab": 10
     },
     "size": {
       "settingsWidth": 520,
@@ -86,11 +88,12 @@
       "resolutionPopoverWidth": 280,
       "helpPopoverWidth": 300,
       "zoomSliderWidth": 160,
-      "libraryWindow": { "width": 760, "height": 520 },
-      "librarySidebar": 200,
-    "libraryRowIcon": 28,
-    "libraryGridIcon": 56,
-    "libraryGridItem": 96
+      "libraryRowIcon": 28,
+      "libraryGridIcon": 48,
+      "libraryGridItem": 78,
+      "libraryTab": { "width": 20, "height": 64 },
+      "libraryTabSymbol": 13,
+      "libraryPanel": { "width": 360, "maxHeight": 600 }
     },
     "iconTile": {
       "about": "设置行左边的彩色小方块，里面是白色 SF Symbol。一种颜色只表示一类东西。没写 symbol 的只定颜色，图标由代码按状态给",

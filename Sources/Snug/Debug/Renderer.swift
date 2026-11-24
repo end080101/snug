@@ -92,7 +92,6 @@ final class RenderStub: AppIntents, TouchIntents, Navigation {
     func showList() {}
     func returnToPlaced() {}
     func putBack() {}
-    func putBack(_ window: WindowKey) {}
     func zoom(by delta: Int) {}
     func setDevice(_ device: DeviceChoice) {}
     func dismissScreen() {}
@@ -105,5 +104,4 @@ final class RenderStub: AppIntents, TouchIntents, Navigation {
     func openWelcome() {}
     func openAbout(on display: DisplayID?) {}
     func openUpdate() {}
-    func openLibrary(on display: DisplayID?) {}
 }

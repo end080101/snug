@@ -17,7 +17,7 @@ extension EnvironmentValues {
 }
 
 extension DeviceKind {
-    /// 屏右上角要让开多少：iPad 上 UU远程 的圆形菜单按钮压着右上角约 45 点（V6）；手机上那里没有 UU 的东西，电脑屏没有面板
+    /// 屏右上角要让开多少：iPad 上 UU远程 的圆形菜单按钮压着右上角约 45 点（V6）；手机上那里没有 UU 的东西；电脑屏的资源库贴在左边缘（ComputerLibrary），不用这里
     var topTrailingClear: CGFloat {
         switch self {
         case .tablet: TouchTokens.Layout.tabletTopRightClear
@@ -25,7 +25,7 @@ extension DeviceKind {
         }
     }
 
-    /// 横屏两栏时左边 App 列表的宽度（电脑屏没有面板，跟手机走）
+    /// 横屏两栏时左边 App 列表的宽度（电脑屏的资源库不分两栏，跟手机走）
     var landscapeSidebar: CGFloat {
         switch self {
         case .tablet: TouchTokens.Layout.TabletLandscape.sidebar

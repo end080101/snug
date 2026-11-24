@@ -466,37 +466,63 @@ enum RenderSamples {
 
     // MARK: 电脑屏的 App 资源库
 
+    /// 浮层的各状态，外加小竖条四态。电脑屏是 #22：htop 是挪过来的（能还原），Safari 在它的全屏空间里，
+    /// 其余在内建屏、已最小化；访达开着但没窗口
     private static var library: [RenderSample] {
-        let notice = RenderSample(name: "library-notice", size: CGSize(width: MacTokens.Size.LibraryWindow.width,
-                                                                       height: MacTokens.Size.LibraryWindow.height), inWindow: true) {
-            let s = sampleState()
-            s.config.screens[2].enabled = true
-            connected(s)
-            s.desks.desks[computerID]?.notice = .windowUnresponsive(app: "Safari")
-            let model = LibraryModel()
-            model.target = computerID
-            return AnyView(LibraryView(state: s, catalog: AppCatalog(sample: running, installed: installed), model: model,
-                                       place: { _ in }, putBack: { _ in }, open: { _ in }))
-        }
-        return [notice] + [false, true].flatMap { dark in
-            [LibraryModel.Source.running, .all].map { source in
-                RenderSample(name: "library-\(source == .running ? "running" : "all")\(dark ? "-dark" : "")", dark: dark,
-                             size: CGSize(width: MacTokens.Size.LibraryWindow.width, height: MacTokens.Size.LibraryWindow.height), inWindow: true) {
-                    let s = sampleState()
-                    s.config.screens[2].enabled = true
-                    connected(s)
-                    // htop 是挪到这块电脑屏上的（能还原），其余在内建屏、已最小化
-                    let main = CGMainDisplayID()
-                    let spots: [WindowKey: WindowSpot] = [windows[0].key: .shown(main), windows[1].key: .shown(main),
-                                                          windows[3].key: .shown(main), windows[4].key: .shown(22)]
-                    let model = LibraryModel()
-                    model.target = computerID
-                    model.source = source
-                    s.desks.desks[computerID]?.brought = [windows[4].key]
-                    let catalog = AppCatalog(sample: running, installed: installed, spots: spots)
-                    return AnyView(LibraryView(state: s, catalog: catalog, model: model, place: { _ in }, putBack: { _ in }, open: { _ in }))
+        let size = CGSize(width: MacTokens.Size.LibraryPanel.width, height: MacTokens.Size.LibraryPanel.maxHeight)
+        let main = CGMainDisplayID()
+        let spots: [WindowKey: WindowSpot] = [windows[0].key: .shown(main), windows[1].key: .fullScreen(22),
+                                              windows[3].key: .shown(main), windows[4].key: .shown(22)]
+        func sample(_ name: String, dark: Bool = false, page: ComputerLibraryModel.Page = .running, query: String = "",
+                    loaded: Bool = true, _ configure: @escaping @MainActor (inout Desk.State) -> Void = { _ in }) -> RenderSample {
+            RenderSample(name: name, dark: dark, size: size, inWindow: true) {
+                let s = sampleState()
+                s.config.screens[2].enabled = true
+                connected(s)
+                s.desks.desks[computerID]?.brought = [windows[4].key]
+                if var desk = s.desks.desks[computerID] {
+                    configure(&desk)
+                    s.desks.desks[computerID] = desk
                 }
+                let model = ComputerLibraryModel()
+                model.page = page
+                model.query = query
+                let catalog = AppCatalog(sample: running, installed: installed, spots: spots, loaded: loaded)
+                let actions = ComputerLibraryActions(focus: { _ in }, pull: { _ in }, putBack: { _ in }, open: { _ in }, dismiss: {})
+                return AnyView(ComputerLibraryView(id: computerID, state: s, catalog: catalog, model: model, actions: actions))
             }
         }
+        let panels = [false, true].flatMap { dark in
+            [sample("library-running\(dark ? "-dark" : "")", dark: dark), sample("library-all\(dark ? "-dark" : "")", dark: dark, page: .all)]
+        } + [
+            sample("library-search", query: "yu"),
+            sample("library-search-empty", query: "xyz"),
+            sample("library-working") { $0.work = .placing(windows[1]) },
+            sample("library-notice") { $0.notice = .windowGone(app: "Safari") },
+            sample("library-loading", loaded: false),
+        ]
+        let tabs = RenderSample(name: "library-tab") {
+            AnyView(HStack(spacing: MacTokens.Space.xl) {
+                tab(open: false) { _ in }
+                tab(open: true) { _ in }
+                tab(open: false) { $0.work = .opening(running[1].app) }
+                tab(open: false) { $0.notice = .windowGone(app: "Safari") }
+            }
+            .padding(MacTokens.Space.xl))
+        }
+        return panels + [tabs]
+    }
+
+    private static func tab(open: Bool, _ configure: @MainActor (inout Desk.State) -> Void) -> some View {
+        let s = sampleState()
+        s.config.screens[2].enabled = true
+        connected(s)
+        if var desk = s.desks.desks[computerID] {
+            configure(&desk)
+            s.desks.desks[computerID] = desk
+        }
+        let model = ComputerLibraryModel()
+        model.open = open
+        return ComputerTabView(id: computerID, state: s, model: model, toggle: {})
     }
 }

@@ -12,6 +12,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let quitFlow: QuitFlow
     private var statusBar: StatusBarController?
     private var panels: ScreenPanels?
+    private var computers: ComputerScreens?
     private var legacyObservers: [any NSObjectProtocol] = []
     private var termSource: (any DispatchSourceSignal)?
     /// 这次是开机自启（登录项拉起的），不是用户亲手打开的
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusBar = StatusBarController(state: controller.state, intents: controller, navigation: router)
         let controller = controller
         panels = ScreenPanels(state: controller.state, catalog: controller.catalog) { ScreenIntents(id: $0, app: controller) }
+        computers = ComputerScreens(state: controller.state, catalog: controller.catalog) { ComputerScreenIntents(id: $0, app: controller) }
         handleSIGTERM()
         controller.updater.onNewVersion = { [weak self] userInitiated in self?.router.showUpdate(activating: userInitiated) }
         controller.updater.onInstalled = { [weak self] in self?.quitFlow.userQuit() }

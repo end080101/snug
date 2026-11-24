@@ -7,7 +7,7 @@ public enum WindowSpot: Equatable, Sendable {
     /// 露在这块屏此刻的桌面里
     case shown(DisplayID)
     /// 在这块屏的全屏空间里：没露着、铺满整块屏。Snug 的屏一加，macOS 会把原主屏上的全屏空间挪过来（实测），
-    /// 从菜单栏打开资源库时屏切回资源库所在的桌面，全屏的窗口就被盖住了
+    /// 屏切回普通桌面时全屏的窗口就被盖住了。电脑屏的资源库对它「切换」：切进那个全屏空间，不退出全屏
     case fullScreen(DisplayID)
     /// 没露着（别的桌面、最小化、藏起来的），或中点不在任何一块屏上：远端的人看不见
     case hidden

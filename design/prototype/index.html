@@ -46,15 +46,13 @@
             <div>远程中 · iPhone 17 Pro Max<small>正在看「Snug 手机屏」</small></div>
           </div>
           <hr>
-          <div class="mi hi"><i class="sym" data-s="square.grid.2x2"></i>App 资源库</div>
-          <hr>
           <div class="mi"><i class="sym" data-s="gearshape"></i>设置…<kbd>⌘,</kbd></div>
           <div class="mi"><i class="sym" data-s="info.circle"></i>关于 Snug</div>
           <hr>
           <div class="mi"><i class="sym" data-s="power"></i>退出 Snug<kbd>⌘Q</kbd></div>
         </div>
       </div>
-      <figcaption><b>菜单栏菜单</b>顶上一行说清此刻的状态。「App 资源库」给电脑屏用：在哪块屏的菜单栏点，就在哪块屏打开。</figcaption>
+      <figcaption><b>菜单栏菜单</b>顶上一行说清此刻的状态。电脑屏的 App 资源库从屏幕左边缘的小竖条打开，不在菜单里（菜单栏图标藏在上面难找，全屏的 App 里还看不到）。</figcaption>
     </figure>
 
     <!-- 设置 · 屏幕 -->
@@ -307,33 +305,161 @@
       <figcaption><b>关于</b>保持独立的小窗口，只放版本、链接、致谢。一句话介绍去掉「手机」，现在不只手机。</figcaption>
     </figure>
 
-    <!-- 电脑屏上的 App 资源库 -->
+    <!-- 电脑屏上的 App 资源库：小竖条 + 浮层，及各状态 -->
     <figure class="frame">
-      <div class="window lib">
-        <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div></div>
-        <div class="toolbar">
-          <h4>App 资源库</h4><small>放到「Snug MacBook Air」</small>
-          <span class="field search"><i class="sym" data-s="magnifyingglass"></i>搜索</span>
+      <div class="computer-screen">
+        <div class="menubar">
+          <span class="app-menu"><b>Ghostty</b><span>Shell</span><span>编辑</span><span>窗口</span></span>
+          <span class="on"><i class="sym" data-s="iphone.radiowaves.left.and.right"></i></span>
+          <i class="sym" data-s="magnifyingglass"></i>
+          <span>11月24日 周二 21:05</span>
         </div>
-        <div class="body">
-          <div class="side">
-            <div class="src" aria-selected="true"><i class="sym" data-s="macwindow"></i>运行中<span class="count">4</span></div>
-            <div class="src"><i class="sym" data-s="square.grid.2x2"></i>全部 App<span class="count">68</span></div>
-          </div>
-          <div class="content">
-            <div class="app"><img src="assets/apps/ghostty.png" alt=""><div class="text"><b>Ghostty</b><div class="detail">2 个窗口</div></div></div>
-            <div class="win"><i class="sym" data-s="macwindow"></i><span class="name">~/projects/snug — zsh</span><span class="where">在内建屏</span><span class="button">放到这块屏</span></div>
-            <div class="win"><i class="sym" data-s="macwindow"></i><span class="name">~ — htop</span><span class="where">在这块屏</span></div>
-            <div class="sep"></div>
-            <div class="app"><img src="assets/apps/safari.png" alt=""><div class="text"><b>Safari</b><div class="detail">1 个窗口</div></div></div>
-            <div class="win"><i class="sym" data-s="macwindow"></i><span class="name">Swift 文档 — Concurrency</span><span class="where">在内建屏</span><span class="button">放到这块屏</span></div>
-            <div class="sep"></div>
-            <div class="app"><img src="assets/apps/notes.png" alt=""><div class="text"><b>备忘录</b><div class="detail">1 个窗口 · 已最小化</div></div></div>
-            <div class="win"><i class="sym" data-s="macwindow"></i><span class="name">周末计划</span><span class="where">已最小化</span><span class="button">放到这块屏</span></div>
+        <div class="backdrop" style="left:830px; top:110px; width:400px; height:360px">
+          <div class="titlebar"><div class="lights"><i></i><i></i><i></i></div><span class="title">~ — htop</span></div>
+          <pre>  PID USER      CPU%  MEM%  COMMAND
+ 2041 zephyr    12.4   3.1  Ghostty
+  958 zephyr     8.0   2.2  UURemoteServer
+ 1097 zephyr     1.2   0.9  Snug</pre>
+        </div>
+        <div class="lib-tab open"><i class="sym" data-s="chevron.compact.left"></i></div>
+        <div class="lib-panel">
+          <span class="field"><i class="sym" data-s="magnifyingglass"></i>搜索 App</span>
+          <span class="segmented"><span aria-selected="true">运行中</span><span>全部</span></span>
+          <div class="list">
+            <div class="sect">
+              <b>这块屏</b>
+              <div class="item"><img src="assets/apps/ghostty.png" alt=""><div class="text"><b>~ — htop</b><span>Ghostty</span></div><span class="act">切换</span><span class="button"><i class="sym" data-s="arrow.uturn.backward"></i>还原</span></div>
+              <div class="item"><img src="assets/apps/safari.png" alt=""><div class="text"><b>GitHub — snug</b><span>Safari · 全屏</span></div><span class="act">切换</span></div>
+            </div>
+            <div class="sect">
+              <b>其他位置</b>
+              <div class="item hover"><img src="assets/apps/ghostty.png" alt=""><div class="text"><b>~/projects/snug — zsh</b><span>Ghostty · 在内建屏</span></div><span class="act">放到这块屏</span></div>
+              <div class="item"><img src="assets/apps/safari.png" alt=""><div class="text"><b>Swift 文档 — Concurrency</b><span>Safari · 在内建屏</span></div><span class="act">放到这块屏</span></div>
+              <div class="item"><img src="assets/apps/preview.png" alt=""><div class="text"><b>截图.png</b><span>预览 · 在「Snug 手机屏」</span></div><span class="act">放到这块屏</span></div>
+              <div class="item"><img src="assets/apps/notes.png" alt=""><div class="text"><b>周末计划</b><span>备忘录 · 已最小化</span></div><span class="act">放到这块屏</span></div>
+            </div>
+            <div class="sect">
+              <b>没有窗口</b>
+              <div class="item"><img src="assets/apps/calendar.png" alt=""><div class="text"><b>日历</b></div><span class="act">打开</span></div>
+              <div class="item"><img src="assets/apps/mail.png" alt=""><div class="text"><b>邮件</b></div><span class="act">打开</span></div>
+            </div>
           </div>
         </div>
       </div>
-      <figcaption><b>电脑屏的 App 资源库</b>电脑屏没有小横条，从菜单栏打开这个窗口。用 Mac 的字号和控件；每个窗口标出现在在哪块屏，一键挪过来。</figcaption>
+      <figcaption><b>运行中</b>按窗口在哪分三组，组名就是点下去会做的事；空的组不显示。整行可点，右边的动作字一直在，不靠悬停提示。没在运行的 App 在「全部」里打开，搜索时也能搜到。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field"><i class="sym" data-s="magnifyingglass"></i>搜索 App</span>
+        <span class="segmented"><span>运行中</span><span aria-selected="true">全部</span></span>
+        <div class="list">
+          <div class="grid">
+            <div><img src="assets/apps/appstore.png" alt="">App Store<i></i></div>
+            <div class="on"><img src="assets/apps/ghostty.png" alt="">Ghostty<i></i></div>
+            <div class="on"><img src="assets/apps/safari.png" alt="">Safari<i></i></div>
+            <div class="on"><img src="assets/apps/snug.png" alt="">Snug<i></i></div>
+            <div class="on"><img src="assets/apps/notes.png" alt="">备忘录<i></i></div>
+            <div><img src="assets/apps/maps.png" alt="">地图<i></i></div>
+            <div><img src="assets/apps/finder.png" alt="">访达<i></i></div>
+            <div><img src="assets/apps/calculator.png" alt="">计算器<i></i></div>
+            <div class="on"><img src="assets/apps/calendar.png" alt="">日历<i></i></div>
+            <div><img src="assets/apps/reminders.png" alt="">提醒事项<i></i></div>
+            <div><img src="assets/apps/textedit.png" alt="">文本编辑<i></i></div>
+            <div><img src="assets/apps/settings.png" alt="">系统设置<i></i></div>
+            <div><img src="assets/apps/music.png" alt="">音乐<i></i></div>
+            <div class="on"><img src="assets/apps/mail.png" alt="">邮件<i></i></div>
+            <div class="on"><img src="assets/apps/preview.png" alt="">预览<i></i></div>
+            <div><img src="assets/apps/photos.png" alt="">照片<i></i></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>全部</b>本机所有 App，4 列，和手机上的「全部」同一套。圆点表示在运行。点图标和点程序坞一样，只是窗口落在这块屏：已在这块屏就切换，在别处就放过来，没有窗口就打开。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field typing"><i class="sym" data-s="magnifyingglass"></i>yu<i class="sym clear" data-s="xmark.circle.fill"></i></span>
+        <span class="segmented off"><span aria-selected="true">运行中</span><span>全部</span></span>
+        <div class="list">
+          <div class="sect">
+            <b>其他位置</b>
+            <div class="item hi"><img src="assets/apps/preview.png" alt=""><div class="text"><b>截图.png</b><span>预览 · 在「Snug 手机屏」</span></div><span class="act">放到这块屏</span></div>
+          </div>
+          <div class="sect">
+            <b>未打开</b>
+            <div class="item"><img src="assets/apps/music.png" alt=""><div class="text"><b>音乐</b></div><span class="act">打开</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>搜索</b>App 名、拼音、首字母、窗口标题都能搜。结果不分页，多一组「未打开」。第一条高亮，回车就执行；按 Esc 先清空，再按一次收起。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field"><i class="sym" data-s="magnifyingglass"></i>搜索 App</span>
+        <span class="segmented"><span aria-selected="true">运行中</span><span>全部</span></span>
+        <div class="banner"><span class="spinner"></span><div><span>正在把 Safari 挪过来…</span></div></div>
+        <div class="list busy">
+          <div class="sect">
+            <b>这块屏</b>
+            <div class="item"><img src="assets/apps/ghostty.png" alt=""><div class="text"><b>~ — htop</b><span>Ghostty</span></div><span class="act">切换</span><span class="button"><i class="sym" data-s="arrow.uturn.backward"></i>还原</span></div>
+          </div>
+          <div class="sect">
+            <b>其他位置</b>
+            <div class="item"><img src="assets/apps/safari.png" alt=""><div class="text"><b>Swift 文档 — Concurrency</b><span>Safari · 在内建屏</span></div><span class="act">放到这块屏</span></div>
+            <div class="item"><img src="assets/apps/notes.png" alt=""><div class="text"><b>周末计划</b><span>备忘录 · 已最小化</span></div><span class="act">放到这块屏</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>进行中</b>列表上方一行写在做什么，列表变淡、暂时不能点，免得连点出两件事。放过来、打开做完没问题就收起；还原不收，看着这一行回到「其他位置」。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field"><i class="sym" data-s="magnifyingglass"></i>搜索 App</span>
+        <span class="segmented"><span aria-selected="true">运行中</span><span>全部</span></span>
+        <div class="banner"><i class="sym" data-s="exclamationmark.triangle.fill"></i><div><b>Safari 窗口已关闭</b><span>请另选一个窗口</span></div></div>
+        <div class="list">
+          <div class="sect">
+            <b>这块屏</b>
+            <div class="item"><img src="assets/apps/ghostty.png" alt=""><div class="text"><b>~ — htop</b><span>Ghostty</span></div><span class="act">切换</span><span class="button"><i class="sym" data-s="arrow.uturn.backward"></i>还原</span></div>
+          </div>
+          <div class="sect">
+            <b>其他位置</b>
+            <div class="item"><img src="assets/apps/notes.png" alt=""><div class="text"><b>周末计划</b><span>备忘录 · 已最小化</span></div><span class="act">放到这块屏</span></div>
+          </div>
+        </div>
+      </div>
+      <figcaption><b>出错</b>写明哪个 App、出了什么事、接下来怎么办，和手机上同一套提示。浮层不收，下一个动作开始时提示清掉。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field typing"><i class="sym" data-s="magnifyingglass"></i>xyz<i class="sym clear" data-s="xmark.circle.fill"></i></span>
+        <span class="segmented off"><span aria-selected="true">运行中</span><span>全部</span></span>
+        <div class="empty"><i class="sym" data-s="magnifyingglass"></i><b>无结果</b><span>没有与「xyz」相符的 App 或窗口</span></div>
+      </div>
+      <figcaption><b>搜索无结果</b></figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="lib-panel">
+        <span class="field"><i class="sym" data-s="magnifyingglass"></i>搜索 App</span>
+        <span class="segmented"><span aria-selected="true">运行中</span><span>全部</span></span>
+        <div class="empty"><span class="spinner"></span><span>正在读取</span></div>
+      </div>
+      <figcaption><b>读取中</b>这次远程第一次打开时。搜索框和分段照常能用。</figcaption>
+    </figure>
+
+    <figure class="frame">
+      <div class="tab-states">
+        <div class="cell"><div class="edge"><div class="lib-tab"><i class="sym" data-s="chevron.compact.right"></i></div></div><small><b>平时</b>20 × 64</small></div>
+        <div class="cell"><div class="edge"><div class="lib-tab open"><i class="sym" data-s="chevron.compact.left"></i></div></div><small><b>浮层开着</b>再点收起</small></div>
+        <div class="cell"><div class="edge"><div class="lib-tab"><span class="spinner" style="width:11px;height:11px"></span></div></div><small><b>收起后还在做事</b>做完恢复</small></div>
+        <div class="cell"><div class="edge"><div class="lib-tab"><i class="sym warn" data-s="exclamationmark.triangle.fill"></i></div></div><small><b>收起后有提示</b>点开就是那条提示</small></div>
+      </div>
+      <figcaption><b>小竖条</b>和手机屏底部的小横条是一对：同属 chevron.compact 一族，箭头朝浮层弹出的方向。只换图标和底色，不换大小；点了第一下就生效，不用先激活 Snug。全屏的 App 里也在。</figcaption>
     </figure>
 
   </div>

@@ -25,7 +25,7 @@ struct WindowSpotTests {
         #expect(spot(CGRect(x: 900, y: 100, width: 800, height: 600), shown: true) == .shown(builtIn))
     }
 
-    @Test("没露着、铺满整块电脑屏：在这块屏的全屏空间里，被资源库所在的桌面盖住（11-17 实测：加屏后 Safari 的全屏空间挪了过来）")
+    @Test("没露着、铺满整块电脑屏：在这块屏的全屏空间里，屏切回普通桌面时被盖住（11-17 实测：加屏后 Safari 的全屏空间挪了过来）")
     func coveredFullScreen() {
         #expect(spot(computerBounds, shown: false) == .fullScreen(computer))
         #expect(spot(builtInBounds, shown: false) == .fullScreen(builtIn))

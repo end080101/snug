@@ -220,7 +220,6 @@ final class ScreenIntents: TouchIntents {
     func showList() { desks.showList(on: id) }
     func returnToPlaced() { desks.returnToPlaced(on: id) }
     func putBack() { desks.putBack(on: id) }
-    func putBack(_ window: WindowKey) { desks.putBack(window, on: id) }
     func zoom(by delta: Int) { desks.zoom(by: delta, on: id) }
     func setDevice(_ device: DeviceChoice) { app.setScreenDevice(id, device) }
     func dismissScreen() { desks.dismissScreen(id) }
@@ -234,4 +233,22 @@ final class ScreenIntents: TouchIntents {
     func openCrop() { app.screenshots.openCrop() }
     func cancelCrop() { app.screenshots.cancelCrop() }
     func finishCrop(_ selection: CGRect) { app.screenshots.finishCrop(selection) }
+}
+
+/// 一块电脑屏的资源库的意图：落到这块屏上
+final class ComputerScreenIntents: ComputerIntents {
+    let id: ScreenID
+    private unowned let app: AppController
+    private var desks: DeskSet { app.desks }
+
+    init(id: ScreenID, app: AppController) {
+        self.id = id
+        self.app = app
+    }
+
+    func focus(_ window: WindowInfo) { desks.focus(window, on: id) }
+    func pull(_ window: WindowInfo) { desks.pull(window, on: id) }
+    func open(_ app: AppInfo) { desks.open(app, on: id) }
+    func putBack(_ window: WindowKey) { desks.putBack(window, on: id) }
+    func dismissNotice() { desks.dismissNotice(on: id) }
 }

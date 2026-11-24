@@ -17,6 +17,7 @@ let symbols = [
     "rectangle.on.rectangle", "hand.point.up.left", "gearshape", "gearshape.fill", "info.circle", "plus", "minus",
     "chevron.up.chevron.down", "chevron.down", "chevron.right", "square.grid.2x2", "magnifyingglass", "xmark.circle",
     "rectangle.portrait", "rectangle", "display", "checkmark", "info.circle.fill", "rectangle.portrait.rotate", "arrow.left.arrow.right",
+    "chevron.compact.right", "chevron.compact.left",
     // Snug 屏上
     "rectangle.portrait.and.arrow.right", "chevron.left", "macwindow.badge.plus", "xmark.square", "xmark.circle.fill",
     "arrow.uturn.backward", "macwindow", "camera", "square.grid.3x3.fill", "list.bullet",
