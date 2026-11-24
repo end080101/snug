@@ -24,6 +24,10 @@ final class AppState {
     var controllers: [String] = []
     /// 这次远程归哪家远控（界面上的名字）；不在远程时为 nil
     var remoteName: String?
+    /// 这次远程的远控只在自己启动时认屏：没提前准备时远程中不建屏（ScreenPlan），状态里提示去打开
+    var remoteLaunchOnly = false
+    /// 看不到某块 Snug 屏的远控（界面上的名字）：它只在启动时认屏，这块屏是它启动后才建的，要重启它
+    var screensUnseenBy: String?
     /// 远控此刻在推的屏
     var streamedDisplay: DisplayID?
     /// 各块屏上的状态（DeskSet 写）

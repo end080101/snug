@@ -4,6 +4,17 @@ import Testing
 
 @Suite("远控端口 RemoteAdapter")
 struct RemoteAdapterTests {
+    @Test("远控看不到的 Snug 屏：它认得的里面没有的那几块；不知道它认得哪些（nil）时一块都不算")
+    func unseenScreens() {
+        func reading(_ known: Set<DisplayID>?) -> RemoteReading {
+            RemoteReading(remote: fakeRemote, observation: RemoteObservation(present: false, controllers: [], streamedDisplay: nil, evidence: "",
+                                                                             knownDisplays: known))
+        }
+        #expect(reading([1, 3, 367]).unseen([367, 368]) == [368])
+        #expect(reading([1, 3]).unseen([]).isEmpty)
+        #expect(reading(nil).unseen([367]).isEmpty)
+    }
+
     @Test("注入事件来源：只认可执行文件名完全对上的进程；读不到路径、同名目录、名字只是前缀都不认")
     func injectedEventSource() {
         let source = fakeRemote.injector

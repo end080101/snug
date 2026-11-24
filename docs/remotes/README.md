@@ -22,9 +22,9 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
 
 | 类型 | 要交什么 |
 | :--- | :--- |
-| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）；界面名；从资源库排除的 App bundle；注入事件的进程；手势整理（不写就是直通） |
+| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）；界面名；从资源库排除的 App bundle；注入事件的进程；手势整理（不写就是直通）；是不是只在自己启动时认显示器（`seesScreensOnlyAtLaunch`：是的话设置里给「提前准备虚拟屏」，没提前准备时远程中不建屏） |
 | `TouchNormalizer` | 把这家注入的原始指针事件整理成标准手指输入：一次手势是按下、若干拖动、最多一个「远控已认出长按或滑动」、抬起。`consumes` 声明要看哪几种事件；可以在当前事件前补输入；要等超时（比如停多久算松手）的给 `deadline`，系统层到点调 `tick`。纯值类型，写在这家的纯逻辑目标里，拿真机录制做回放测试。远控发的就是手指的按下、拖动、抬起时用 `DirectTouch` |
-| `RemoteObservation` | 在不在场：只在有正面证据时为真；控制端：认不出为空；推流屏：不知道为 nil；信号快照：写进连入、断开日志 |
+| `RemoteObservation` | 在不在场：只在有正面证据时为真；控制端：认不出为空；推流屏：不知道为 nil；信号快照：写进连入、断开日志；认得的显示器：只在启动时认屏的远控报它这次启动认到的，Snug 据此提示「重启它才选得到」，别家为 nil |
 | `RemoteAdapter` | 静态的 `identity`（身份属于这家远控，登记处、诊断命令、运行中的实例都从这里取）；`init()`；`start()`、`stop()`；`sample(wallClock:)` 每拍调一次 |
 
 不在端口里的：屏幕让位、主屏策略、模式恢复、断开时序。这些按 UU远程 实测标定、各家暂时一样，留在共用代码里（[清单](uu.md#留在共用代码里的-uu-实测值)）；新的远控实测不同，改共用代码并补测试。手势的手感（防抖、长按时长、惯性）也在共用的翻译器里，各家只管把自家方言整理成标准手指输入；改翻译器时，`TouchGoldenMasterTests` 的摘要必须不变。注入事件目前只按进程名认：RustDesk 这类界面与服务同一个可执行文件的，要按别的特征认（RustDesk 是事件的 `eventSourceUserData`），得改核心的 `InjectedEventSource` 和系统层的 `InjectedEvents`（`TouchEvents.swift`）并补测试（见[设计记录](../remote-adapter/README.md#5-适配接口)，RustDesk 一行）。

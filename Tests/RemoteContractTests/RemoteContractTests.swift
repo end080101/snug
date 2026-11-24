@@ -47,6 +47,18 @@ struct RemoteContractTests {
         }
     }
 
+    @Test("认得哪些屏：只在启动时认屏的远控要报（连上后不建屏、看不到的屏要提示重启），别的一直不报", arguments: drivers)
+    func knownDisplays(driver: any RemoteDriver) {
+        let knowing = driver.knowing([1, 367])
+        #expect((knowing != nil) == driver.identity.seesScreensOnlyAtLaunch)
+        if let knowing { #expect(knowing.knownDisplays == [1, 367]) }
+        if !driver.identity.seesScreensOnlyAtLaunch {
+            for observation in [driver.idle(), driver.unreadable(), driver.connected(controllers: ["iPhone"]), driver.streaming(79)] {
+                #expect(observation.knownDisplays == nil)
+            }
+        }
+    }
+
     @Test("注入事件：认它自己注入的进程；本机的事件、Snug 自己的进程、别家远控的注入进程都不认", arguments: drivers)
     func injectedEvents(driver: any RemoteDriver) {
         let injector = driver.identity.injector

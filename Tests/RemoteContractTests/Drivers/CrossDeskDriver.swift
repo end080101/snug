@@ -26,6 +26,16 @@ struct CrossDeskDriver: RemoteDriver {
         connected(controllers: [])
     }
 
+    /// CrossDesk 只在启动时认屏：认到的从日志里跟着读
+    func knowing(_ displays: Set<DisplayID>) -> RemoteObservation? {
+        var launch = CrossDeskLaunchDisplays()
+        launch.take("[2026-11-23 18:52:52.680] [crossdesk] [info] Logger initialized")
+        for (index, id) in displays.sorted().enumerated() {
+            launch.take("[2026-11-23 18:52:52.825] [crossdesk] [info] [x.mm:426] macOS display discovered: index=\(index), display_id=\(id), name='屏'")
+        }
+        return CrossDeskRemote.observation(sharing: [], known: launch.displays)
+    }
+
     /// iOS 选「绝对鼠标」时：点、长按带一个手指处的移动，滑动只发不按键的移动。
     /// 滑动前先来一个孤立的移动，开头跳到 80 点开外：整理据此认出是绝对鼠标
     func touchEvents(_ gesture: FingerGesture) -> [PointerEvent] {

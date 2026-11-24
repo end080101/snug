@@ -35,7 +35,12 @@ struct StatusText: Equatable {
         if s.quitting { return "正在还原窗口" }
         if !s.accessibilityTrusted { return "用于移动窗口与转换手势" }
         if !s.config.screens.contains(where: \.enabled) { return "屏幕都已关闭" }
+        // 措辞到门面那一轮再定
+        if let remote = s.screensUnseenBy { return "重启 \(remote) 才选得到 Snug 的屏" }
         if s.connection == .idle { return nil }
+        if s.remoteLaunchOnly, !s.config.keepScreensReady, let remote = s.remoteName {
+            return "\(remote) 只在启动时认屏：打开「提前准备虚拟屏」，再重启 \(remote)"
+        }
         if s.gesturesFailed { return "手势转换未启用" }
         let screens = s.config.screens.filter(\.enabled)
         let states = screens.map { s.desks.desks[$0.id]?.screen ?? .off }

@@ -27,6 +27,9 @@ struct UUDriver: RemoteDriver {
         signals(.unrecognized, capture: [.displayDescribed(display), .captureStarted])
     }
 
+    /// UU 随时认新屏（连上后建的屏也选得到），不报
+    func knowing(_ displays: Set<DisplayID>) -> RemoteObservation? { nil }
+
     /// UU 把手指当鼠标左键：按下、拖动、抬起原样发过来
     func touchEvents(_ gesture: FingerGesture) -> [PointerEvent] {
         let p = CGPoint(x: 200, y: 400)

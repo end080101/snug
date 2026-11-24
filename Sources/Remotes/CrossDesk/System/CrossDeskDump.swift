@@ -33,6 +33,14 @@ package enum CrossDeskDump {
         for line in instance {
             if case .displayFound(let index, let display, let name) = line.event { print("  [\(index)] #\(display) \(name)") }
         }
+        // 运行时那条路（只读日志末尾、跟着新追加的行），和上面整份读的对得上才对
+        var launch = CrossDeskLaunchDisplays()
+        do {
+            for line in try CrossDeskLogTail().poll() { launch.take(line) }
+            print("运行时读到的：\(launch.displays.map { $0.sorted().map { "#\($0)" }.joined(separator: "、") } ?? "没读到")")
+        } catch {
+            print("运行时读不了日志：\(error)")
+        }
         print("此刻的屏：")
         RemoteCheckTools.displayLines().forEach { print($0) }
         return owners == nil ? 1 : 0

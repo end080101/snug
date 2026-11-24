@@ -59,6 +59,21 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).map(\.resident) == [true, false])
     }
 
+    @Test("远控只在启动时认屏：没提前准备时远程中不建屏（设为主屏的那块照常常驻）；提前准备了照常")
+    func launchOnlyRemote() {
+        var c = config()
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).isEmpty)
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).count == 2)
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).map(\.id) == [.phone])
+        c.mainScreen = nil
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).count == 2)
+        // 预览自测不看远控
+        c.keepScreensReady = false
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true, preview: true).count == 2)
+    }
+
     @Test("类别 → 行为：手机、平板是触屏，电脑不是；手势总开关不改行为（翻不翻译由界面层按开关定）")
     func behavior() {
         #expect(ScreenPlan.behavior(.phone) == .touchScreen)

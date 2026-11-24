@@ -141,7 +141,9 @@ final class AppController: Sendable {
         refreshTrust()
         screenshots.expire()
         let wallClock = Date()
-        handle(session.update(remotes.map { RemoteReading(remote: $0.identity, observation: $0.sample(wallClock: wallClock)) }, now: now))
+        let readings = remotes.map { RemoteReading(remote: $0.identity, observation: $0.sample(wallClock: wallClock)) }
+        handle(session.update(readings, now: now))
+        noteUnseenScreens(readings)
         keepPointerOffSnugScreens()
         if now.timeIntervalSince(lastVerifyAt) >= Self.verifyInterval {
             lastVerifyAt = now
@@ -166,6 +168,21 @@ final class AppController: Sendable {
         state.update(\.connection, session.isConnected ? .connected : (session.inEpisode ? .reconnecting : .idle))
         state.update(\.controllers, session.controllers)
         state.update(\.remoteName, session.owner?.displayName)
+        state.update(\.remoteLaunchOnly, session.owner?.seesScreensOnlyAtLaunch == true)
+    }
+
+    /// 只在启动时认屏的远控，它启动后才建的 Snug 屏选不到：状态里提示重启它（没人远程时也提示，好在连之前就重启）
+    private func noteUnseenScreens(_ readings: [RemoteReading]) {
+        let snug = Set(state.desks.desks.values.compactMap(\.display))
+        let blind = readings.first { !$0.unseen(snug).isEmpty }
+        let name = blind?.remote.displayName
+        guard name != state.screensUnseenBy else { return }
+        if let blind {
+            Log.info("\(blind.remote.logName) 看不到 Snug 的屏 \(blind.unseen(snug).sorted().map { "#\($0)" }.joined(separator: "、"))：重启它才选得到")
+        } else if let gone = state.screensUnseenBy {
+            Log.info("\(gone) 看得到 Snug 的屏了（或不再需要）")
+        }
+        state.screensUnseenBy = name
     }
 
     /// Snug 的屏在本机看不见，没人远程时指针停在上面就成了「鼠标找不回来」。每拍看一眼，连上马上停：
@@ -189,7 +206,8 @@ final class AppController: Sendable {
 
     /// 按此刻的配置和会话算出要哪些屏，交给 DeskSet（结论没变就什么都不做）
     func applyPlan() {
-        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, trusted: state.accessibilityTrusted, preview: preview))
+        desks.setWishes(ScreenPlan.wishes(config: store.config, remote: session.inEpisode, seesNewScreens: session.owner?.seesScreensOnlyAtLaunch != true,
+                                          trusted: state.accessibilityTrusted, preview: preview))
     }
 
     /// 权限是用户在系统设置里给的，随时会变：刚给上时把上次没放回去的窗口放回去

@@ -88,6 +88,11 @@ enum RenderSamples {
                 s.desks.desks[.phone]?.placed = Desk.Placed(window: windows[0], zoom: 2)
             },
             page("settings-screens-main") { s in s.config.mainScreen = computerID },
+            page("settings-screens-unseen") { s in
+                s.launchOnlyRemotes = Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
+                s.config.keepScreensReady = true
+                s.screensUnseenBy = s.launchOnlyRemotes.first
+            },
             page("settings-screens-ready") { s in
                 s.launchOnlyRemotes = Remotes.all.map(\.identity).filter(\.seesScreensOnlyAtLaunch).map(\.displayName)
                 s.config.keepScreensReady = true
