@@ -14,8 +14,13 @@ enum CrossDeskHost {
         var description: String { "IOPMCopyAssertionsByProcess 返回 \(String(format: "0x%08x", code))" }
     }
 
+    /// 此刻持「共享桌面」断言的进程（按进程号排）；查不了电源断言时抛出
+    static func sharingOwners() throws -> [Int32] {
+        CrossDeskRemote.sharingOwners(in: try assertions())
+    }
+
     /// 此刻每个进程持有的电源断言名
-    static func assertions() throws -> [Int32: [String]] {
+    private static func assertions() throws -> [Int32: [String]] {
         var raw: Unmanaged<CFDictionary>?
         let code = IOPMCopyAssertionsByProcess(&raw)
         guard code == kIOReturnSuccess, let byProcess = raw?.takeRetainedValue() as? [NSNumber: [[String: Any]]] else {

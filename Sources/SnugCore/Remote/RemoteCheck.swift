@@ -28,6 +28,26 @@ public enum RemoteCheck {
         }
     }
 
+    /// 第一项：没装。其余各项无从核对，各家只报这一项
+    public static func notInstalled(_ remote: RemoteIdentity, bundleID: String) -> Item {
+        Item(status: .fail, title: remote.displayName, detail: "没装（按 \(bundleID) 找不到），其余各项无从核对")
+    }
+
+    /// 第一项：装了什么版本、和上次核对过的比，这次核对哪一段（scope：「最近 4 小时」之类）
+    public static func installed(_ remote: RemoteIdentity, version: String, verified: String, scope: String) -> Item {
+        let note = version == verified ? "即上次核对的版本" : "上次核对的是 \(verified)"
+        return Item(status: .ok, title: remote.displayName, detail: "版本 \(version)（\(note)）；核对范围：\(scope)")
+    }
+
+    /// 报告里的时刻（时:分）
+    public static func clock(_ date: Date, in timeZone: TimeZone = .current) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = timeZone
+        f.dateFormat = "HH:mm"
+        return f.string(from: date)
+    }
+
     /// 报告正文：标题（「<远控> 兼容自检」）、结论、逐项
     public static func report(_ items: [Item], remote: RemoteIdentity, hours: Int, at date: Date) -> String {
         let stamp = DateFormatter()

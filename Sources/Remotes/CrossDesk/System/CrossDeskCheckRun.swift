@@ -14,15 +14,15 @@ package enum CrossDeskCheckRun {
         let zone = TimeZone.current
         var files: [String: String] = [:]
 
-        let bundle = NSWorkspace.shared.urlForApplication(withBundleIdentifier: CrossDeskRemote.bundleID)
-        let version = bundle.flatMap { Bundle(url: $0)?.infoDictionary?["CFBundleShortVersionString"] as? String }
+        let installed = RemoteCheckTools.installedApp(bundleID: CrossDeskRemote.bundleID)
+        let bundle = installed?.url, version = installed?.version
         let sought = [CrossDeskRemote.sharingAssertion] + CrossDeskLogLine.phrases
         let scan = bundle.map { RemoteCheckTools.scanBundle($0, for: sought.reduce(into: [:]) { $0[$1] = Data($1.utf8) }) }
         let processes = CrossDeskHost.processes().map(\.processIdentifier)
         var sharingNow: [Int32]?
         var assertionNote: String
         do {
-            sharingNow = CrossDeskRemote.sharingOwners(in: try CrossDeskHost.assertions())
+            sharingNow = try CrossDeskHost.sharingOwners()
             assertionNote = CrossDeskRemote.observation(sharing: sharingNow).evidence
         } catch {
             assertionNote = "电源断言查不了：\(error)"
@@ -37,7 +37,7 @@ package enum CrossDeskCheckRun {
         files["snug.log"] = SnugLogDigest.recent(snugLines, since: since).joined(separator: "\n")
         files["displays.txt"] = RemoteCheckTools.displayLines().joined(separator: "\n")
 
-        let facts = CrossDeskCheck.Facts(hours: hours, since: since, version: version, processes: processes,
+        let facts = CrossDeskCheck.Facts(hours: hours, since: since, version: version, processes: processes, programs: scan?.programs ?? [],
                                          foundInProgram: Set(scan?.hits.keys.map { $0 } ?? []), sharingNow: sharingNow, log: log, timeZone: zone,
                                          snugLog: snugLines.map(String.init), onlineDisplays: Set(Screens.online() ?? []),
                                          onlineSnugDisplays: RemoteCheckTools.onlineSnugDisplays())

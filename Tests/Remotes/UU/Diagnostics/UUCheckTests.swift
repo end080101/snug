@@ -45,7 +45,7 @@ private func facts(version: String? = UUCheck.verifiedVersion, server: UUCheck.S
                   linkers: linkers, capture: capture, snugLog: snug, onlineSnugDisplays: online, controllersNow: now)
 }
 
-private func item(_ title: String, in items: [UUCheck.Item]) -> UUCheck.Item? { items.first { $0.title == title } }
+private func item(_ title: String, in items: [RemoteCheck.Item]) -> RemoteCheck.Item? { items.first { $0.title == title } }
 
 @Suite("UU远程 兼容自检 UUCheck")
 struct UUCheckTests {
@@ -131,7 +131,7 @@ struct UUCheckTests {
         ]
         let server = UUCheck.Server(pid: 200, start: restart)
         let items = UUCheck.evaluate(facts(server: server, capture: capture, snug: snugLog(sessions: [remoteStart, restart + 60])))
-        #expect(items.first?.detail.hasSuffix("核对范围：UURemoteServer \(UUCheck.clock(restart)) 启动以来") == true)
+        #expect(items.first?.detail.hasSuffix("核对范围：UURemoteServer \(RemoteCheck.clock(restart)) 启动以来") == true)
         #expect(item("推流日志", in: items)?.detail == "推流开始 1 次、停止 0 次；Snug 记到的 1 次远程都对得上")
         // 新进程开推前没有屏描述：旧进程描述过的 79 不能带过来
         #expect(item("推流屏", in: items)?.status == .fail)
@@ -144,7 +144,7 @@ struct UUCheckTests {
     @Test("连接检测：推流信号未知的连入不计；一次都没亮是问题，亮了一部分需留意")
     func detection() throws {
         let capture = try records("2257")
-        func status(_ values: [Bool?]) -> UUCheck.Status? {
+        func status(_ values: [Bool?]) -> RemoteCheck.Status? {
             item("连接检测", in: UUCheck.evaluate(facts(capture: capture, snug: snugLog(captures: values))))?.status
         }
         #expect(status([true, nil]) == .ok)

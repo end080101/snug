@@ -1,7 +1,6 @@
 // 远控兼容自检（--check-remote）各家共用的取证工具：读 Snug 自己的日志、扫远控包里的程序、此刻在线的屏、写取证材料、收尾出报告。
 // 判定在各家的纯逻辑目标里（UU 见 UUCheck，CrossDesk 见 CrossDeskCheck），条目与报告的写法见 SnugCore 的 RemoteCheck
-import CoreGraphics
-import Foundation
+import AppKit
 import SnugCore
 
 @MainActor
@@ -13,6 +12,12 @@ public enum RemoteCheckTools {
             guard let text = try? String(contentsOf: url, encoding: .utf8) else { return [] }
             return text.split(separator: "\n")
         }
+    }
+
+    /// 远控装在哪、什么版本；没装为 nil
+    public static func installedApp(bundleID: String) -> (url: URL, version: String?)? {
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else { return nil }
+        return (url, Bundle(url: url)?.infoDictionary?["CFBundleShortVersionString"] as? String)
     }
 
     /// 包里的 Mach-O 程序（包内路径，排好序），以及每个要找的字节串出现在哪些程序里。

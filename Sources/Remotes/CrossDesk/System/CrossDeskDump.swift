@@ -7,8 +7,7 @@ import SnugSystem
 @MainActor
 package enum CrossDeskDump {
     package static func run() -> Int32 {
-        if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: CrossDeskRemote.bundleID) {
-            let version = Bundle(url: url)?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        if let (url, version) = RemoteCheckTools.installedApp(bundleID: CrossDeskRemote.bundleID) {
             print("CrossDesk：\(url.path)（版本 \(version ?? "未知")，上次核对的是 \(CrossDeskRemote.verifiedVersion)）")
         } else {
             print("CrossDesk：没装（按 \(CrossDeskRemote.bundleID) 找不到）")
@@ -20,7 +19,7 @@ package enum CrossDeskDump {
         }.joined(separator: "；")))
         let owners: [Int32]?
         do {
-            owners = CrossDeskRemote.sharingOwners(in: try CrossDeskHost.assertions())
+            owners = try CrossDeskHost.sharingOwners()
         } catch {
             print("电源断言：查不了（\(error)）")
             owners = nil

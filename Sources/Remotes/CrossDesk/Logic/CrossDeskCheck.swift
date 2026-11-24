@@ -19,6 +19,8 @@ package enum CrossDeskCheck {
         package var version: String?
         /// 运行中的 CrossDesk 进程号
         package var processes: [Int32]
+        /// 包里的程序（包内路径）
+        package var programs: [String]
         /// 在 CrossDesk 的程序里找得到的句子（断言名、日志里认的几句，原文）
         package var foundInProgram: Set<String>
         /// 此刻持「共享桌面」断言的进程；查不了为 nil
@@ -33,12 +35,13 @@ package enum CrossDeskCheck {
         package var onlineDisplays: Set<DisplayID>
         package var onlineSnugDisplays: Set<DisplayID>
 
-        package init(hours: Int, since: Date, version: String?, processes: [Int32], foundInProgram: Set<String>, sharingNow: [Int32]?,
+        package init(hours: Int, since: Date, version: String?, processes: [Int32], programs: [String], foundInProgram: Set<String>, sharingNow: [Int32]?,
                      log: [String]?, timeZone: TimeZone, snugLog: [String], onlineDisplays: Set<DisplayID>, onlineSnugDisplays: Set<DisplayID>) {
             self.hours = hours
             self.since = since
             self.version = version
             self.processes = processes
+            self.programs = programs
             self.foundInProgram = foundInProgram
             self.sharingNow = sharingNow
             self.log = log
@@ -50,12 +53,10 @@ package enum CrossDeskCheck {
     }
 
     package static func evaluate(_ f: Facts) -> [RemoteCheck.Item] {
-        guard let version = f.version else {
-            return [RemoteCheck.Item(status: .fail, title: "CrossDesk", detail: "没装（按 \(CrossDeskRemote.bundleID) 找不到），其余各项无从核对")]
-        }
-        let note = version == CrossDeskRemote.verifiedVersion ? "即上次核对的版本" : "上次核对的是 \(CrossDeskRemote.verifiedVersion)"
-        var items = [RemoteCheck.Item(status: .ok, title: "CrossDesk", detail: "版本 \(version)（\(note)）；核对范围：最近 \(f.hours) 小时")]
+        guard let version = f.version else { return [RemoteCheck.notInstalled(CrossDeskRemote.identity, bundleID: CrossDeskRemote.bundleID)] }
+        var items = [RemoteCheck.installed(CrossDeskRemote.identity, version: version, verified: CrossDeskRemote.verifiedVersion, scope: "最近 \(f.hours) 小时")]
         items.append(process(f))
+        items.append(injector(f))
         items.append(sharing(f))
         items.append(phrases(f))
         let lines = f.log.map { $0.compactMap { CrossDeskLogLine($0[...]) } }
@@ -80,6 +81,18 @@ package enum CrossDeskCheck {
             return RemoteCheck.Item(status: .warn, title: "进程", detail: "CrossDesk 没在运行：打开后再用手机连一次")
         }
         return RemoteCheck.Item(status: .ok, title: "进程", detail: "在运行（进程 \(f.processes.map(String.init).joined(separator: "、"))）")
+    }
+
+    /// 手势只接管这个进程注入的事件（和运行时用同一个匹配）：主程序改名、注入挪进辅助进程后手势全部退成原样放行，
+    /// 在场检测、日志照样正常，别处看不出来
+    private static func injector(_ f: Facts) -> RemoteCheck.Item {
+        let source = CrossDeskRemote.identity.injector
+        let found = f.programs.filter { source.matches(executablePath: $0) }
+        guard !found.isEmpty else {
+            return RemoteCheck.Item(status: .fail, title: "注入进程",
+                                    detail: "包里没有叫 \(source.executableName) 的程序：手势只接管它发来的事件，改名后手势全部退成原样放行")
+        }
+        return RemoteCheck.Item(status: .ok, title: "注入进程", detail: "\(found.joined(separator: "、"))：手势按它认操作来源")
     }
 
     /// 判在场全靠这条断言：程序里没了它、或者查不了，连接检测就失效
@@ -123,7 +136,7 @@ package enum CrossDeskCheck {
         let missed = began.filter { b in !detected.contains { abs($0.timeIntervalSince(b)) <= matchWindow } }
         let counts = "CrossDesk 开始共享 \(began.count) 次"
         guard missed.isEmpty else {
-            let times = missed.prefix(listed).map { clock($0, in: f.timeZone) }.joined(separator: "、") + (missed.count > listed ? " 等" : "")
+            let times = missed.prefix(listed).map { RemoteCheck.clock($0, in: f.timeZone) }.joined(separator: "、") + (missed.count > listed ? " 等" : "")
             return RemoteCheck.Item(status: .warn, title: "远程记录",
                                     detail: "\(counts)，Snug 认出 \(began.count - missed.count) 次；没认出的在 \(times)：Snug 当时开着的话就是连接检测出了问题（对照取证材料里的 snug.log）")
         }
@@ -155,7 +168,7 @@ package enum CrossDeskCheck {
         }
         var slots = CrossDeskSlots()
         instance.forEach { slots.take($0) }
-        let when = "CrossDesk \(start.date(in: f.timeZone).map { clock($0, in: f.timeZone) } ?? String(start.stamp)) 启动时"
+        let when = "CrossDesk \(start.date(in: f.timeZone).map { RemoteCheck.clock($0, in: f.timeZone) } ?? String(start.stamp)) 启动时"
         guard let current = slots.displays, let unreachable = slots.unreachable(online: f.onlineDisplays) else {
             return RemoteCheck.Item(status: .warn, title: "认屏", detail: "\(when)没记下认到的屏：日志写法可能改了，认不出它看没看到 Snug 的屏")
         }
@@ -179,11 +192,4 @@ package enum CrossDeskCheck {
         return RemoteCheck.Item(status: .ok, title: "认屏", detail: "\(when)认到 \(list)，此刻在线的 Snug 屏都有格子推")
     }
 
-    private static func clock(_ date: Date, in timeZone: TimeZone) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.timeZone = timeZone
-        f.dateFormat = "HH:mm"
-        return f.string(from: date)
-    }
 }

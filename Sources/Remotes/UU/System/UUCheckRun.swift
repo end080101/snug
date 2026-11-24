@@ -18,8 +18,8 @@ package enum UUCheckRun {
         let since = now.addingTimeInterval(-TimeInterval(hours) * 3600)
         var files: [String: String] = [:]
 
-        let bundle = NSWorkspace.shared.urlForApplication(withBundleIdentifier: UURemote.bundleID)
-        let version = bundle.flatMap { Bundle(url: $0)?.infoDictionary?["CFBundleShortVersionString"] as? String }
+        let installed = RemoteCheckTools.installedApp(bundleID: UURemote.bundleID)
+        let bundle = installed?.url, version = installed?.version
         let needles = [UUCheck.captureFramework, UUCheck.encoderFramework].reduce(into: [String: Data]()) {
             $0[$1] = Data("/System/Library/Frameworks/\($1).framework/".utf8)
         }

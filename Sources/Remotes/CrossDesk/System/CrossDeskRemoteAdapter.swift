@@ -27,7 +27,7 @@ package final class CrossDeskRemoteAdapter: RemoteAdapter {
 
     private func sharingOwners() -> [Int32]? {
         do {
-            let owners = CrossDeskRemote.sharingOwners(in: try CrossDeskHost.assertions())
+            let owners = try CrossDeskHost.sharingOwners()
             if unreadable { Log.info("电源断言又查得到了：CrossDesk 的连接检测恢复") }
             unreadable = false
             return owners

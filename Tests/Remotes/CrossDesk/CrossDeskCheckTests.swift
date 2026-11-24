@@ -26,10 +26,11 @@ private let session = [
 private let snugDetected = "[2026-11-23 09:03:54.400] [info] 检测到 CrossDesk 连入（共享断言=有（进程 78275） 距上次在场 0.00s）"
 
 private func facts(version: String? = CrossDeskRemote.verifiedVersion, processes: [Int32] = [78275],
+                   programs: [String] = ["Contents/MacOS/CrossDesk"],
                    found: Set<String> = Set([CrossDeskRemote.sharingAssertion] + CrossDeskLogLine.phrases), sharingNow: [Int32]? = [],
                    log: [String]? = [started] + displays + session, snug: [String] = [snugDetected],
                    online: Set<DisplayID> = [367]) -> CrossDeskCheck.Facts {
-    CrossDeskCheck.Facts(hours: 4, since: at("07:00:00.000"), version: version, processes: processes, foundInProgram: found,
+    CrossDeskCheck.Facts(hours: 4, since: at("07:00:00.000"), version: version, processes: processes, programs: programs, foundInProgram: found,
                          sharingNow: sharingNow, log: log, timeZone: zone, snugLog: snug, onlineDisplays: online.union([1]), onlineSnugDisplays: online)
 }
 
@@ -40,7 +41,7 @@ struct CrossDeskCheckTests {
     @Test("一切照旧：逐项通过，报出断开到放断言的延迟，结论无问题、退出码 0")
     func healthy() throws {
         let items = CrossDeskCheck.evaluate(facts())
-        #expect(items.map(\.title) == ["CrossDesk", "进程", "会话信号", "日志写法", "远程记录", "认屏"])
+        #expect(items.map(\.title) == ["CrossDesk", "进程", "注入进程", "会话信号", "日志写法", "远程记录", "认屏"])
         #expect(items.allSatisfy { $0.status == .ok })
         #expect(try #require(item("远程记录", in: items)).detail.contains("最长 9.5 秒"))
         #expect(RemoteCheck.report(items, remote: CrossDeskRemote.identity, hours: 4, at: at("10:00:00.000")).contains("结论：未发现兼容问题"))
@@ -132,5 +133,13 @@ struct CrossDeskCheckTests {
     func recent() {
         let lines = [crossdesk("06:59:00.000", "old"), "  continuation of old", crossdesk("07:00:00.000", "new"), "  continuation of new"]
         #expect(CrossDeskCheck.recent(lines, since: at("07:00:00.000"), in: zone) == Array(lines[2...]))
+    }
+
+    @Test("注入进程：包里有 CrossDesk 主程序为通过；改名（只剩别的程序）为不通过，手势会退成原样放行")
+    func injector() {
+        #expect(item("注入进程", in: CrossDeskCheck.evaluate(facts()))?.status == .ok)
+        let renamed = CrossDeskCheck.evaluate(facts(programs: ["Contents/MacOS/CrossDeskApp", "Contents/Frameworks/x.dylib"]))
+        #expect(item("注入进程", in: renamed)?.status == .fail)
+        #expect(RemoteCheck.exitCode(renamed) == 1)
     }
 }
