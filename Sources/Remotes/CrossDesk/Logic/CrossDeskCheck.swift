@@ -69,7 +69,7 @@ package enum CrossDeskCheck {
     package static func recent(_ lines: [String], since: Date, in timeZone: TimeZone) -> [String] {
         var keep = false
         return lines.filter { line in
-            if let date = CrossDeskLogLine.date(ofLine: line[...], in: timeZone) { keep = date >= since }
+            if let date = CrossDeskLogLine.date(ofLine: line[...], in: timeZone) { keep = date.timeIntervalSince(since) >= 0 }
             return keep
         }
     }
@@ -124,7 +124,7 @@ package enum CrossDeskCheck {
         guard let lines else {
             return RemoteCheck.Item(status: .warn, title: "远程记录", detail: "读不到 CrossDesk 的日志（~/Library/Logs/CrossDesk），远程记录与认屏无从核对")
         }
-        let dated = lines.compactMap { line in line.date(in: f.timeZone).map { (date: $0, event: line.event) } }.filter { $0.date >= f.since }
+        let dated = lines.compactMap { line in line.date(in: f.timeZone).map { (date: $0, event: line.event) } }.filter { $0.date.timeIntervalSince(f.since) >= 0 }
         let began = dated.filter { $0.event == .sharingBegan }.map(\.date)
         let detected = SnugLogDigest(lines: f.snugLog, since: f.since, remote: CrossDeskRemote.identity.logName).detections.map(\.date)
         if began.isEmpty {
