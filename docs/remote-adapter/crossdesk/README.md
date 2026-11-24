@@ -1,6 +1,6 @@
 # CrossDesk 适配：上下文与计划
 
-> 状态（2026-11-23）：第 7 节 1–13、15 步已落地，crossdesk-cli 本机实测（8.1）、一轮多维审查、iPhone 实测（1.7.7）和门面一轮已完成；待推送、PR 转回可审阅、合并时同步 GitHub 简介与话题。工作分支：本地 `pr58-crossdesk`，推到 PR #58 的来源分支 `nexmoe/snug:crossdesk-adapter`。
+> 状态（2026-11-24）：已合并（0f3acb3），随 Snug 2.8.0 发布。剩第 7 节第 14 步：按 #200 的思路给 CrossDesk 提热插拔与虚拟屏重新识别的 PR（kunkundi 在 #200 表示欢迎，已在 kunkundi/crossdesk#225 说明会提）。工作分支：本地 `pr58-crossdesk`，推到 PR #58 的来源分支 `nexmoe/snug:crossdesk-adapter`。
 > 本文是这次适配的唯一上下文入口：开工前先读；结论变了就改这里，别让它过期。
 > 行号默认指 CrossDesk `v1.7.6-20261112`（`5f526cd`）；主干指 `mcp` 分支 `acf678d`（11-23）。
 
@@ -218,7 +218,7 @@ PR 一个提交 `28e1ae5`，31 个文件，+480 −46；`scripts/snug check` 原
 13. 收尾整洁（问题 10）；`docs/remotes` 和设计记录同步技术事实 ✅ 995c15b 等；另按主人 11-23 提醒，界面不写死哪一家远控（a636d6b）
 14. 跟进上游 issue [#200](https://github.com/kunkundi/crossdesk/issues/200)；对方修了就同步调整第 10、12 步
 15. 门面一轮：README、界面文案、`crossdesk.md` 的措辞 ✅ 3b963f1、1b8d17b、93fe93e（核对版本升到 1.7.7）
-16. 合并前：PR 从草稿改回可审阅（nexmoe 在 11-23 14:43Z 转成了草稿）
+16. 合并前：PR 从草稿改回可审阅（nexmoe 在 11-23 14:43Z 转成了草稿） ✅ 11-24 合并、发布 2.8.0
 
 ## 8. 实测清单
 
