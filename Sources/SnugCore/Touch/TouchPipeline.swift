@@ -38,7 +38,7 @@ public struct TouchPipeline: Sendable {
     }
 
     /// 一次远程结束：各家整理、翻译器都从头来。整理记着的（手机端在发什么模式、扣着的移动）只对这次连接成立，
-    /// 屏常驻（提前准备、设为主屏）时监听会跨多次远程，不清就带进下一次：连别家远程时还挂着上一家的提醒
+    /// 屏常驻（提前准备、设为主屏）时监听会跨多次远程，不清就带进下一次
     public mutating func reset() {
         self = TouchPipeline(normalizers: normalizers.map { type(of: $0) })
     }
@@ -55,9 +55,6 @@ public struct TouchPipeline: Sendable {
 
     /// 下一次要喂超时拍的时刻：各家最早的那个
     public var deadline: TimeInterval? { normalizers.compactMap(\.deadline).min() }
-
-    /// 要提醒用户的话：按登记顺序第一家有话说的
-    public var advice: String? { normalizers.lazy.compactMap(\.advice).first }
 
     /// 一个原始事件。regions：此刻手势翻译管的范围
     public mutating func take(_ event: PointerEvent, from source: Int, regions: [TouchRegion]) -> TouchStep {

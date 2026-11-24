@@ -17,9 +17,6 @@ public final class TouchTap {
     private let remotes: [RemoteIdentity]
     /// 手机上点了屏上那个窗口的关闭按钮（核对过、点击已经吞掉了），交回窗口编号：在主线程上调
     public var onCloseWindow: ((UInt32) -> Void)?
-    /// 手势层要提醒用户的话变了（见 TouchNormalizer.advice），nil = 不用提醒：在主线程上调
-    public var onAdvice: ((String?) -> Void)?
-    private var advice: String?
 
     public init(remotes: [RemoteIdentity]) {
         self.remotes = remotes
@@ -41,8 +38,6 @@ public final class TouchTap {
         guard session == nil else { return true }
         let next = TapSession(regions: regions, remotes: remotes) { [weak self] window in
             DispatchQueue.main.async { MainActor.assumeIsolated { self?.onCloseWindow?(window) } }
-        } adviceChanged: { [weak self] advice in
-            DispatchQueue.main.async { MainActor.assumeIsolated { self?.report(advice) } }
         }
         guard next.start() else {
             Log.error("手势翻译开不起来：建事件监听失败（多半是没有辅助功能权限）")
@@ -53,7 +48,7 @@ public final class TouchTap {
         return true
     }
 
-    /// 一次远程结束：手势层从头认（见 TouchPipeline.reset），旧的提醒收起。监听没开时没有要清的
+    /// 一次远程结束：手势层从头认（见 TouchPipeline.reset）。监听没开时没有要清的
     public func remoteEnded() {
         session?.reset()
     }
@@ -63,16 +58,6 @@ public final class TouchTap {
         session.stop()
         self.session = nil
         Log.info("手势翻译已关闭")
-        report(nil)
-    }
-
-    private func report(_ next: String?) {
-        // 监听已关时，关之前排进主线程的变化不再算数
-        let next = session == nil ? nil : next
-        guard next != advice else { return }
-        advice = next
-        Log.info(next.map { "手势层提醒用户：\($0)" } ?? "手势层的提醒已收起")
-        onAdvice?(next)
     }
 }
 
@@ -80,7 +65,6 @@ public final class TouchTap {
 private final class TapSession: @unchecked Sendable {
     private let regions: OSAllocatedUnfairLock<[TouchRegion]>
     private let closeWindow: @Sendable (UInt32) -> Void
-    private let adviceChanged: @Sendable (String?) -> Void
     /// 监听线程的 run loop：start 等它建好才返回，之后只读
     private var runLoop: CFRunLoop?
 
@@ -95,16 +79,13 @@ private final class TapSession: @unchecked Sendable {
     /// 整理要的超时拍（比如停多久算松手）：第一次有人要时才建
     private var deadlineTimer: CFRunLoopTimer?
     private var injected: InjectedEvents
-    private var advice: String?
 
-    init(regions: OSAllocatedUnfairLock<[TouchRegion]>, remotes: [RemoteIdentity], closeWindow: @escaping @Sendable (UInt32) -> Void,
-         adviceChanged: @escaping @Sendable (String?) -> Void) {
+    init(regions: OSAllocatedUnfairLock<[TouchRegion]>, remotes: [RemoteIdentity], closeWindow: @escaping @Sendable (UInt32) -> Void) {
         self.regions = regions
         injected = InjectedEvents(injectors: remotes.map(\.injector))
         pipeline = TouchPipeline(normalizers: remotes.map(\.normalizer))
         mask = TouchEvents.mask(for: TouchPipeline.kinds(of: remotes.map(\.normalizer)))
         self.closeWindow = closeWindow
-        self.adviceChanged = adviceChanged
     }
 
     func start() -> Bool {
@@ -195,14 +176,10 @@ private final class TapSession: @unchecked Sendable {
         settle()
     }
 
-    /// 管线变了之后：惯性、超时拍的计时器跟上，提醒变了报给主线程
+    /// 管线变了之后：惯性、超时拍的计时器跟上
     private func settle() {
         if pipeline.isCoasting { startCoasting() }
         scheduleDeadline()
-        if pipeline.advice != advice {
-            advice = pipeline.advice
-            adviceChanged(advice)
-        }
     }
 
     private func perform(_ command: TouchCommand, current: CGEvent?, region: TouchRegion?) {

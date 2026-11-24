@@ -40,8 +40,8 @@ package struct CrossDeskTouch: TouchNormalizer {
     static let gestureGap: TimeInterval = 0.25
     static let voteWindow: TimeInterval = 10
     /// 开头和上一个事件在同一点（相对鼠标每一下都从光标停的地方开始）；连续这么多下都这样才认作相对鼠标，中间有一下挪开就重新数。
-    /// 绝对鼠标原地再点、按住不动再接着滑也会这样，分不出来，宁可误认：误认了下一下手指落到别处就恢复；
-    /// 漏认的话相对鼠标用户整场滑不动、也不知道为什么（CrossDesk 手机端默认就是相对鼠标，11-23 手机实测只滑不点时提醒不出来）
+    /// 绝对鼠标原地再点、按住不动再接着滑也会这样，分不出来：误认了只是一下滑动不滚，下一下手指落到别处就恢复。
+    /// 11-23 手机实测中途从绝对鼠标切到相对鼠标时没认出来（原因未查，见上下文文档 6.3）；一开始就是相对鼠标的不受影响（从没认作绝对鼠标，移动照常放行）
     static let samePlace = 0.5
     static let cursorVotes = 3
 
@@ -49,11 +49,6 @@ package struct CrossDeskTouch: TouchNormalizer {
 
     package private(set) var feed = Feed.unknown
 
-    /// 相对鼠标拿不到手指位置：请用户在手机端改成绝对鼠标（措辞到门面那一轮再定）
-    package var advice: String? {
-        // 按钮名照 CrossDesk 手机端（1.7.7）：会话里的浮动按钮在「相对鼠标」「绝对鼠标」间切换，设置页里叫「绝对位置」
-        feed == .cursor ? "手机端用的是「相对鼠标」，单指滑只能挪光标。点会话里的「相对鼠标」按钮切成「绝对鼠标」（设置里叫「绝对位置」）" : nil
-    }
     /// 连续几下开头落在上一个事件的位置上
     private var cursorRun = 0
     /// 这一按：手指的（交翻译器）还是虚拟鼠标键的（原样放行）

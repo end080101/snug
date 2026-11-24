@@ -218,8 +218,6 @@ struct TouchHomeView: View {
             }
         } else if let notice = panel.notice {
             NoticeBanner(notice: notice, intents: intents)
-        } else if let advice = state.touchAdvice {
-            Banner(symbol: "hand.point.up.left", tint: .orange, headline: "手势未生效", detail: advice) {}
         }
     }
 

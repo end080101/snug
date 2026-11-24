@@ -355,7 +355,6 @@ enum RenderSamples {
                 s.desks.desks[.phone]?.notice = .windowUnresponsive(app: windows[1].app)
             },
             panel("phone-quit-stalled-dark", dark: true) { s, _ in s.desks.desks[.phone]?.notice = .quitStalled(app: "文本编辑", pid: 9) },
-            panel("phone-touch-advice") { s, _ in s.touchAdvice = "手机端用的是「相对鼠标」，单指滑只能挪光标。在远控手机端的设置里改成「绝对鼠标」" },
             panel("phone-all", tab: .all) { _, _ in },
             panel("phone-all-dark", dark: true, tab: .all) { s, _ in s.desks.desks[.phone]?.placed = placed },
             panel("phone-search") { _, pages in pages.open(.search) },

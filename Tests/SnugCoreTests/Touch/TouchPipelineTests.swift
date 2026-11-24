@@ -38,17 +38,6 @@ private struct SlideFromMoves: TouchNormalizer {
     }
 }
 
-/// 假的整理：看到不按键的移动就认定手机端模式不对，要提醒用户
-private struct WarnsAfterMove: TouchNormalizer {
-    static let consumes: Set<PointerEvent.Kind> = [.move]
-    var warned = false
-    mutating func normalize(_ event: PointerEvent) -> Normalized {
-        warned = true
-        return .ignored
-    }
-    var advice: String? { warned ? "换个模式" : nil }
-}
-
 /// 假的整理：什么都不管
 private struct IgnoresAll: TouchNormalizer {
     static let consumes: Set<PointerEvent.Kind> = [.leftDown, .leftUp]
@@ -152,22 +141,15 @@ struct TouchPipelineTests {
         #expect(grammar.check(TouchInput(.release, at: CGPoint(x: 0, y: 40), time: 0.02), synthesized: true) == nil)
     }
 
-    @Test("要提醒用户的话：按登记顺序第一家有话说的；都没话说为 nil（直通从不提醒）")
-    func advice() {
-        #expect(TouchPipeline(normalizers: [DirectTouch.self, IgnoresAll.self]).advice == nil)
-        var p = TouchPipeline(normalizers: [DirectTouch.self, WarnsAfterMove.self])
-        _ = p.take(event(.move, 100, 300, 0), from: 1, regions: [phone])
-        #expect(p.advice == "换个模式")
-    }
-
-    @Test("一次远程结束重来：各家整理记着的状态（模式、提醒、要等的超时拍）都清掉，不带进下一次")
+    @Test("一次远程结束重来：各家整理记着的状态（扣着的、要等的超时拍）都清掉，不带进下一次")
     func reset() {
-        var p = TouchPipeline(normalizers: [SlideFromMoves.self, WarnsAfterMove.self])
-        _ = p.take(event(.move, 100, 300, 0), from: 0, regions: [phone])
+        var p = TouchPipeline(normalizers: [DirectTouch.self, SlideFromMoves.self])
         _ = p.take(event(.move, 100, 300, 0), from: 1, regions: [phone])
-        #expect(p.deadline != nil && p.advice != nil)
+        #expect(p.deadline != nil)
         p.reset()
-        #expect(p.deadline == nil && p.advice == nil)
+        #expect(p.deadline == nil)
+        // 从头来：下一个移动又是新的一段的开头（补按下、认作滑动），不是接着上一段拖
+        #expect(scrollPhases(p.take(event(.move, 100, 320, 0.1), from: 1, regions: [phone])) == [.began])
     }
 
     @Test("几家各用各的整理：一家的状态不影响另一家")

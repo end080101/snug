@@ -36,8 +36,6 @@ final class AppState {
     var desks = DeskSet.State()
     /// 手势翻译要开却没开起来（建事件监听失败）
     var gesturesFailed = false
-    /// 手势层要提醒用户的话（比如远控在发光标位移、翻译不了单指滑），手机、平板屏的面板顶上显示
-    var touchAdvice: String?
     /// 装了的、只在自己启动时认屏的远控（界面上的名字，按登记顺序）：设置里据此显示「提前准备虚拟屏」
     var launchOnlyRemotes: [String] = []
     var accessibilityTrusted = false
