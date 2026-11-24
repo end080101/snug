@@ -1,6 +1,6 @@
 # CrossDesk 适配：上下文与计划
 
-> 状态（2026-11-23）：调研和两轮真机录制已完成，**还没开工**。工作分支：本地 `pr58-crossdesk`，推到 PR #58 的来源分支 `nexmoe/snug:crossdesk-adapter`。
+> 状态（2026-11-23）：第 7 节 1–13 步已落地，crossdesk-cli 本机实测（8.1）和一轮多维审查已修完；待手机实测（第 8 节 B3–B5、B7、B9、A1、A4，UU 回归 B1、B2）和门面一轮。工作分支：本地 `pr58-crossdesk`，推到 PR #58 的来源分支 `nexmoe/snug:crossdesk-adapter`。
 > 本文是这次适配的唯一上下文入口：开工前先读；结论变了就改这里，别让它过期。
 > 行号默认指 CrossDesk `v1.7.6-20261112`（`5f526cd`）；主干指 `mcp` 分支 `acf678d`（11-23）。
 
@@ -30,7 +30,7 @@
 - **只在启动时认一次**：抓屏器初始化时枚举显示器（`screen_capturer_sck_impl.mm` `Init`，约 333–400 行）；视频通道按当时的屏数一次性注册（`gui_runtime.cpp:386-392`，主干 `:393-399`）。之后加的屏，控制端选不到。
 - 空闲时显示器变化直接忽略（`sck_impl.mm:876`），抓屏中只更新已有槽位。
 - 编号对不上时按位置回退（`sck_impl.mm:560-617`）：开始抓屏时先按这一格记的 displayID 找，找不到就取系统此刻屏幕列表（ScreenCaptureKit 的顺序）里同一序号的那块，再把这一格改记成它。Snug 每次重建屏都会换 displayID（11-23 本机：Snug 重启 #22 → #23，开关「提前准备」#21 → #22），屏数不变、新屏排在原来的序号上时 CrossDesk 照样推得到。**未验证**，见实测 B8。
-  - ScreenCaptureKit 的顺序：11-23 本机两次 CrossDesk 启动，Snug 的屏都排第 0（#21、#22），实体屏在后。CrossDesk 连上先推第 0 块，所以 Snug 的屏在它启动前就在时，一连上就是 Snug 的屏（两份样本，**未验证**是否总这样）。
+  - ScreenCaptureKit 的顺序：11-23 本机四次 CrossDesk 启动（含 crossdesk-cli 实测的两次），Snug 的屏都排第 0，实体屏在后。CrossDesk 连上先推第 0 块，所以 Snug 的屏在它启动前就在时，一连上就是 Snug 的屏（四份样本，**未验证**是否总这样）。
   - ✅ 11-23 用 crossdesk-cli 连回本机实测（B8）：Snug 重启 #24 → #25 后连第 0 格，CrossDesk 日志 `display mapping refreshed: slot=0, old_id=24, new_id=25`，推的正是新的 Snug 屏。
   - 所以 Snug 判「CrossDesk 选不到某块屏」按格子推算（`CrossDeskSlots.unreachable`）：每格推哪块屏从日志跟着读（启动时 `display discovered` 是初值，之后每句 `display mapping refreshed` 改一格）；格子推的屏还在线的都选得到；新屏不多于推着已下线屏的格也选得到；多了一律算选不到（哪块落哪格看系统排序，宁可多报）。
   - 格子会被改走：推着 Snug 屏时 Snug 把屏撤了，CrossDesk 抓屏报错（-3815）后约 2 秒自动恢复，那格改推内建屏（`slot=0, old_id=27, new_id=1`），控制端列表里出现两个「Built-in Retina Display」；之后 Snug 再建的屏没格子，要重启 CrossDesk（B14 实测）。
@@ -195,7 +195,7 @@ PR 一个提交 `28e1ae5`，31 个文件，+480 −46；`scripts/snug check` 原
 
 回放结果（超时拍准点、惯性按 60 帧一帧帧走）：绝对鼠标录制手上点了 13 下，2 下落在惯性里只停住惯性（和 iPhone 一样），App 收到点击 11；右键 4、选择 1、滑动 14；相对鼠标录制不合成滑动、认作相对鼠标。
 
-还没做的：双指滑匀成像素滚动；安卓（没有录制，安卓的按下前不带移动，此刻按虚拟鼠标键原样放行，手势不翻译）；事件成团的匀开；mouseMoved 进掩码后的开销（**未测**）。
+还没做的：双指滑匀成像素滚动；安卓（没有录制，安卓的按下前不带移动，此刻按虚拟鼠标键原样放行，手势不翻译）；事件成团的匀开；mouseMoved 进掩码后的开销（**未测**；掩码按登记的远控取并集，只装 UU 的用户也受影响，有常驻屏时监听一直开着）。
 
 ## 7. 工作清单
 

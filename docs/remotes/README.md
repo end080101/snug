@@ -22,12 +22,12 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
 
 | 类型 | 要交什么 |
 | :--- | :--- |
-| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）；界面名；从资源库排除的 App bundle；注入事件的进程；手势整理（不写就是直通）；是不是只在自己启动时认显示器（`seesScreensOnlyAtLaunch`：是的话设置里给「提前准备虚拟屏」，没提前准备时远程中不建屏） |
-| `TouchNormalizer` | 把这家注入的原始指针事件整理成标准手指输入：一次手势是按下、若干拖动、最多一个「远控已认出长按或滑动」、抬起。`consumes` 声明要看哪几种事件；可以在当前事件前补输入；要等超时（比如停多久算松手）的给 `deadline`，系统层到点调 `tick`。纯值类型，写在这家的纯逻辑目标里，拿真机录制做回放测试。远控发的就是手指的按下、拖动、抬起时用 `DirectTouch` |
-| `RemoteObservation` | 在不在场：只在有正面证据时为真；控制端：认不出为空；推流屏：不知道为 nil；信号快照：写进连入、断开日志；认得的显示器：只在启动时认屏的远控报它这次启动认到的，Snug 据此提示「重启它才选得到」，别家为 nil |
+| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）；界面名；从资源库排除的 App bundle；注入事件的进程；手势整理（不写就是直通）；是不是只在自己启动时认显示器（`seesScreensOnlyAtLaunch`：是的话设置里给「提前准备虚拟屏」，没提前准备时远程中不建屏）；连上是不是先推主屏（`opensOnMainScreen`：界面讲「设为主屏，每次连接即进入」时点它的名字） |
+| `TouchNormalizer` | 把这家注入的原始指针事件整理成标准手指输入：一次手势是按下、若干拖动、最多一个「远控已认出长按或滑动」、抬起。`consumes` 声明要看哪几种事件；可以在当前事件前补输入，但补出来的按下、抬起只能用来滑动（没有原事件可补发，点击、长按、选择要靠真的原事件收尾，`TouchGrammar` 查）；要等超时（比如停多久算松手）的给 `deadline`，系统层到点调 `tick`；翻译不了时用 `advice` 告诉用户怎么在远控里换。纯值类型，每次远程从头来，写在这家的纯逻辑目标里，拿真机录制做回放测试。远控发的就是手指的按下、拖动、抬起时用 `DirectTouch` |
+| `RemoteObservation` | 在不在场：只在有正面证据时为真；控制端：认不出为空；推流屏：不知道为 nil；信号快照：写进连入、断开日志；选不到的显示器（`unreachableDisplays`）：只在启动时认屏的远控报此刻在线、它却选不到的，Snug 据此提示「重启它才选得到」，别家为 nil |
 | `RemoteAdapter` | 静态的 `identity`（身份属于这家远控，登记处、诊断命令、运行中的实例都从这里取）；`init()`；`start()`、`stop()`；`sample(wallClock:)` 每拍调一次 |
 
-不在端口里的：屏幕让位、主屏策略、模式恢复、断开时序。这些按 UU远程 实测标定、各家暂时一样，留在共用代码里（[清单](uu.md#留在共用代码里的-uu-实测值)）；新的远控实测不同，改共用代码并补测试。手势的手感（防抖、长按时长、惯性）也在共用的翻译器里，各家只管把自家方言整理成标准手指输入；改翻译器时，`TouchGoldenMasterTests` 的摘要必须不变。注入事件目前只按进程名认：RustDesk 这类界面与服务同一个可执行文件的，要按别的特征认（RustDesk 是事件的 `eventSourceUserData`），得改核心的 `InjectedEventSource` 和系统层的 `InjectedEvents`（`TouchEvents.swift`）并补测试（见[设计记录](../remote-adapter/README.md#5-适配接口)，RustDesk 一行）。
+不在端口里的：屏幕让位、模式恢复、断开时序；主屏的常驻策略各家共用，只有「连上先推主屏」由 `opensOnMainScreen` 声明。这些按 UU远程 实测标定、各家暂时一样，留在共用代码里（[清单](uu.md#留在共用代码里的-uu-实测值)）；新的远控实测不同，改共用代码并补测试。手势的手感（防抖、长按时长、惯性）也在共用的翻译器里，各家只管把自家方言整理成标准手指输入；改翻译器时，`TouchGoldenMasterTests` 的摘要必须不变。注入事件目前只按进程名认：RustDesk 这类界面与服务同一个可执行文件的，要按别的特征认（RustDesk 是事件的 `eventSourceUserData`），得改核心的 `InjectedEventSource` 和系统层的 `InjectedEvents`（`TouchEvents.swift`）并补测试（见[设计记录](../remote-adapter/README.md#5-适配接口)，RustDesk 一行）。
 
 ## 步骤
 
@@ -38,12 +38,13 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
 3. **适配器**：
    - 纯逻辑只 import Foundation 和 SnugCore，内容是身份和信号映射。身份（`RemoteIdentity`）定义在这里，只此一份（UU 见 `UURemote.identity`），适配器和契约驱动都引用它
    - 信号映射把原始信号变成 `RemoteObservation`（UU 见 `UUSignals.observation`）
+   - 兼容自检：判定写在纯逻辑的 `RustDeskCheck`，条目、版本一项、报告用 `RemoteCheck`；系统部分收集事实，取证工具用 `RemoteCheckTools`（UU 见 `UUCheck`、`UUCheckRun`）。至少核对：版本、注入事件的进程还在不在包里、判在场靠的信号还在不在
    - 系统部分实现 `RemoteAdapter`，类型叫 `RustDeskRemoteAdapter`，`static let identity` 指向纯逻辑里那份，另写 `package init() {}`
    - 手势整理：远控发的不是手指的按下、拖动、抬起时（比如只发不按键的移动），在纯逻辑里写这家的 `TouchNormalizer`，身份里声明；先录一段真机事件（`docs/remote-adapter/crossdesk/recordings/crossdesk_events.swift` 是现成的监听工具）做回放夹具
    - 注入事件的进程和自家界面是同一个可执行文件时（RustDesk 就是），先照上文「不在端口里的」一段改核心和系统层
    - 内部类型用 `package`，不用 `public`
 4. **登记**：`Sources/Snug/App/Remotes.swift` import `RemoteRustDeskSystem`，`all` 加一行 `Entry(adapter: RustDeskRemoteAdapter.self, dump: …, check: …)`，`dump`、`check` 是 `--dump-remote`、`--check-remote` 的实现（UU 见 `UUDump.run`、`UUCheckRun.run`）。登记顺序即两家同时报在场时的归属顺序
-5. **契约测试**：`Tests/RemoteContractTests/Drivers/RustDeskDriver.swift`，照 `UUDriver` 实现 `RemoteDriver`（协议在 `RemoteDriver.swift`），把空闲、读不到、连入、推流几种情形翻译成它的原始信号，经它自己的映射交出观测；放进同一文件里的 `drivers`
+5. **契约测试**：`Tests/RemoteContractTests/Drivers/RustDeskDriver.swift`，照 `UUDriver` 实现 `RemoteDriver`（协议在 `RemoteDriver.swift`），把空闲、读不到、连入、推流几种情形翻译成它的原始信号，经它自己的映射交出观测；`reaching` 交出它启动时认到、此刻在线的是给定两组屏时的观测（随时认新屏的返回 nil）；`touchEvents` 交出手机上点、长按松手、长按拖、单指滑在这家注入成什么样的原始指针事件。放进 `RemoteDriver.swift` 里的 `drivers`
 6. **验收**：
    - `scripts/snug check` 全绿
    - `swift build && "$(swift build --show-bin-path)/Snug" --dump-remote rustdesk`（日志名，大小写都行），看读得到信号
