@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f97709de-705a-489b-bb7a-7353b1fba51c
-  modified: 2026-11-19T16:00:00.000Z
+  modified: 2026-11-24T13:30:00.000Z
 ---
 
 **UU 更新后先跑 `scripts/snug remote-check uu`**：几秒出报告，原始材料在 `~/Library/Logs/Snug-uu-check/`，核对项见 docs/remotes/uu.md「兼容自检」，核对完改 `UUCheck.verifiedVersion`。
@@ -15,8 +15,8 @@ metadata:
 **UU**
 - 新连接一律从连上那一刻的主屏开始，不记上次选的屏、不跟指针（11-16 多次实测），所以「默认进某块屏」只能靠设主屏常驻
 - 停推流时 UURemoteServer 按推流开始时拍下的模式逐块恢复（`SLSCompleteDisplayConfigurationWithOption: kCGSConfigureForSession`），手机屏会被拨回旧档，Snug 复查 1.5 秒内切回；用 `.permanently` 切也一样，别再试。逆向 4.46.0：连接开始、开始采集、切屏时按分辨率改模式，原始模式只拍一次
-- 看 UU 推哪块屏：`/usr/bin/log show --info --debug` 筛 UURemoteServer 的 `SCDisplay initWithDict:` 和 `CaptureWithCompletionHandler:]`，开流前列一遍屏、紧跟那行是要推的；第二路总在主屏，看第一路。zsh 的 `log` 是内建命令，写全路径
-- 推流时长上限 2.0.1 已删（误判两次、救场零次），别加回来；推流卡住在推流层取证（CaptureSessionState），不靠控制端表反推
+- 看 UU 推哪块屏：`/usr/bin/log show --info --debug` 筛 UURemoteServer 的 `SCDisplay initWithDict:`、`CaptureWithCompletionHandler:]`、`addStreamOutput:type:`、`SCStream dealloc]`，按行里的流地址把开、停、释放对上；开流前列一遍屏、紧跟那行是这路要推的。登记了 type=1 的那路是声音流（挂主屏、推到远程结束），在推的屏看最近开推的那路画面。切屏顺序不固定：本机先停旧画面再开新的，#56 先开新的再停旧的（11-24 查清，推流表 CaptureStreams 照此判断）。zsh 的 `log` 是内建命令，写全路径
+- 推流时长上限 2.0.1 已删（误判两次、救场零次），别加回来；推流卡住在推流表取证（CaptureStreams），不靠控制端表反推
 
 **系统按「这组屏幕」记模式**（#13）：WindowServer 给每组屏各记一份模式，组合一变就套用并写进永久配置（`/Library/Preferences/com.apple.windowserver.displays.plist`）。机制和修法见 how-it-works「不影响其他屏幕」
 - 显示器睡着时释放的虚拟屏要等唤醒才下线（可能拖几小时），睡着时改模式会失败
