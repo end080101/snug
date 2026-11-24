@@ -103,6 +103,7 @@ public final class DeskSet {
         for wish in next {
             if let desk = desks[wish.id] {
                 desk.behavior = wish.behavior
+                desk.staysOnDismiss = wish.staysOnDismiss
                 desk.wanted = true
                 // 换了型号：闲着就马上盖上「正在调整」；别的动作在做时不冲掉它的状态，轮到换比例时再设
                 if let old = previous.first(where: { $0.id == wish.id }), old.fit != wish.fit, desk.state.work == nil, desk.state.display != nil {
@@ -117,9 +118,11 @@ public final class DeskSet {
 
     /// 在手机上退出了某块屏：放回窗口、撤掉这块屏，直到不再要它之前都不再加（这次远程结束、关了开关）。
     /// 没接显示器的 Mac 上，Snug 的屏一出现系统就撤掉自己的默认屏，远控里没有别的屏可切，靠它回到原来的画面（issue #8）。
+    /// 屏要留着的（staysOnDismiss，见 ScreenPlan）只还原窗口，和远程结束时收拾提前准备的屏一样。
     /// 远程刚结束、屏还没撤完时点的不算：不然会挡掉下一次远程的屏
     public func dismissScreen(_ id: ScreenID) {
         guard let desk = desks[id], desk.wanted else { return }
+        if desk.staysOnDismiss { return keepOnDismiss(desk) }
         state.dismissed.insert(id)
         wishes.removeAll { $0.id == id }
         desk.wanted = false
@@ -128,8 +131,22 @@ public final class DeskSet {
         lane.run { await self.reconcile() }
     }
 
+    private func keepOnDismiss(_ desk: Desk) {
+        Log.info("在手机上退出了屏（\(desk.id)）：这次远程的远控只在启动时认屏，撤了再建它就选不到，只还原窗口、屏留着")
+        let ticket = desk.begin(.dismissing)
+        lane.run {
+            await desk.perform(ticket) {
+                await desk.returnAll()
+                await self.clear(desk.id, "退出这块屏、屏留着，")
+                await desk.matchWidth()
+            }
+            desk.setNotice(.keptOnDismiss)
+        }
+    }
+
     private func addDesk(for wish: ScreenWish) {
         let desk = Desk(id: wish.id, behavior: wish.behavior, env: env)
+        desk.staysOnDismiss = wish.staysOnDismiss
         desk.onChange = { [weak self, weak desk] in
             guard let self, let desk, desks[desk.id] === desk else { return }
             state.desks[desk.id] = desk.state

@@ -338,6 +338,11 @@ enum RenderSamples {
             panel("phone-confirm-quit", confirming: .quit(2)) { _, _ in },
             panel("phone-confirm-close", confirming: .close(windows[4].key)) { s, _ in s.desks.desks[.phone]?.placed = placed },
             panel("phone-confirm-dismiss", confirming: .dismissScreen) { s, _ in s.desks.desks[.phone]?.placed = placed },
+            panel("phone-confirm-dismiss-kept", confirming: .dismissScreen) { s, _ in
+                s.desks.desks[.phone]?.placed = placed
+                s.desks.desks[.phone]?.staysOnDismiss = true
+            },
+            panel("phone-kept-on-dismiss") { s, _ in s.desks.desks[.phone]?.notice = .keptOnDismiss },
             panel("phone-main") { s, _ in s.config.mainScreen = .phone },
             panel("phone-confirm-cancel-main", confirming: .cancelMain) { s, _ in s.config.mainScreen = .phone },
             panel("phone-dismissing-dark", dark: true) { s, _ in s.desks.desks[.phone]?.work = .dismissing },

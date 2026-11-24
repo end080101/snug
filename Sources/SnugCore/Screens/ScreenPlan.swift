@@ -4,6 +4,8 @@
 //   远程结束时屏留着，Snug 放上去的窗口归位、用户在上面开的窗口挪回主屏，没人远程时指针进不去（看不见）
 // - 远控只在自己启动时认屏、又没提前准备时，远程中不建屏：建了它也选不到，拓扑一变还会让 CrossDesk 的隐私屏失效。
 //   状态里提示用户打开「提前准备虚拟屏」再重启远控
+// - 这样的远程中，常驻的屏（提前准备的、设为主屏的）在手机上退出时只还原窗口、屏留着：撤了远程结束又建回来，换了编号，
+//   远控就选不到了，得重启它（主人 11-23 定）。回到 Mac 原来的画面靠在远控里切屏；没接显示器的 Mac（issue #8）在这类远控下也是这样
 // - 设为主屏的那块常驻，不等远程：UU 只在连上那一刻选一次屏，选的是当时的主屏；Snug 察觉连接时 UU 已在推 Mac 屏，
 //   连上后再建、再设主屏都晚了。屏连接前就在、已经是主屏，每次连接才直接进去（11-18 实测，issue #28）
 // - 换手接管落在重连等待期之内，算同一次远程，屏不撤不建（V12）
@@ -18,10 +20,13 @@ public enum ScreenPlan {
     public static func wishes(config: AppConfig, remote: Bool, seesNewScreens: Bool = true, trusted: Bool, preview: Bool = false) -> [ScreenWish] {
         guard trusted else { return [] }
         let held = Set(withheld(config: config, remote: remote, seesNewScreens: seesNewScreens, preview: preview))
+        // 预览时屏不是因为「提前准备」才在的：远程结束不收拾（开发者正看着），和不开提前准备的预览一样
+        let prepared = config.keepScreensReady && !preview
         return shown(config).filter { (remote || preview || config.keepScreensReady || $0.id == config.mainScreen) && !held.contains($0.id) }.map { screen in
-            // 预览时屏不是因为「提前准备」才在的：远程结束不收拾（开发者正看着），和不开提前准备的预览一样
-            ScreenWish(id: screen.id, spec: spec(of: screen), fit: fit(of: screen), behavior: behavior(screen.device.kind),
-                       main: config.mainScreen == screen.id, prepared: config.keepScreensReady && !preview)
+            var wish = ScreenWish(id: screen.id, spec: spec(of: screen), fit: fit(of: screen), behavior: behavior(screen.device.kind),
+                                  main: config.mainScreen == screen.id, prepared: prepared)
+            wish.staysOnDismiss = wish.resident && !seesNewScreens
+            return wish
         }
     }
 

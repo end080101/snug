@@ -82,6 +82,21 @@ struct ScreenPlanTests {
         #expect(ScreenPlan.withheld(config: c, remote: true, seesNewScreens: false, preview: true).isEmpty)
     }
 
+    @Test("退出时屏留着：只在启动时认屏的远程中的常驻屏（提前准备的、设为主屏的）；随时认新屏的远控、远程中才建的屏照常撤")
+    func residentStaysOnDismiss() {
+        var c = config()
+        c.keepScreensReady = true
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).allSatisfy { $0.staysOnDismiss })
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).allSatisfy { !$0.staysOnDismiss })
+        #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true).allSatisfy { !$0.staysOnDismiss })
+        // 没提前准备：设为主屏的那块常驻，同样留着
+        c.keepScreensReady = false
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: false, trusted: true).map(\.staysOnDismiss) == [true])
+        // 随时认新屏的远控：远程中才建的那块照常撤，设为主屏的那块也照常撤（下次连接前建回，UU 每次都认得）
+        #expect(ScreenPlan.wishes(config: c, remote: true, seesNewScreens: true, trusted: true).allSatisfy { !$0.staysOnDismiss })
+    }
+
     @Test("预览自测开着提前准备：屏不算提前准备的（远程结束不收拾，开发者正看着）")
     func previewNotPrepared() {
         var c = config()

@@ -62,6 +62,8 @@ public struct ScreenWish: Equatable, Sendable {
     public var main: Bool
     /// 提前准备的屏（设置里「提前准备虚拟屏」）：没人远程也在，给只在启动时认屏的远控
     public var prepared: Bool
+    /// 在手机上退出时只还原窗口、屏留着（见 DeskSet.dismissScreen）
+    public var staysOnDismiss: Bool
 
     public init(id: ScreenID, spec: ScreenSpec, fit: ScreenFit, behavior: ScreenBehavior, main: Bool = false, prepared: Bool = false) {
         self.id = id
@@ -70,6 +72,7 @@ public struct ScreenWish: Equatable, Sendable {
         self.behavior = behavior
         self.main = main
         self.prepared = prepared
+        staysOnDismiss = false
     }
 
     /// 常驻、不随远程建撤：设为主屏的那块，和提前准备的屏

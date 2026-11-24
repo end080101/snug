@@ -15,6 +15,8 @@ public final class Desk {
         public var screen = ScreenSet.State.off
         /// 这块屏的行为（ScreenPlan 按型号的类别给）：界面按它决定有没有面板、手势翻不翻译
         public var behavior = ScreenBehavior.touchScreen
+        /// 在手机上退出时屏留着（ScreenWish.staysOnDismiss）：界面按它讲退出后会怎样
+        public var staysOnDismiss = false
         /// 屏上的窗口
         public var placed: Placed?
         /// 电脑屏上 Snug 挪过来、还记着原处的窗口：资源库里可以一键还原
@@ -56,6 +58,8 @@ public final class Desk {
         case reshaped
         /// 换了型号，但这块屏没能换成新比例（还是原来的）；下次加屏时按新的建
         case reshapeFailed
+        /// 在手机上退出了，窗口已还原、屏留着（ScreenWish.staysOnDismiss）：要回 Mac 原来的画面，在远控里切到别的屏
+        case keptOnDismiss
         /// 放大过字号的窗口在 Snug 之外关掉了，放大的那几级会被 App 记住（VS Code 按工作区记），再打开时可能还大
         case zoomLeftBehind(app: String, steps: Int)
     }
@@ -95,6 +99,10 @@ public final class Desk {
     var behavior: ScreenBehavior {
         get { state.behavior }
         set { state.behavior = newValue }
+    }
+    var staysOnDismiss: Bool {
+        get { state.staysOnDismiss }
+        set { state.staysOnDismiss = newValue }
     }
     private(set) var state = State() {
         didSet { if state != oldValue { onChange?() } }

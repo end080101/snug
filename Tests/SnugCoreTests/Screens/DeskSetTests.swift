@@ -749,6 +749,37 @@ struct DeskSetTests {
         #expect(rig.journal.all.last == "width 101 540")
     }
 
+    @Test("屏要留着时（只在启动时认屏的远程中的常驻屏）在手机上退出：屏不撤、编号不变；Snug 放的窗口归位，用户在上面开的挪到主屏，提示屏幕保留")
+    func keptOnDismiss() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        wish.staysOnDismiss = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        let display = try #require(rig.set.state.desks[.phone]?.display)
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        let memo = WindowInfo(key: WindowKey(pid: 30, id: 40), app: "备忘录", bundleID: "com.apple.Notes", title: "手机上新开的")
+        let memoFrame = CGRect(x: phoneArea.minX + 20, y: phoneArea.minY + 40, width: 300, height: 200)
+        rig.windows.add(memo.key, frame: memoFrame, info: memo)
+        rig.timeline.advance(10)
+        rig.set.dismissScreen(.phone)
+        await rig.set.idle()
+        let phone = try #require(rig.set.state.desks[.phone])
+        #expect(phone.display == display)
+        #expect(rig.set.state.dismissed.isEmpty)
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+        #expect(phone.notice == .keptOnDismiss)
+        #expect(phone.work == nil)
+        // 同一次远程里再算一遍要哪些屏：屏照旧在，编号不变
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        #expect(rig.set.state.desks[.phone]?.display == display)
+    }
+
     @Test("预览自测的屏（不是提前准备的）：远程结束时不动，窗口照旧放着（开发者正看着）")
     func previewScreenUntouchedAtSessionEnd() async throws {
         let rig = try Rig()

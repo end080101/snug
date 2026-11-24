@@ -210,7 +210,9 @@ struct TouchHomeView: View {
                 ConfirmButtons(title: "确定", confirming: $confirming, spacing: TouchTokens.Space.m) { intents.cancelMain() }
             }
         } else if confirming == .dismissScreen {
-            Banner(symbol: Self.dismissSymbol, tint: .red, headline: "退出这块屏？", detail: "窗口还原，下次远程时恢复") {
+            // 屏留着的那种（只在启动时认屏的远控）：撤了再建它就选不到，退出只还原窗口。措辞到门面那一轮再定
+            Banner(symbol: Self.dismissSymbol, tint: .red, headline: "退出这块屏？",
+                   detail: panel.staysOnDismiss ? "窗口还原，屏幕保留" : "窗口还原，下次远程时恢复") {
                 // 间距和提示卡里的「稍后 / 强制退出」一样
                 ConfirmButtons(title: "退出", confirming: $confirming, spacing: TouchTokens.Space.m) { intents.dismissScreen() }
             }
