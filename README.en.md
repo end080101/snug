@@ -332,11 +332,11 @@ scripts/snug install   # build, install, and launch
 
 ## 🌐 Community Ports
 
-| Platform | Project | Maintainer | Notes |
-| :--- | :--- | :--- | :--- |
-| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | Ported from Snug 2.5.0; C# / .NET 10 / WPF; stable release available |
-| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | Ported from Snug 2.5.0; C# / .NET 8 / WPF |
-| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | Rewritten from Snug and snug-win; Rust / egui; single EXE with bundled driver |
+| Platform | Project | Maintainer | Synced to | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| Windows 10 / 11 | [snug-win](https://github.com/nicocart/snug-win) | [nicocart](https://github.com/nicocart) | Snug 2.8.0 | C# / .NET 10 / WPF; supports UU Remote and CrossDesk |
+| Windows x64 | [Snug for Windows](https://github.com/rizetngan/snug-for-windows) | [rizetngan](https://github.com/rizetngan) | Snug 2.5.0 | C# / .NET 10 / WPF; stable release available |
+| Windows x64 | [snug-win-rust](https://github.com/mirakyux/snug-win-rust) | [mirakyux](https://github.com/mirakyux) | Snug 2.7.4 | Rewritten from Snug and snug-win; Rust / egui; single EXE with bundled driver |
 
 Community ports are developed, released, and maintained independently by their authors. This repository develops and tests only the macOS version and has not tested these ports; please report issues to the respective repositories.
 
