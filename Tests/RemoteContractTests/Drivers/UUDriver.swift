@@ -28,7 +28,7 @@ struct UUDriver: RemoteDriver {
     }
 
     /// UU 随时认新屏（连上后建的屏也选得到），不报
-    func reaching(_ displays: Set<DisplayID>) -> RemoteObservation? { nil }
+    func reaching(launched: Set<DisplayID>, online: Set<DisplayID>) -> RemoteObservation? { nil }
 
     /// UU 把手指当鼠标左键：按下、拖动、抬起原样发过来
     func touchEvents(_ gesture: FingerGesture) -> [PointerEvent] {

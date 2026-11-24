@@ -27,17 +27,25 @@ package enum CrossDeskDump {
         }
         print("会话观测：\(CrossDeskRemote.observation(sharing: owners).evidence)")
         print("日志：\(CrossDeskLogs.directory.path)")
-        // CrossDesk 只在启动时认屏：最近一次启动认到的，对照此刻的屏
+        // CrossDesk 只在启动时认屏：整份日志回放最近一次启动，各格此刻推的屏对照此刻的屏
         let instance = CrossDeskLogLine.lastInstance((CrossDeskLogs.lines() ?? []).compactMap { CrossDeskLogLine($0[...]) })
         print("最近一次启动（\(instance.first.map { String($0.stamp) } ?? "日志里没有")）认到的屏：")
         for line in instance {
             if case .displayFound(let index, let display, let name) = line.event { print("  [\(index)] #\(display) \(name)") }
         }
-        // 运行时那条路（只读日志末尾、跟着新追加的行），和上面整份读的对得上才对
-        var launch = CrossDeskLaunchDisplays()
+        var whole = CrossDeskSlots()
+        instance.forEach { whole.take($0) }
+        let online = Set(Screens.online() ?? [])
+        let unreachable = { (slots: CrossDeskSlots) in
+            slots.unreachable(online: online).map { $0.isEmpty ? "没有" : $0.sorted().map { "#\($0)" }.joined(separator: "、") } ?? "不知道"
+        }
+        print("各格此刻推的屏：\(whole.summary ?? "没认到")；此刻选不到：\(unreachable(whole))")
+        // 运行时那条路（只读日志末尾、跟着新追加的行）：算出的格子应和上面整份回放的一致
+        var tail = CrossDeskLogTail()
+        var live = CrossDeskSlots()
         do {
-            for line in try CrossDeskLogTail().poll() { launch.take(line) }
-            print("运行时读到的：\(launch.displays.map { $0.sorted().map { "#\($0)" }.joined(separator: "、") } ?? "没读到")")
+            for line in try tail.poll() { live.take(line) }
+            print("运行时读到的：\(live.summary ?? "没读到")；此刻选不到：\(unreachable(live))")
         } catch {
             print("运行时读不了日志：\(error)")
         }

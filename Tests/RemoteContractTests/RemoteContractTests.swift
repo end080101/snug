@@ -47,14 +47,18 @@ struct RemoteContractTests {
         }
     }
 
-    @Test("选得到哪些屏：只在启动时认屏的远控要报（连上后不建屏、选不到的屏要提示重启），别的一直不报", arguments: drivers)
-    func reachableDisplays(driver: any RemoteDriver) {
-        let reaching = driver.reaching([1, 367])
-        #expect((reaching != nil) == driver.identity.seesScreensOnlyAtLaunch)
-        if let reaching { #expect(reaching.reachableDisplays == [1, 367]) }
+    @Test("选不到哪些屏：只在启动时认屏的远控要报（它启动后才建的 Snug 屏要提示重启，启动时就在的不提示），别的一直不报", arguments: drivers)
+    func unreachableDisplays(driver: any RemoteDriver) {
+        let later = driver.reaching(launched: [1, 367], online: [1, 367, 400])
+        let same = driver.reaching(launched: [1, 367], online: [1, 367])
+        #expect((later != nil) == driver.identity.seesScreensOnlyAtLaunch)
+        if let later, let same {
+            #expect(RemoteReading(remote: driver.identity, observation: later).unseen([367, 400]) == [400])
+            #expect(RemoteReading(remote: driver.identity, observation: same).unseen([1, 367]).isEmpty)
+        }
         if !driver.identity.seesScreensOnlyAtLaunch {
             for observation in [driver.idle(), driver.unreadable(), driver.connected(controllers: ["iPhone"]), driver.streaming(79)] {
-                #expect(observation.reachableDisplays == nil)
+                #expect(observation.unreachableDisplays == nil)
             }
         }
     }

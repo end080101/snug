@@ -4,15 +4,25 @@ import Testing
 
 @Suite("远控端口 RemoteAdapter")
 struct RemoteAdapterTests {
-    @Test("远控选不到的 Snug 屏：它选得到的里面没有的那几块；不知道它选得到哪些（nil）时一块都不算")
+    @Test("远控选不到的 Snug 屏：它报的选不到的里面是 Snug 的那几块；不知道（nil）时一块都不算")
     func unseenScreens() {
-        func reading(_ reachable: Set<DisplayID>?) -> RemoteReading {
-            RemoteReading(remote: fakeRemote, observation: RemoteObservation(present: false, controllers: [], streamedDisplay: nil, evidence: "",
-                                                                             reachableDisplays: reachable))
-        }
-        #expect(reading([1, 3, 367]).unseen([367, 368]) == [368])
-        #expect(reading([1, 3]).unseen([]).isEmpty)
-        #expect(reading(nil).unseen([367]).isEmpty)
+        #expect(reading(fakeRemote, unreachable: [368, 5]).unseen([367, 368]) == [368])
+        #expect(reading(fakeRemote, unreachable: [368]).unseen([]).isEmpty)
+        #expect(reading(fakeRemote, unreachable: nil).unseen([367]).isEmpty)
+    }
+
+    @Test("该提示重启哪家：没人远程时问每一家；远程中只问这次远程的那家，别家选不到为别人建的屏不提示")
+    func blind() {
+        let readings = [reading(fakeRemote, unreachable: nil), reading(otherRemote, unreachable: [368])]
+        #expect(RemoteReading.blind(readings, owner: nil, snugDisplays: [367, 368])?.remote == otherRemote)
+        #expect(RemoteReading.blind(readings, owner: nil, snugDisplays: [367])?.displays == nil)
+        #expect(RemoteReading.blind(readings, owner: fakeRemote, snugDisplays: [367, 368]) == nil)
+        #expect(RemoteReading.blind(readings, owner: otherRemote, snugDisplays: [368])?.displays == [368])
+    }
+
+    private func reading(_ remote: RemoteIdentity, unreachable: Set<DisplayID>?) -> RemoteReading {
+        RemoteReading(remote: remote, observation: RemoteObservation(present: false, controllers: [], streamedDisplay: nil, evidence: "",
+                                                                     unreachableDisplays: unreachable))
     }
 
     @Test("注入事件来源：只认可执行文件名完全对上的进程；读不到路径、同名目录、名字只是前缀都不认")

@@ -375,7 +375,7 @@ public struct RemoteObservation: Equatable, Sendable {
 
 - `RemoteIdentity.seesScreensOnlyAtLaunch`：只在自己启动时认显示器（CrossDesk）。据此显示「提前准备虚拟屏」；没提前准备时远程中不建屏（`ScreenPlan` 的 `seesNewScreens`）。
 - `RemoteIdentity.opensOnMainScreen`：连上时先推 Mac 的主屏（UU）。「设为主屏每次连接即进入」只按声明了的那几家说。
-- `RemoteObservation.reachableDisplays`：只在启动时认屏的远控报它此刻选得到的屏（CrossDesk 按启动时认到的格子推算，含按序号回退能落到的），`RemoteReading.unseen` 算出选不到的 Snug 屏，提示重启它；别家为 nil（契约测试守着）。
+- `RemoteObservation.unreachableDisplays`：只在启动时认屏的远控报此刻在线、它却选不到的屏（CrossDesk 按各格此刻推的屏推算，含按序号回退能落到的；只报在线的，正在撤的屏不会被当成选不到），`RemoteReading.unseen` 取出其中 Snug 的屏，提示重启它；远程中只问这次远程的那家（`RemoteReading.blind`）；别家为 nil。契约测试按「启动时认到、此刻在线」两组屏核对：启动后才建的要报出来，启动时就在的不报。
 - `ScreenWish.prepared`：提前准备的屏，`resident` = 设为主屏 || 提前准备；远程结束时只收拾提前准备的屏。
 - 自检：条目与报告在 `SnugCore` 的 `RemoteCheck`，取证工具（读 Snug 日志、扫包、写材料）在 `SnugSystem` 的 `RemoteCheckTools`，各家只写判定（`UUCheck`、`CrossDeskCheck`）。
 - 界面不写死哪一家：提到远控时用登记处的名单或这次远程的那家（`AppState.remoteNames`）。

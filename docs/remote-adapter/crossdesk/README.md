@@ -32,7 +32,7 @@
 - 编号对不上时按位置回退（`sck_impl.mm:560-617`）：开始抓屏时先按这一格记的 displayID 找，找不到就取系统此刻屏幕列表（ScreenCaptureKit 的顺序）里同一序号的那块，再把这一格改记成它。Snug 每次重建屏都会换 displayID（11-23 本机：Snug 重启 #22 → #23，开关「提前准备」#21 → #22），屏数不变、新屏排在原来的序号上时 CrossDesk 照样推得到。**未验证**，见实测 B8。
   - ScreenCaptureKit 的顺序：11-23 本机两次 CrossDesk 启动，Snug 的屏都排第 0（#21、#22），实体屏在后。CrossDesk 连上先推第 0 块，所以 Snug 的屏在它启动前就在时，一连上就是 Snug 的屏（两份样本，**未验证**是否总这样）。
   - ✅ 11-23 用 crossdesk-cli 连回本机实测（B8）：Snug 重启 #24 → #25 后连第 0 格，CrossDesk 日志 `display mapping refreshed: slot=0, old_id=24, new_id=25`，推的正是新的 Snug 屏。
-  - 所以 Snug 判「CrossDesk 选不到某块屏」按格子推算（`CrossDeskLaunchDisplays.reachable`）：每格推哪块屏从日志跟着读（启动时 `display discovered` 是初值，之后每句 `display mapping refreshed` 改一格）；格子推的屏还在线的都选得到；新屏不多于推着已下线屏的格也选得到；多了一律算选不到（哪块落哪格看系统排序，宁可多报）。
+  - 所以 Snug 判「CrossDesk 选不到某块屏」按格子推算（`CrossDeskSlots.unreachable`）：每格推哪块屏从日志跟着读（启动时 `display discovered` 是初值，之后每句 `display mapping refreshed` 改一格）；格子推的屏还在线的都选得到；新屏不多于推着已下线屏的格也选得到；多了一律算选不到（哪块落哪格看系统排序，宁可多报）。
   - 格子会被改走：推着 Snug 屏时 Snug 把屏撤了，CrossDesk 抓屏报错（-3815）后约 2 秒自动恢复，那格改推内建屏（`slot=0, old_id=27, new_id=1`），控制端列表里出现两个「Built-in Retina Display」；之后 Snug 再建的屏没格子，要重启 CrossDesk（B14 实测）。
 - **开机顺序**：CrossDesk 比 Snug 的屏先起来，手机就只看到实体屏，重启 CrossDesk 才能选到（nexmoe 11-23 真机复现）。CrossDesk 启动后 0.21 秒就枚举完，Snug 建屏要 1.6 秒。
 - **每次连接都要重新选屏**：最后一台控制端断开后，被控端把选中的屏重置成 0 号（`session_device_manager.cpp:866`）；iOS 断开时也重置（`RemoteSessionModel.swift:739`）。
