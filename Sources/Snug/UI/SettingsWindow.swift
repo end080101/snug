@@ -109,17 +109,17 @@ struct ScreensPage: View {
     }
 }
 
-/// 提前准备虚拟屏：为谁、代价是什么（措辞到门面那一轮再定）
+/// 提前准备虚拟屏：为谁、代价是什么
 enum ReadyNotice {
     /// 开关下面那一行
     static func detail(_ remotes: [String]) -> String {
-        remotes.isEmpty ? "Snug 启动时就建好屏" : "Snug 启动时就建好屏，打开后重新启动 \(remotes.joined(separator: "、"))"
+        remotes.isEmpty ? "Snug 启动时即建立屏幕" : "Snug 启动时即建立屏幕；开启后需重启 \(remotes.joined(separator: "、"))"
     }
 
     /// 打开前确认
     static func confirm(_ remotes: [String]) -> String {
         let names = remotes.isEmpty ? "远控" : remotes.joined(separator: "、")
-        return "\(names) 只在自己启动时认显示器，连上以后才建的屏它选不到。打开后，开着的屏会一直在线，没人远程时也在；重新启动 \(names)，它才选得到这些屏。"
+        return "\(names) 仅在启动时识别显示器，连接后新建的屏幕无法选择。开启后，已开启的屏幕常驻，无人远程时亦在线，本机不可见；重启 \(names) 后即可选择。"
     }
 }
 
