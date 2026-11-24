@@ -169,7 +169,11 @@ final class AppController: Sendable {
         state.update(\.connection, session.isConnected ? .connected : (session.inEpisode ? .reconnecting : .idle))
         state.update(\.controllers, session.controllers)
         state.update(\.remoteName, session.owner?.displayName)
-        state.update(\.remoteLaunchOnly, session.owner?.seesScreensOnlyAtLaunch == true)
+        let launchOnly = session.owner?.seesScreensOnlyAtLaunch == true
+        if launchOnly, !state.remoteLaunchOnly, !store.config.keepScreensReady, let owner = session.owner {
+            Log.info("\(owner.logName) 只在启动时认屏、没开「提前准备虚拟屏」：这次远程不建屏")
+        }
+        state.update(\.remoteLaunchOnly, launchOnly)
     }
 
     /// 只在启动时认屏的远控，它启动后才建的 Snug 屏选不到：状态里提示重启它（没人远程时也提示，好在连之前就重启）
