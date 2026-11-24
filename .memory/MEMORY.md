@@ -18,6 +18,7 @@
 - [产品思维](feedback-product-thinking.md) — 用户无感、可选不强制、隔离干净；不为了做而做；能根治不打补丁、能通用不为单个 App 适配
 - [手势是核心](feedback-gestures-core.md) — 接任何远控都必须做原生手势翻译，不能以「远控自己处理」为由放弃
 - [界面规范](feedback-ui-style.md) — 图标只用 SF Symbols；文字短词、书面、克制；每个状态讲清楚
+- [远控并列](feedback-remotes-interchangeable.md) — 界面上各家远控并列可换，名字从登记处取，特有说法按能力点名
 - [对外文案](feedback-doc-writing.md) — 书面语、短语式、简短干练；提炼不照抄；第三方只陈述事实；打码只糊一小块
 - [回复 issue](feedback-issue-replies.md) — 主人第一人称；bug 留给报告人关、做完发版的需求就关；婉拒讲清定位、语气平和；做不到的要把实测和论证讲闭环；主人说发就不再审
 - [直接修不建 issue](feedback-direct-fix-no-issues.md) — bug 直接修、重构直接做，追溯靠 commit 信息
