@@ -556,7 +556,8 @@ public final class DeskSet {
     /// 提前准备的副屏继续在线，临时放上去的窗口归位。设为主屏的那块保留窗口供下次接续。
     private func endSession() async {
         for wish in wishes where !wish.main {
-            guard !screens.isRemote else { return }
+            // 又连上了：屏上的窗口留给这一次，不再归位；提示、监视照样收掉（属于上一次）
+            guard !screens.isRemote else { break }
             guard let desk = desks[wish.id], desk.wanted, desk.state.display != nil else { continue }
             await desk.vacate()
             await desk.matchWidth()

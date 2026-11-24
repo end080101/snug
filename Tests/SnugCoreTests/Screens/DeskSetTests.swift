@@ -825,6 +825,28 @@ struct DeskSetTests {
         #expect(rig.windows.window(finder.key)?.frame == area.centered(finderHome.size))
     }
 
+    @Test("远程结束后马上又连上（收尾还排在队里）：上一次的提示照样收掉，不带到这一次")
+    func quickReconnectForgetsSession() async throws {
+        let rig = try Rig()
+        let codex = AppInfo(bundleID: "com.openai.codex", name: "ChatGPT", path: "/Applications/ChatGPT.app")
+        rig.desk.setRemote(true)
+        rig.set.setWishes([rig.desk.wish])
+        await rig.set.idle()
+        let app = rig.apps.run(codex, pid: 600)
+        rig.apps.onQuit(codex, .stalls)
+        rig.desk.quit(app)
+        await rig.set.idle()
+        #expect(rig.desk.state.notice == .quitStalled(app: "ChatGPT", pid: 600))
+        // 这一拍远程结束（AppController.handle：先不要屏、再按计划要、再报不在远程），下一拍又连上，收尾轮到时已经又在远程
+        rig.set.setWishes([])
+        rig.set.setWishes([])
+        rig.desk.setRemote(false)
+        rig.set.setWishes([rig.desk.wish])
+        rig.desk.setRemote(true)
+        await rig.set.idle()
+        #expect(rig.desk.state.notice == nil)
+    }
+
     @Test("常驻的主屏：这次远程留在屏上的提示，远程结束时收掉，不带到下一次")
     func persistentMainForgetsSession() async throws {
         let rig = try Rig()
