@@ -1,5 +1,7 @@
 // 策略：配置 + 会话 → 此刻要哪些屏、每块的比例和行为。纯函数，规则只写在这里，换规则不动任何模块（docs/development.md「代码结构」）。
 // - 远程开始（含断开后等重连的那段）就建出所有开着的屏：UU 每次新连接都从主屏开始，用户要在 UU 里手动选屏，屏得先在
+// - 提前准备虚拟屏时所有开着的屏都常驻：CrossDesk 这类远控只在自己启动时认屏，连上后才建的屏它选不到。
+//   远程结束时屏留着，Snug 放上去的窗口归位、用户在上面开的窗口挪回主屏，没人远程时指针进不去（看不见）
 // - 设为主屏的那块常驻，不等远程：UU 只在连上那一刻选一次屏，选的是当时的主屏；Snug 察觉连接时 UU 已在推 Mac 屏，
 //   连上后再建、再设主屏都晚了。屏连接前就在、已经是主屏，每次连接才直接进去（11-18 实测，issue #28）
 // - 换手接管落在重连等待期之内，算同一次远程，屏不撤不建（V12）
@@ -15,7 +17,7 @@ public enum ScreenPlan {
         let shown = config.screens.filter(\.enabled).prefix(ScreenConfig.limit)
         return shown.filter { remote || preview || config.keepScreensReady || $0.id == config.mainScreen }.map { screen in
             ScreenWish(id: screen.id, spec: spec(of: screen), fit: fit(of: screen), behavior: behavior(screen.device.kind),
-                       main: config.mainScreen == screen.id)
+                       main: config.mainScreen == screen.id, prepared: config.keepScreensReady)
         }
     }
 

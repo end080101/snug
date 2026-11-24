@@ -60,12 +60,18 @@ public struct ScreenWish: Equatable, Sendable {
     public var behavior: ScreenBehavior
     /// 建好后设为主屏、撤之前设回原来的主屏（最多一块，见 docs/how-it-works.md「设为主屏」）
     public var main: Bool
+    /// 提前准备的屏（设置里「提前准备虚拟屏」）：没人远程也在，给只在启动时认屏的远控
+    public var prepared: Bool
 
-    public init(id: ScreenID, spec: ScreenSpec, fit: ScreenFit, behavior: ScreenBehavior, main: Bool = false) {
+    public init(id: ScreenID, spec: ScreenSpec, fit: ScreenFit, behavior: ScreenBehavior, main: Bool = false, prepared: Bool = false) {
         self.id = id
         self.spec = spec
         self.fit = fit
         self.behavior = behavior
         self.main = main
+        self.prepared = prepared
     }
+
+    /// 常驻、不随远程建撤：设为主屏的那块，和提前准备的屏
+    public var resident: Bool { main || prepared }
 }

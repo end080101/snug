@@ -689,34 +689,66 @@ struct DeskSetTests {
         #expect(rig.arrangement.origins()[1] == .zero)
     }
 
-    // MARK: 设为主屏常驻（issue #28）
+    // MARK: 提前准备的屏
 
-    @Test("user 断开后，临时放上去的窗口归位，提前准备的副屏继续在线")
-    func preparedSecondaryReturnsPlacedWindow() async throws {
-        // Given a secondary virtual display is online before a connection.
-        let rig = try Rig()
-        let home = CGRect(x: 120, y: 100, width: 800, height: 600)
-        let window = WindowInfo(key: WindowKey(pid: 30, id: 50), app: "Xcode", bundleID: "com.apple.dt.Xcode", title: "snug")
-        rig.windows.add(window.key, frame: home, info: window)
-        rig.set.setWishes([rig.desk.wish])
+    /// 提前准备的那块手机屏：远程中放上 ghostty、用户在屏上直接开了个窗口，然后远程结束（屏留着）
+    private func preparedSessionEnds(_ rig: Rig, before end: () -> Void = {}) async throws -> (memo: WindowInfo, frame: CGRect, display: DisplayID) {
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
         await rig.set.idle()
         let display = try #require(rig.set.state.desks[.phone]?.display)
-
-        // When the user puts a window on it during a session and disconnects.
         rig.desk.setRemote(true)
-        rig.set.pull(window, on: .phone)
-        await rig.set.idle()
-        #expect(rig.placed(on: .phone) == window)
+        await rig.pull(ghostty)
+        let memo = WindowInfo(key: WindowKey(pid: 30, id: 40), app: "备忘录", bundleID: "com.apple.Notes", title: "手机上新开的")
+        let memoFrame = CGRect(x: phoneArea.minX + 20, y: phoneArea.minY + 40, width: 300, height: 200)
+        rig.windows.add(memo.key, frame: memoFrame, info: memo)
+        end()
         rig.set.setWishes([])
-        rig.set.setWishes([rig.desk.wish])
+        rig.set.setWishes([wish])
         rig.desk.setRemote(false)
         await rig.set.idle()
-
-        // Then the window returns to its original position and the same display stays available.
-        #expect(rig.windows.window(window.key)?.frame == home)
-        #expect(rig.placed(on: .phone) == nil)
-        #expect(rig.set.state.desks[.phone]?.display == display)
+        return (memo, memoFrame, display)
     }
+
+    @Test("提前准备的屏，远程结束：屏留着；Snug 放的窗口按账归位、销账，用户在屏上直接开的挪到主屏居中（本机看不见这块屏）")
+    func preparedScreenEndsSession() async throws {
+        let rig = try Rig()
+        let (memo, memoFrame, display) = try await preparedSessionEnds(rig)
+        #expect(rig.set.state.desks[.phone]?.display == display)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.windows.window(ghostty.key)?.zoom == 0)
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.record == nil)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+    }
+
+    @Test("提前准备的屏，远程结束时放不回去的窗口（字号缩不回）：照旧算放着、账留着，也不当成用户的窗口挪去主屏；别的照常挪")
+    func preparedScreenKeepsStuckWindow() async throws {
+        let rig = try Rig()
+        let (memo, memoFrame, _) = try await preparedSessionEnds(rig) { rig.windows.blockZoom() }
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.record?.window == ghostty.key)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+        #expect(rig.windows.window(memo.key)?.frame == FakeDisplays.main.centered(memoFrame.size))
+    }
+
+    @Test("提前准备的屏，远程结束后又连上（同一拍里）：屏上的窗口留给这一次，不归位")
+    func preparedScreenReconnects() async throws {
+        let rig = try Rig()
+        var wish = rig.desk.wish
+        wish.prepared = true
+        rig.set.setWishes([wish])
+        await rig.set.idle()
+        rig.desk.setRemote(true)
+        await rig.pull(ghostty)
+        rig.desk.setRemote(false)
+        rig.desk.setRemote(true)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == ghostty)
+        #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
+    }
+
 
     @Test("设为主屏的那块常驻：远程结束时不撤、仍是主屏，屏上的窗口原样留着（账也留着，下次连上接着用）；没设主屏的那块照旧撤")
     func persistentMainSurvivesSessionEnd() async throws {

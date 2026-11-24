@@ -522,6 +522,15 @@ public final class Desk {
         await matchWidth()
     }
 
+    /// 远程结束、屏留着（提前准备的屏）：放回 Snug 放上来、挪过来的窗口，回到资源库。屏不撤，放不回去的（App 卡住）
+    /// 照旧算放着、账照旧留着：面板、账和屏上对得上，下次远程接着用或再放
+    func returnAll() async {
+        _ = await returnToOriginal()
+        for key in brought.keys.sorted(by: Self.order) {
+            if let record = brought[key] { brought[key] = await putBack(record) }
+        }
+    }
+
     /// 屏要撤了：放回窗口，屏上不再算有窗口；放不回去的留着还原记录，下次放窗口或下次启动再放。
     /// 电脑屏上挪过来的还记着账的都放回（关了的 putBack 自己销账）。这时不按位置判断是不是被用户挪走了：
     /// 撤之前先设回原主屏，系统会把新主屏上的窗口整体搬回原主屏，看上去像挪走了；用户自己挪走的，定期核对时已经销了

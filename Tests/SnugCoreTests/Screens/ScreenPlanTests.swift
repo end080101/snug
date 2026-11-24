@@ -48,10 +48,15 @@ struct ScreenPlanTests {
         let idle = ScreenPlan.wishes(config: c, remote: false, trusted: true)
         #expect(idle.map(\.id) == [.phone, c.screens[1].id])
         #expect(idle.map(\.main) == [false, false])
+        #expect(idle.allSatisfy { $0.prepared && $0.resident })
         #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true) == idle)
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: false).isEmpty)
         c.keepScreensReady = false
         #expect(ScreenPlan.wishes(config: c, remote: false, trusted: true).isEmpty)
+        // 没开时远程中建的屏不常驻；设为主屏的那块总是常驻
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).allSatisfy { !$0.resident })
+        c.mainScreen = .phone
+        #expect(ScreenPlan.wishes(config: c, remote: true, trusted: true).map(\.resident) == [true, false])
     }
 
     @Test("类别 → 行为：手机、平板是触屏，电脑不是；手势总开关不改行为（翻不翻译由界面层按开关定）")
