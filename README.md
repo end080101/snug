@@ -6,9 +6,11 @@
 
 # Snug
 
-**Make UU Remote Native on Any Device**
+**Make Your Remote Mac Native on Any Device**
 
-远程 Mac 的显示与触控增强 · 支持 UU远程 和 CrossDesk<br>每台设备专属屏幕 · 原生触屏手势 · App 资源库
+远程 Mac 的显示与触控增强<br>每台设备专属屏幕 · 原生触屏手势 · App 资源库
+
+<p>已支持的远控<br><a href="https://uuyc.163.com/"><img src="https://dl.zephyrxiang.com/snug/media/remote-uu.7b92201d.png" width="40" align="absmiddle" alt=""> <b>UU远程</b></a>&emsp;&emsp;<a href="https://github.com/kunkundi/crossdesk"><img src="https://dl.zephyrxiang.com/snug/media/remote-crossdesk.0ffdb226.png" width="40" align="absmiddle" alt=""> <b>CrossDesk</b></a></p>
 
 [![最新版本](https://img.shields.io/github/v/release/zephyr4123/snug?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-%E9%80%9A%E7%94%A8-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![已公证](https://img.shields.io/badge/Apple-%E5%B7%B2%E5%85%AC%E8%AF%81-black?logo=apple) [![许可证 MIT](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-MIT-green)](LICENSE)
 
@@ -16,13 +18,13 @@
 
 <br>
 
-<img src="https://dl.zephyrxiang.com/snug/media/hero-architecture.0ee41447.png" width="92%" alt="原理图：Snug 在 Mac 上为手机、平板、电脑分别建立屏幕，经 UU远程 推送至各设备并铺满画面">
+<img src="https://dl.zephyrxiang.com/snug/media/hero-architecture.e4ceb0af.png" width="92%" alt="原理图：Snug 在 Mac 上为手机、平板、电脑分别建立屏幕，经远控软件推送至各设备并铺满画面">
 <p><sub>▶ <a href="https://dl.zephyrxiang.com/snug/media/phone-demo.a97e46d1.mp4">观看高清演示视频</a></sub></p>
 
 </div>
 
 > [!IMPORTANT]
-> **进行中**：正在全力接入第二款远控软件 [CrossDesk](https://github.com/kunkundi/crossdesk)（免费、开源），进展参见 [#58](https://github.com/zephyr4123/snug/pull/58)。
+> **新增 CrossDesk**：已支持免费、开源的远控软件 [CrossDesk](https://github.com/kunkundi/crossdesk)，屏幕、原生手势与 App 资源库同 UU远程；连接前的设置参见 [CrossDesk 使用说明](docs/remotes/crossdesk.md)。
 >
 > **致 UU远程 VIP 用户**：UU远程 自 2026 年 12 月 1 日起将多屏、虚拟屏等功能纳入 VIP。Snug 基于虚拟屏架构，若你恰为 UU远程 VIP 用户，欢迎一试。
 >
@@ -49,7 +51,7 @@
 
 ## ✨ 每台设备，原生体验
 
-UU远程 将桌面整体等比缩放至控制端，比例不符即留黑边，文字与控件随之缩小。Snug 为每台控制端新增一块比例匹配的屏幕：手机、平板按移动端尺度铺满，适配触屏操作；电脑与本机分辨率一致，全屏无黑边。
+远控软件将桌面整体等比缩放至控制端，比例不符即留黑边，文字与控件随之缩小。Snug 为每台控制端新增一块比例匹配的屏幕：手机、平板按移动端尺度铺满，适配触屏操作；电脑与本机分辨率一致，全屏无黑边。
 
 ### 手机：竖屏 · 横屏
 
@@ -74,6 +76,7 @@ UU远程 移动端沿用触控板的手势逻辑；Snug 在手机屏与平板屏
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/phone-demo.2cee4e81.webp" width="30%" alt="实机演示：打开窗口、弹出键盘输入命令、恢复会话、单指滚动、返回列表"> <img src="https://dl.zephyrxiang.com/snug/media/phone-context-menu.997dd70f.png" width="30%" alt="长按调出右键菜单"><br><sub>单指滚动 · 长按调出右键菜单</sub></p>
 
 - 仅作用于手机屏与平板屏，其他屏幕及本机触控板、鼠标不受影响
+- **CrossDesk**：手机端须选「绝对鼠标」；「相对鼠标」下单指滑仅移动光标，Snug 不予转换
 
 ### 平板：铺满 · 原生手势
 
@@ -111,7 +114,7 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 | 设备 | 手机、平板或电脑；比例与屏上功能随类别而定，见下表 |
 | 型号 | 机型库选择，或填写分辨率、比例（如 1080×2400、9×20）；更换即时生效，无需重连 |
 | 方向 | 竖屏或横屏，添加时选定 |
-| 名字 | 显示于 UU远程 屏幕列表，便于识别 |
+| 名字 | 显示于远控的屏幕列表，便于识别 |
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/settings-add-screen.eed74389.png" width="46%" alt="添加屏幕：选定设备、方向、型号与名字"><br><sub>添加屏幕：设备 · 方向 · 型号 · 名字</sub></p>
 
@@ -121,13 +124,13 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 | 平板 · 横 / 竖 | 按机型计算，字号略大于原生 | 同上；横屏为左右两栏 |
 | 电脑 · 横 | 与控制端分辨率一致；带刘海的 MacBook 避让顶部，像素级对应 | 无附加内容，等同普通显示器 |
 
-- **一机两向**：同一台手机或平板，竖屏、横屏各设一块（屏幕详情中一键添加另一方向），转向时在 UU远程 中切换
+- **一机两向**：同一台手机或平板，竖屏、横屏各设一块（屏幕详情中一键添加另一方向），转向时在远控中切换
 - **多机轮换**：多台手机或平板各设一块，分别选定型号
 - **跨设备**：手机、平板、电脑各设一块，换用设备时选择对应屏幕
 
 ### 屏幕列表
 
-设置「屏幕」页集中管理全部屏幕；远程时，在 UU远程 屏幕列表中选择所需屏幕。
+设置「屏幕」页集中管理全部屏幕；远程时，在远控的屏幕列表中选择所需屏幕。
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/settings-screens-remote.4475b8da.png" width="43%" alt="Snug 设置「屏幕」页：远程中的屏幕列表与设为主屏"> <img src="https://dl.zephyrxiang.com/snug/media/uu-screen-list.a161e201.png" width="46%" alt="UU远程 屏幕菜单：四块 Snug 屏幕"><br><sub>左：Snug 设置中的屏幕列表 · 右：远程时 UU远程 中的屏幕列表</sub></p>
 
@@ -172,7 +175,7 @@ Snug 电脑屏按控制端分辨率建立，画面与本机一致。
 | 关闭窗口 | 轻点窗口右侧的关闭按钮，再次轻点确认 |
 | 退出 App | 轻点 App 卡片上的「退出」，再次轻点确认；10 秒未退出时可强制退出 |
 | 存储未保存内容 | 关闭或退出时的「是否存储」对话框显示于当前屏幕，可在移动端直接选择 |
-| 退出这块屏 | 轻点右上角「退出这块屏」并确认：窗口归位、屏幕移除，本次远程不再显示，下次远程恢复（断开后 15 秒内重连仍视为本次） |
+| 退出这块屏 | 轻点右上角「退出这块屏」并确认：窗口归位、屏幕移除，本次远程不再显示，下次远程恢复（断开后 15 秒内重连仍视为本次）。CrossDesk 远程中仅还原窗口，屏幕保留，可在 CrossDesk 中切换显示器 |
 | 取消主屏 | 设为主屏的屏幕上，轻点右上角「取消主屏」并确认：主屏改回 Mac，远程结束后移除此屏 |
 
 ### 与 iPhone 一致的操作
@@ -256,19 +259,19 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 
 ## 🧭 使用方式
 
-CrossDesk 用户先开启「屏幕 → 提前准备虚拟屏」，等屏幕上线后重新启动 CrossDesk。连接后在显示器菜单选 Snug 屏。 [CrossDesk 使用说明](docs/remotes/crossdesk.md)
-
 1. **添加屏幕**（按需）：默认仅一块竖屏「Snug 手机屏」；平板、电脑或横屏手机，在设置「屏幕」页添加并选定型号
-2. **切换屏幕**：连接后，在 UU远程 屏幕列表中选择对应屏幕
+2. **切换屏幕**：连接后，在远控的屏幕列表中选择对应屏幕
 3. **选择 App 或窗口**：手机屏、平板屏上，在 App 资源库中轻点 App 或窗口，即铺满全屏；电脑屏从菜单栏打开 App 资源库
 4. **切换窗口**：轻点底部指示条返回 App 资源库；另选窗口时，原窗口自动归位
-5. **结束远程**：窗口归位、字号复原，Snug 屏幕随之移除；设为主屏的屏幕及其上的窗口保留
+5. **结束远程**：窗口归位、字号复原，Snug 屏幕随之移除；设为主屏的屏幕连同其上的窗口保留，提前准备的屏幕亦保留
+
+> **CrossDesk**：CrossDesk 仅在启动时识别显示器。首次使用前，在设置「屏幕」页开启「提前准备虚拟屏」，待屏幕上线后重新启动 CrossDesk；手机端选「绝对鼠标」。详见 [CrossDesk 使用说明](docs/remotes/crossdesk.md)
 
 > 💡 建议将 UU远程 画质调至最高：画质较低时画面模糊，平板上尤为明显。
 
 ## 🔒 隔离与还原
 
-- **仅改动 Snug 屏幕**：不关闭任何屏幕，不改动其他窗口；未切换至 Snug 屏幕时，UU远程 与原版一致。主屏默认不变；启用「设为主屏」后，所选屏幕常驻为主屏，取消或退出 Snug 后自动还原
+- **仅改动 Snug 屏幕**：不关闭任何屏幕，不改动其他窗口；未切换至 Snug 屏幕时，远控与原版一致。主屏默认不变；启用「设为主屏」后，所选屏幕常驻为主屏，取消或退出 Snug 后自动还原
 - **撤屏前清场**：在 Snug 屏幕上直接打开的窗口，撤屏前移至主屏，不被挤至角落
 - **先记录，后改动**：预先记录窗口原始位置与字号，Snug 意外退出后亦可还原
 - **窗口直接关闭亦可还原**：在移动端直接关闭的窗口，App 下次以 Snug 屏幕尺寸打开时，自动归位并复原字号
@@ -283,11 +286,12 @@ CrossDesk 用户先开启「屏幕 → 提前准备虚拟屏」，等屏幕上�
 | UU远程 一次仅允许一台设备控制 | 多块屏幕轮换使用，不支持多台设备同时远程 |
 | UU远程 每次连接从主屏开始 | 需在屏幕列表中手动选择一次；设为主屏后，每次连接直接进入该屏，参见 [设为主屏](#设为主屏) |
 | UU远程 Mac 端最多列出 5 块屏幕 | 含 Mac 自身屏幕；以 Mac 远程时，可先关闭暂不使用的 Snug 屏幕 |
-| 屏幕不随设备自动横竖切换 | 横竖兼用时各设一块，转向时在 UU远程 中切换 |
-| 非网易官方软件 | 与 UU远程 及其开发商无关；UU远程 更新后部分功能可能受影响 |
+| CrossDesk 仅在启动时识别显示器 | 须开启「提前准备虚拟屏」，屏幕常驻；新增屏幕后重新启动 CrossDesk。远程中退出这块屏仅还原窗口，屏幕保留 |
+| 屏幕不随设备自动横竖切换 | 横竖兼用时各设一块，转向时在远控中切换 |
+| 非官方软件 | 与 UU远程、CrossDesk 及其开发者均无关；远控更新后部分功能可能受影响 |
 | 远程结束后 Snug 屏幕偶尔未移除 | 推流停止未被系统日志记录时出现，菜单栏仍显示「远程中」；在设置中关闭已开启的屏幕即可还原 |
 | VS Code、Cursor 窗口在移动端以快捷键或菜单关闭后，字号可能被保留 | 远程结束后重新打开时若字号偏大，按 ⌘- 复原（关闭时屏上提示级数）；开启手势时轻点窗口关闭按钮，或在 App 资源库中关闭，则不受影响 |
-| 未接显示器的 Mac 无法切回原屏幕 | macOS 仅在无任何显示器时提供默认屏幕，Snug 屏幕出现后即撤下；在 App 资源库右上角退出这块屏，或在设置中关闭，即恢复原画面 |
+| 未接显示器的 Mac 无法切回原屏幕 | macOS 仅在无任何显示器时提供默认屏幕，Snug 屏幕出现后即撤下；在 App 资源库右上角退出这块屏，或在设置中关闭，即恢复原画面；CrossDesk 远程中退出仅还原窗口，屏幕保留 |
 
 各项限制的成因见 [工作原理](docs/how-it-works.md#已知限制的技术原因)。
 
@@ -343,7 +347,8 @@ Snug 免费开源。如果它帮到了你，欢迎请我喝杯咖啡，支持后
 - [Better Remote](https://github.com/pincc-debug/better-remote)（MIT）：pincc-debug，为 UU远程 实现单指滚动的思路
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow)（MIT）：小弟调调，授权引导与拖拽授权面板
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay)（MIT）：huberdf，`CGVirtualDisplay` 接口声明
-- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）
+- [CrossDesk](https://github.com/kunkundi/crossdesk)（GPL-3.0）：kunkundi，免费、开源的远控软件；Snug 仅按其公开行为对接，不含其代码
+- 社区 PR 作者：bubble、gencheng liu、Rongzheng Liu（#10，全屏桌面空间下读取 UU远程 窗口）；yupeng（#26，跨屏窗口经主屏中转）；李小双（#30、#36，断线后立即结束远程、撤屏前与断线等待期内移开指针）；LI Long（#31，多屏窗口归位与菜单栏定位的排查）；11ze（#39，降低后台扫描与辅助功能读取开销）；eltociear（#40，日文版 README）；Nexmoe（#58，接入 CrossDesk）
 - 虚拟屏的实现参考了 [DeskPad](https://github.com/Stengo/DeskPad)、[Side Screen](https://github.com/tranvuongquocdat/SideScreen) 与 Chromium 的相关代码
 
 ## ⭐ Star 趋势

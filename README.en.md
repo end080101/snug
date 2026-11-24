@@ -6,9 +6,11 @@
 
 # Snug
 
-**Make UU Remote Native on Any Device**
+**Make Your Remote Mac Native on Any Device**
 
-Display and touch enhancements for remote Macs · Supports UU Remote and CrossDesk<br>A dedicated screen for every device · Native touch gestures · App Library
+Display and touch enhancements for remote Macs<br>A dedicated screen for every device · Native touch gestures · App Library
+
+<p>Works with<br><a href="https://uuyc.163.com/"><img src="https://dl.zephyrxiang.com/snug/media/remote-uu.7b92201d.png" width="40" align="absmiddle" alt=""> <b>UU Remote</b></a>&emsp;&emsp;<a href="https://github.com/kunkundi/crossdesk"><img src="https://dl.zephyrxiang.com/snug/media/remote-crossdesk.0ffdb226.png" width="40" align="absmiddle" alt=""> <b>CrossDesk</b></a></p>
 
 [![Latest release](https://img.shields.io/github/v/release/zephyr4123/snug?label=release&color=blue)](https://github.com/zephyr4123/snug/releases/latest) ![Apple Silicon · Intel](https://img.shields.io/badge/Apple%20Silicon%20%C2%B7%20Intel-Universal-success) ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue) ![Notarized](https://img.shields.io/badge/Apple-Notarized-black?logo=apple) [![License MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
@@ -16,13 +18,13 @@ Display and touch enhancements for remote Macs · Supports UU Remote and CrossDe
 
 <br>
 
-<img src="https://dl.zephyrxiang.com/snug/media/hero-architecture.0ee41447.png" width="92%" alt="Diagram: Snug creates a screen on the Mac for each phone, tablet, and computer, delivered through UU Remote to fill each device">
+<img src="https://dl.zephyrxiang.com/snug/media/hero-architecture.e4ceb0af.png" width="92%" alt="Diagram: Snug creates a screen on the Mac for each phone, tablet, and computer, delivered through a remote desktop app to fill each device">
 <p><sub>▶ <a href="https://dl.zephyrxiang.com/snug/media/phone-demo.a97e46d1.mp4">Watch the HD demo video</a></sub></p>
 
 </div>
 
 > [!IMPORTANT]
-> **In progress**: full-time work on supporting a second remote desktop app, [CrossDesk](https://github.com/kunkundi/crossdesk) (free and open source). Progress in [#58](https://github.com/zephyr4123/snug/pull/58).
+> **New: CrossDesk**: [CrossDesk](https://github.com/kunkundi/crossdesk), a free and open-source remote desktop app, is now supported, with the same screens, native gestures, and App Library as UU Remote. Setup before connecting: [CrossDesk guide](docs/remotes/crossdesk.md) (in Chinese).
 >
 > **For UU Remote VIP members**: from December 1, 2026, UU Remote moves multi-display and virtual display features to VIP. Snug is built on virtual displays; if you happen to be a UU Remote VIP member, give it a try.
 >
@@ -43,13 +45,13 @@ Display and touch enhancements for remote Macs · Supports UU Remote and CrossDe
 | **China mirror** | Tencent Cloud CDN; recommended in mainland China | [Snug.dmg](https://dl.zephyrxiang.com/snug/latest/Snug.dmg) |
 | **GitHub Releases** | Release notes, checksums, and previous versions | [Go to Releases](https://github.com/zephyr4123/snug/releases/latest) |
 
-Identical packages from both sources. Snug runs only on the Mac being controlled; the controlling device, an Android phone, iPhone, tablet, or computer, needs only UU Remote, with no Snug app to install.
+Identical packages from both sources. Snug runs only on the Mac being controlled; the controlling device, an Android phone, iPhone, tablet, or computer, needs only UU Remote or CrossDesk, with no Snug app to install.
 
 > Windows hosts: see [Community Ports](#-community-ports).
 
 ## ✨ Native on Every Device
 
-UU Remote scales the entire desktop to fit the controlling device, leaving black bars when proportions differ and shrinking text and controls. Snug adds a screen with matching proportions for each device: full-screen windows at a mobile scale with touch-first controls on phones and tablets; the device's own resolution with no black bars on computers.
+Remote desktop apps scale the entire desktop to fit the controlling device, leaving black bars when proportions differ and shrinking text and controls. Snug adds a screen with matching proportions for each device: full-screen windows at a mobile scale with touch-first controls on phones and tablets; the device's own resolution with no black bars on computers.
 
 ### Phone: Portrait · Landscape
 
@@ -74,6 +76,7 @@ UU Remote's mobile client follows trackpad gesture conventions. On phone and tab
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/phone-demo.2cee4e81.webp" width="30%" alt="Live demo: opening a window, typing commands on the pop-up keyboard, resuming a session, one-finger scrolling, returning to the list"> <img src="https://dl.zephyrxiang.com/snug/media/phone-context-menu.997dd70f.png" width="30%" alt="Long-press context menu"><br><sub>One-finger scrolling · Long-press context menu</sub></p>
 
 - Limited to phone and tablet screens; other displays and the Mac's own trackpad and mouse are unaffected
+- **CrossDesk**: absolute mouse mode required on the phone; in relative mouse mode, a one-finger drag only moves the pointer and Snug does not translate it
 
 ### Tablet: Full Screen · Native Gestures
 
@@ -111,7 +114,7 @@ Device, model, orientation, and name configurable per screen; up to 4 screens, e
 | Device | Phone, tablet, or computer; proportions and on-screen features follow the type, see the table below |
 | Model | From the model library, or a custom resolution or aspect ratio (e.g. 1080×2400, 9×20); changes take effect immediately, no reconnection required |
 | Orientation | Portrait or landscape, chosen when the screen is added |
-| Name | Shown in UU Remote's screen list for easy identification |
+| Name | Shown in the remote desktop app's screen list for easy identification |
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/settings-add-screen.eed74389.png" width="46%" alt="Add Screen: device, orientation, model, and name"><br><sub>Add Screen: device · orientation · model · name</sub></p>
 
@@ -121,13 +124,13 @@ Device, model, orientation, and name configurable per screen; up to 4 screens, e
 | Tablet · landscape / portrait | Calculated per model, text slightly larger than native | Same as above; two columns in landscape |
 | Computer · landscape | The controlling computer's resolution; notch area on MacBooks left clear, pixel for pixel | Nothing added, as with an ordinary display |
 
-- **Both orientations**: one portrait and one landscape screen for the same phone or tablet (add the other orientation from its screen details); switch in UU Remote when you rotate
+- **Both orientations**: one portrait and one landscape screen for the same phone or tablet (add the other orientation from its screen details); switch in the remote desktop app when you rotate
 - **Multiple phones**: one screen per phone or tablet, each with its own model
 - **Across devices**: one screen each for a phone, a tablet, and a computer, selected per device in use
 
 ### Screen List
 
-All screens managed on the Screens page of Settings; the screen in use selected from UU Remote's screen list during a session.
+All screens managed on the Screens page of Settings; the screen in use selected from the remote desktop app's screen list during a session.
 
 <p align="center"><img src="https://dl.zephyrxiang.com/snug/media/settings-screens-remote.4475b8da.png" width="43%" alt="The Screens page of Snug's settings during a session: the screen list and Set as main display"> <img src="https://dl.zephyrxiang.com/snug/media/uu-screen-list.a161e201.png" width="46%" alt="UU Remote's screen menu listing four Snug screens"><br><sub>Left: the screen list in Snug's settings · Right: the screen list in UU Remote during a session</sub></p>
 
@@ -172,7 +175,7 @@ The home page of phone and tablet screens (「App 资源库」), for managing th
 | Close a window | Tap the close button next to the window, then tap again to confirm |
 | Quit an app | Tap "Quit" on the app's card, then tap again to confirm; force quit available after 10 seconds |
 | Save unsaved changes | The save prompt on closing or quitting appears on the current screen, answerable from the mobile device |
-| Exit this screen | Tap "Exit This Screen" at the top right and confirm: windows returned, screen removed for the rest of the session, restored next session (reconnecting within 15 seconds counts as the same session) |
+| Exit this screen | Tap "Exit This Screen" at the top right and confirm: windows returned, screen removed for the rest of the session, restored next session (reconnecting within 15 seconds counts as the same session). During a CrossDesk session, windows are returned and the screen stays; switch displays in CrossDesk |
 | Cancel main display | On the screen set as main, tap "Cancel Main" at the top right and confirm: the main display returns to the Mac, and this screen is removed when the session ends |
 
 ### Works Like an iPhone
@@ -218,7 +221,7 @@ Available on phone and tablet screens. With Screenshot (「截图」) turned on 
 
 ## 📦 Installation
 
-> **Requirements**: macOS 14 or later on the Mac being controlled, with [UU Remote](https://uuyc.163.com/) installed; any phone, tablet, or computer with UU Remote as the controlling device.
+> **Requirements**: macOS 14 or later on the Mac being controlled; [UU Remote](https://uuyc.163.com/) or [CrossDesk](https://github.com/kunkundi/crossdesk) on both devices.
 
 **Download and install (recommended)**
 
@@ -257,16 +260,18 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 ## 🧭 Usage
 
 1. **Add screens** (as needed): a single portrait screen, "Snug 手机屏" (Snug Phone Screen), by default; tablet, computer, or landscape phone screens added on the Screens page of Settings, each with its model
-2. **Switch screens**: once connected, choose the matching screen in UU Remote's screen list
+2. **Switch screens**: once connected, choose the matching screen in the remote desktop app's screen list
 3. **Pick an app or window**: on phone and tablet screens, tap an app or window in the App Library to fill the screen; on computer screens, open the App Library from the menu bar
 4. **Switch windows**: tap the bottom indicator bar to return to the App Library; choosing another window returns the previous one to its place
-5. **End the session**: windows returned, text sizes restored, Snug's screens removed, except the one set as main display, which keeps its windows
+5. **End the session**: windows returned, text sizes restored, Snug's screens removed, except the one set as main display, which keeps its windows, and screens kept ready in advance
+
+> **CrossDesk**: CrossDesk detects displays only at launch. Before first use, turn on 「提前准备虚拟屏」 (Prepare virtual screens in advance) on the Screens page of Settings, then restart CrossDesk once the screens are online; choose absolute mouse mode on the phone. Details in the [CrossDesk guide](docs/remotes/crossdesk.md) (in Chinese)
 
 > 💡 Set UU Remote's picture quality to the highest: lower settings blur the picture, especially on tablets.
 
 ## 🔒 Isolation and Restoration
 
-- **Only Snug's screens affected**: no display turned off, no other window touched; outside Snug's screens, UU Remote behaves exactly as before. The main display changes only with "Set as main display" on, which keeps the chosen screen as main until the setting is turned off or Snug quits
+- **Only Snug's screens affected**: no display turned off, no other window touched; outside Snug's screens, the remote desktop app behaves exactly as before. The main display changes only with "Set as main display" on, which keeps the chosen screen as main until the setting is turned off or Snug quits
 - **Cleared before removal**: windows opened directly on a Snug screen moved to the main display before the screen is removed, never pushed into a corner
 - **Record first, then change**: original window positions and text sizes recorded in advance, restorable even if Snug quits unexpectedly
 - **Restored even after a direct close**: a window closed directly on the mobile device returns to its place, with its text size restored, the next time the app opens it at the Snug screen's size
@@ -281,11 +286,12 @@ rm ~/Library/LaunchAgents/com.corndog.uudisplay.watchdog-agent.plist
 | UU Remote allows only one controlling device at a time | Screens used in turn; simultaneous sessions from several devices not supported |
 | UU Remote starts every connection on the main display | One manual selection in the screen list; with "Set as main display", every connection lands on that screen; see [Set as Main Display](#set-as-main-display) |
 | UU Remote on a Mac lists at most 5 screens | The Mac's own displays included; when controlling from a Mac, switch off unused Snug screens first |
-| No automatic portrait–landscape rotation | One screen per orientation, switched in UU Remote when rotating |
-| Not an official NetEase product | Unaffiliated with UU Remote or its developer; UU Remote updates may affect some features |
+| CrossDesk detects displays only at launch | 「提前准备虚拟屏」 (Prepare virtual screens in advance) required, keeping screens in place; restart CrossDesk after adding a screen. Exiting a screen during a session returns its windows and keeps the screen |
+| No automatic portrait–landscape rotation | One screen per orientation, switched in the remote desktop app when rotating |
+| Not an official product | Unaffiliated with UU Remote, CrossDesk, or their developers; their updates may affect some features |
 | A Snug screen may occasionally remain after a session | Occurs when the system log misses the end of the stream, with the menu bar still showing the session as active (「远程中」); switch off the active screens in Settings to restore |
 | VS Code and Cursor may keep the enlarged text size after a window is closed on the mobile device with a shortcut or menu | If the text appears too large after the session, press ⌘- to restore it (the number of steps is shown on screen at closing); unaffected when closing via the window's own close button with gestures on, or from the App Library |
-| No return to the original screen on a Mac without a display | macOS provides a default screen only when no display is connected, and removes it once a Snug screen appears; exit the screen from the top right of the App Library, or switch it off in Settings, to restore the original screen |
+| No return to the original screen on a Mac without a display | macOS provides a default screen only when no display is connected, and removes it once a Snug screen appears; exit the screen from the top right of the App Library, or switch it off in Settings, to restore the original screen; during a CrossDesk session, exiting returns windows and keeps the screen |
 
 Technical background for each limitation: [How It Works](docs/how-it-works.md#已知限制的技术原因) (in Chinese).
 
@@ -296,7 +302,7 @@ scripts/snug check     # build and run all tests
 scripts/snug install   # build, install, and launch
 ```
 
-- Three layers: `SnugCore` (pure logic) → `SnugSystem` (system interfaces) → `Snug` (UI); the code that interfaces with UU Remote is a swappable remote adapter layer (`Sources/Remotes`)
+- Three layers: `SnugCore` (pure logic) → `SnugSystem` (system interfaces) → `Snug` (UI); the adapters for UU Remote and CrossDesk live in `Sources/Remotes`
 - Packaging, releases, launch arguments, and data locations: [Development guide](docs/development.md) (in Chinese)
 - Connection detection, window placement, and gesture translation: [How It Works](docs/how-it-works.md) (in Chinese)
 
@@ -341,7 +347,8 @@ We are equally grateful to the following projects and contributors:
 - [Better Remote](https://github.com/pincc-debug/better-remote) (MIT): by pincc-debug, the approach to one-finger scrolling in UU Remote
 - [PermissionFlow](https://github.com/jaywcjlove/PermissionFlow) (MIT): by jaywcjlove (小弟调调), the permission onboarding and drag-to-authorize panel
 - [FreeDisplay](https://github.com/huberdf/FreeDisplay) (MIT): by huberdf, the `CGVirtualDisplay` interface declarations
-- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README)
+- [CrossDesk](https://github.com/kunkundi/crossdesk) (GPL-3.0): by kunkundi, a free and open-source remote desktop app; Snug interfaces with it based on its observable behavior and contains none of its code
+- Community PR authors: bubble, gencheng liu, and Rongzheng Liu (#10, reading UU Remote windows in full-screen Spaces); yupeng (#26, routing cross-display windows through the main display); 李小双 (#30, #36, ending a session immediately after disconnecting and moving the pointer off a screen before removal and while waiting to reconnect); LI Long (#31, investigating multi-display window restoration and menu bar placement); 11ze (#39, reducing background scanning and Accessibility read overhead); eltociear (#40, Japanese README); Nexmoe (#58, CrossDesk support)
 - The virtual display implementation draws on [DeskPad](https://github.com/Stengo/DeskPad), [Side Screen](https://github.com/tranvuongquocdat/SideScreen), and Chromium
 
 ## ⭐ Star History
