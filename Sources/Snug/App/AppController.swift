@@ -49,7 +49,7 @@ final class AppController: Sendable {
         desks = DeskSet(displays: VirtualDisplayService(helper: helper), windows: windows, apps: apps,
                         arrangement: DisplayArrangementService(), paths: paths, defaultZoom: store.config.zoomSteps)
         catalog = AppCatalog(apps: apps, windows: windows, excluding: Set(remotes.flatMap(\.identity.bundleIDs)))
-        touch = TouchTap(injectors: remotes.compactMap(\.identity.injector))
+        touch = TouchTap(remotes: remotes.map(\.identity))
         state.config = store.config
         state.previewing = preview
         state.devices = devices

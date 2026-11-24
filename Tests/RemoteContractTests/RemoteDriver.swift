@@ -10,8 +10,8 @@ protocol RemoteDriver: Sendable, CustomTestStringConvertible {
     var namesControllers: Bool { get }
     /// 能报在推哪块屏；报不了的一直是 nil
     var reportsStreamedDisplay: Bool { get }
-    /// 要交给 Snug 翻译的鼠标事件来自哪个可执行文件。nil = 远控自己处理手势
-    var injectorPath: String? { get }
+    /// 它注入鼠标事件的进程（可执行文件路径）
+    var injectorPath: String { get }
     /// 它自己的 App
     var appBundleID: String { get }
 

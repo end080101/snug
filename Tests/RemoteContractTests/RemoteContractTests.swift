@@ -47,20 +47,14 @@ struct RemoteContractTests {
     }
 
     @Test("注入事件：认它自己注入的进程；本机的事件、Snug 自己的进程、别家远控的注入进程都不认", arguments: drivers)
-    func injectedEvents(driver: any RemoteDriver) throws {
-        guard let path = driver.injectorPath else {
-            #expect(driver.identity.injector == nil)
-            return
-        }
-        let injector = try #require(driver.identity.injector)
-        #expect(injector.matches(executablePath: path))
+    func injectedEvents(driver: any RemoteDriver) {
+        let injector = driver.identity.injector
+        #expect(injector.matches(executablePath: driver.injectorPath))
         #expect(!injector.matches(executablePath: ""))
         #expect(!injector.matches(executablePath: "/System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer"))
         #expect(!injector.matches(executablePath: "/Applications/Snug.app/Contents/MacOS/Snug"))
         for other in drivers where other.identity != driver.identity {
-            if let otherPath = other.injectorPath {
-                #expect(!injector.matches(executablePath: otherPath))
-            }
+            #expect(!injector.matches(executablePath: other.injectorPath))
         }
     }
 

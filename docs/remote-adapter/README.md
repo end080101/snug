@@ -351,7 +351,7 @@ public struct RemoteObservation: Equatable, Sendable {
 
 ### 12.4 已知疏漏：手势只拆了一半
 
-2026-11-20 发现，待 RustDesk 的 PR 来了一起拆。
+2026-11-20 发现，待 RustDesk 的 PR 来了一起拆。**11-23 已拆**（接 CrossDesk 时，PR #58）：端口是 `TouchNormalizer`（`Sources/SnugCore/Touch/TouchNormalizer.swift`），身份里声明 `normalizer`，分派在纯值的 `TouchPipeline`（还掉了 7.5「`TouchTap` 的分派没有测试」），翻译器加了「远控已认出长按、滑动」的入口；只登记 UU 时逐字不变由 `TouchGoldenMasterTests` 守着。下面是当时的记录，拆法和草案一致；补发事件仍是拷贝后改写记号（CrossDesk 的记号打在事件本身，和 UU 同一条路径，真机待验）。
 
 **现状**：手势链路全部共用。适配器只在身份里声明 `injector`（哪个进程注入的事件归它）。系统层的 `TouchTap` 全局只有一个，启动时收齐各家的 `injector`（`AppController.swift` 里 `TouchTap(injectors:)`），截下远控注入的事件。核心的 `TouchTranslator` 也只有一个，只认「按下 → 拖动 → 抬起」这一种原料，按 iPhone 的习惯翻译成点击、滚动、长按选择、右键。
 

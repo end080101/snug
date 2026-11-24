@@ -10,14 +10,24 @@ public struct RemoteIdentity: Equatable, Sendable {
     public let displayName: String
     /// 这家远控自己的 App：不出现在 App 资源库里（把遥控器放到 Snug 的屏上没有意义，退了它远程就断了）
     public let bundleIDs: Set<String>
-    /// 适配器要交给 Snug 翻译手势时，声明注入鼠标事件的进程。
-    public let injector: InjectedEventSource?
+    /// 被远程时注入鼠标事件的进程：手势翻译只接管它发来的
+    public let injector: InjectedEventSource
+    /// 这家注入的指针事件怎么整理成标准手指输入（手势层，见 TouchNormalizer）；远控发的就是手指的按下、拖动、抬起时直通
+    public let normalizer: any TouchNormalizer.Type
 
-    public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource?) {
+    public init(logName: String, displayName: String, bundleIDs: Set<String>, injector: InjectedEventSource,
+                normalizer: any TouchNormalizer.Type = DirectTouch.self) {
         self.logName = logName
         self.displayName = displayName
         self.bundleIDs = bundleIDs
         self.injector = injector
+        self.normalizer = normalizer
+    }
+
+    /// 元类型不能自动比较：整理按类型本身比
+    public static func == (a: Self, b: Self) -> Bool {
+        a.logName == b.logName && a.displayName == b.displayName && a.bundleIDs == b.bundleIDs && a.injector == b.injector
+            && ObjectIdentifier(a.normalizer) == ObjectIdentifier(b.normalizer)
     }
 }
 

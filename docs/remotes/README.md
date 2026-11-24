@@ -10,22 +10,24 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
   适配器（每家一个）│  sample() 每 0.5 秒交一份中性的观测
                    ▼
   核心（各家共用）    RemoteSession 归属 → ConnectionTracker 连入 / 断开 → SessionEpisode 重连窗口
-                   → ScreenPlan → DeskSet / ScreenSet 建屏、换档、撤屏；AppList 资源库排除；TouchTranslator
+                   → ScreenPlan → DeskSet / ScreenSet 建屏、换档、撤屏；AppList 资源库排除
+  手势层             各家的整理（TouchNormalizer）→ 标准手指输入 → 共用的 TouchTranslator（分派在 TouchPipeline）
                    ▼
   系统层             虚拟屏、显示模式、窗口、事件监听（只接管登记的远控注入的事件）
 ```
 
 ## 端口
 
-定义在 `Sources/SnugCore/Remote/RemoteAdapter.swift`。
+定义在 `Sources/SnugCore/Remote/RemoteAdapter.swift` 和 `Sources/SnugCore/Touch/TouchNormalizer.swift`。
 
 | 类型 | 要交什么 |
 | :--- | :--- |
-| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）、界面名、从资源库排除的 App bundle。需要 Snug 翻译手势时，声明注入事件的进程。 |
+| `RemoteIdentity` | 日志名（写进日志与命令行，不含空格、不和别家重名）；界面名；从资源库排除的 App bundle；注入事件的进程；手势整理（不写就是直通） |
+| `TouchNormalizer` | 把这家注入的原始指针事件整理成标准手指输入：一次手势是按下、若干拖动、最多一个「远控已认出长按或滑动」、抬起。`consumes` 声明要看哪几种事件；可以在当前事件前补输入；要等超时（比如停多久算松手）的给 `deadline`，系统层到点调 `tick`。纯值类型，写在这家的纯逻辑目标里，拿真机录制做回放测试。远控发的就是手指的按下、拖动、抬起时用 `DirectTouch` |
 | `RemoteObservation` | 在不在场：只在有正面证据时为真；控制端：认不出为空；推流屏：不知道为 nil；信号快照：写进连入、断开日志 |
 | `RemoteAdapter` | 静态的 `identity`（身份属于这家远控，登记处、诊断命令、运行中的实例都从这里取）；`init()`；`start()`、`stop()`；`sample(wallClock:)` 每拍调一次 |
 
-不在端口里的：手势形态、屏幕让位、主屏策略、模式恢复、断开时序。这些按 UU远程 实测标定、各家暂时一样，留在共用代码里（[清单](uu.md#留在共用代码里的-uu-实测值)）；新的远控实测不同，改共用代码并补测试。⚠️ 例外是手势形态：共用的翻译器只认「按下 → 拖动 → 抬起」，事件形态不同的远控（RustDesk 触摸模式即是）计划改为各家在自己的适配器里整理成标准输入，见[设计记录 12.4](../remote-adapter/README.md#124-已知疏漏手势只拆了一半)；在那之前改共用的 `TouchTap`，只登记 UU 时的手势行为必须不变。注入事件目前只按进程名认：RustDesk 这类界面与服务同一个可执行文件的，要按别的特征认（RustDesk 是事件的 `eventSourceUserData`），得改核心的 `InjectedEventSource` 和系统层的 `InjectedEvents`（`TouchEvents.swift`）并补测试（见[设计记录](../remote-adapter/README.md#5-适配接口)，RustDesk 一行）。
+不在端口里的：屏幕让位、主屏策略、模式恢复、断开时序。这些按 UU远程 实测标定、各家暂时一样，留在共用代码里（[清单](uu.md#留在共用代码里的-uu-实测值)）；新的远控实测不同，改共用代码并补测试。手势的手感（防抖、长按时长、惯性）也在共用的翻译器里，各家只管把自家方言整理成标准手指输入；改翻译器时，`TouchGoldenMasterTests` 的摘要必须不变。注入事件目前只按进程名认：RustDesk 这类界面与服务同一个可执行文件的，要按别的特征认（RustDesk 是事件的 `eventSourceUserData`），得改核心的 `InjectedEventSource` 和系统层的 `InjectedEvents`（`TouchEvents.swift`）并补测试（见[设计记录](../remote-adapter/README.md#5-适配接口)，RustDesk 一行）。
 
 ## 步骤
 
@@ -37,6 +39,7 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
    - 纯逻辑只 import Foundation 和 SnugCore，内容是身份和信号映射。身份（`RemoteIdentity`）定义在这里，只此一份（UU 见 `UURemote.identity`），适配器和契约驱动都引用它
    - 信号映射把原始信号变成 `RemoteObservation`（UU 见 `UUSignals.observation`）
    - 系统部分实现 `RemoteAdapter`，类型叫 `RustDeskRemoteAdapter`，`static let identity` 指向纯逻辑里那份，另写 `package init() {}`
+   - 手势整理：远控发的不是手指的按下、拖动、抬起时（比如只发不按键的移动），在纯逻辑里写这家的 `TouchNormalizer`，身份里声明；先录一段真机事件（`docs/remote-adapter/crossdesk/recordings/crossdesk_events.swift` 是现成的监听工具）做回放夹具
    - 注入事件的进程和自家界面是同一个可执行文件时（RustDesk 就是），先照上文「不在端口里的」一段改核心和系统层
    - 内部类型用 `package`，不用 `public`
 4. **登记**：`Sources/Snug/App/Remotes.swift` import `RemoteRustDeskSystem`，`all` 加一行 `Entry(adapter: RustDeskRemoteAdapter.self, dump: …, check: …)`，`dump`、`check` 是 `--dump-remote`、`--check-remote` 的实现（UU 见 `UUDump.run`、`UUCheckRun.run`）。登记顺序即两家同时报在场时的归属顺序
@@ -54,7 +57,7 @@ Snug 通过适配器对接远控。可参考 [UU远程](uu.md) 和 [CrossDesk](c
 
 ## 几家并存
 
-一次远程只归一家（`RemoteSession`）：未连接时归登记顺序里第一家报在场的；已连接时不换，别家也报在场只记一条日志；重连等待期里换了一家连入，算同一次远程；远程结束清空归属。手势翻译接管声明了注入事件来源的适配器。
+一次远程只归一家（`RemoteSession`）：未连接时归登记顺序里第一家报在场的；已连接时不换，别家也报在场只记一条日志；重连等待期里换了一家连入，算同一次远程；远程结束清空归属。手势翻译接管所有登记的远控注入的事件，按注入进程认出是哪家、交它的整理。
 
 ## 防回潮
 

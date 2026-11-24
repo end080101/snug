@@ -5,7 +5,7 @@ struct CrossDeskDriver: RemoteDriver {
     let identity = CrossDeskRemote.identity
     let namesControllers = false
     let reportsStreamedDisplay = false
-    let injectorPath: String? = nil
+    let injectorPath = "/Applications/CrossDesk.app/Contents/MacOS/CrossDesk"
     let appBundleID = CrossDeskRemote.bundleID
 
     func idle() -> RemoteObservation {
