@@ -5,10 +5,11 @@ metadata:
   node_type: memory
   type: project
   originSessionId: f97709de-705a-489b-bb7a-7353b1fba51c
-  modified: 2026-11-24T12:00:00.000Z
+  modified: 2026-11-24T16:10:21.333Z
 ---
 
 - **一个入口**：构建、测试、打包、公证、发版都走 `scripts/snug`，新步骤加成子命令或内部函数，不另起脚本（主人：「通过一行命令行就能去出包、去 release，千万别散在各处」）。流程：改 VERSION 提交 → 打带说明的同名标签推上去 → `scripts/snug ship`；断了重跑只补没做完的那一步
+- **Homebrew（11-24 定，12-13 主人会提醒）**：等仓库满 30 天（11-13 建仓）后给 `Homebrew/homebrew-cask` 提 PR 加 `Casks/s/snug.rb`，不先建自己的 tap。11-24 核过：自提门槛 225 星 / 90 fork / 90 关注者满足其一（当时 1436 星、114 fork）、必须过 Gatekeeper（已公证）、官方还没有叫 snug 的 cask。cask 要点：GitHub Release 的 dmg + 现成的 `.sha256`、`auto_updates true`（有应用内更新）、`depends_on macos: ">= :sonoma"`、通用包不分架构
 - **签名公证**：个人 Developer ID Application（Team ID 29898YBGWD）。notarytool 档案名在 `.machine.env`，档案在数据保护钥匙串里，`security find-generic-password` 搜不到，别据此说没有。苹果回 403「A required agreement is missing」是开发者协议待签，要主人去 developer.apple.com 签
 - **GitHub 账号**：`GH_CONFIG_DIR=~/.config/gh-zephyr4123`，推送和 gh 命令前 `gh api user --jq .login` 必须是 zephyr4123；gh 命令一律写 `-R zephyr4123/snug`（不写会挑 upstream，2.0.0 差点发到原作者仓库）。main 不加分支保护（11-19 主人定）
 - **版本号**：x.y.0 发主打功能，x.y.z 修 issue 报的问题（带一个小入口也算）
