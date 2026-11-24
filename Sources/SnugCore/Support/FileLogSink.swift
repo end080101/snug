@@ -23,12 +23,17 @@ public final class FileLogSink: LogSink, @unchecked Sendable {
     /// processTag：帮手进程传「帮手」，每行带上 [帮手]
     public init(url: URL, processTag: String? = nil, maxBytes: UInt64 = FileLogSink.defaultMaxBytes) {
         self.url = url
-        self.rotatedURL = url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".1")
+        self.rotatedURL = Self.rotatedURL(of: url)
         self.processTag = processTag
         self.maxBytes = maxBytes
         formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+    }
+
+    /// 滚动出去的那一份：同目录、名字后加 .1
+    public static func rotatedURL(of url: URL) -> URL {
+        url.deletingLastPathComponent().appendingPathComponent(url.lastPathComponent + ".1")
     }
 
     public func write(_ level: LogLevel, _ message: String, at date: Date) {

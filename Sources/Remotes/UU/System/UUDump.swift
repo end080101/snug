@@ -10,7 +10,7 @@ package enum UUDump {
     package static func run() -> Int32 {
         print("覆盖窗口：\(UURemoteApp.overlayVisible() ? "在屏" : "没有")")
         print("屏幕：")
-        displayLines().forEach { print($0) }
+        RemoteCheckTools.displayLines().forEach { print($0) }
         guard AX.isTrusted else {
             print("没有辅助功能权限，读不到 UU远程 的界面")
             return 1
@@ -51,13 +51,5 @@ package enum UUDump {
         }
         for window in windows { walk(window, depth: 1) }
         return lines
-    }
-
-    /// 此刻在线的屏，一行一块
-    static func displayLines() -> [String] {
-        (Screens.online() ?? []).map { id in
-            let mine = CGDisplayVendorNumber(id) == ScreenSpec.vendorID ? "（Snug 的屏）" : ""
-            return "  #\(id) \(Screens.name(of: id))\(mine) \(DisplayMode.describe(id))"
-        }
     }
 }

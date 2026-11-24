@@ -15,24 +15,8 @@ package enum UUCheck {
     /// Snug 记到的远程开始，前后这么久内 UU 日志里有推流开始，就算对上
     static let matchWindow: TimeInterval = 15
 
-    package enum Status: Equatable, Sendable {
-        case ok, warn, fail, info
-
-        var symbol: String {
-            switch self {
-            case .ok: "✅"
-            case .warn: "⚠️"
-            case .fail: "❌"
-            case .info: "ℹ️"
-            }
-        }
-    }
-
-    package struct Item: Equatable, Sendable {
-        package var status: Status
-        package var title: String
-        package var detail: String
-    }
+    package typealias Status = RemoteCheck.Status
+    package typealias Item = RemoteCheck.Item
 
     /// 此刻的 UURemoteServer 进程
     package struct Server: Equatable, Sendable {
@@ -127,17 +111,8 @@ package enum UUCheck {
         return f.string(from: date)
     }
 
-    /// 报告正文：标题、结论、逐项
-    package static func report(_ items: [Item], hours: Int, at date: Date) -> String {
-        let stamp = DateFormatter()
-        stamp.locale = Locale(identifier: "en_US_POSIX")
-        stamp.dateFormat = "MM-dd HH:mm"
-        let fails = items.filter { $0.status == .fail }.count
-        let warns = items.filter { $0.status == .warn }.count
-        let verdict = fails > 0 ? "发现 \(fails) 项问题" : warns > 0 ? "未发现问题，\(warns) 项需留意" : "未发现兼容问题"
-        return (["UU远程 兼容自检 · \(stamp.string(from: date)) · 回看 \(hours) 小时", "结论：\(verdict)", ""]
-            + items.map { "\($0.status.symbol) \($0.title)：\($0.detail)" }).joined(separator: "\n")
-    }
+    /// 报告的标题
+    package static let title = "UU远程 兼容自检"
 
     // MARK: 逐项
 
