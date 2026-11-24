@@ -50,6 +50,9 @@ public struct TouchPipeline: Sendable {
     /// 下一次要喂超时拍的时刻：各家最早的那个
     public var deadline: TimeInterval? { normalizers.compactMap(\.deadline).min() }
 
+    /// 要提醒用户的话：按登记顺序第一家有话说的
+    public var advice: String? { normalizers.lazy.compactMap(\.advice).first }
+
     /// 一个原始事件。regions：此刻手势翻译管的范围
     public mutating func take(_ event: PointerEvent, from source: Int, regions: [TouchRegion]) -> TouchStep {
         guard normalizers.indices.contains(source), type(of: normalizers[source]).consumes.contains(event.kind) else { return .pass }

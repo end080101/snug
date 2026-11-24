@@ -46,6 +46,11 @@ package struct CrossDeskTouch: TouchNormalizer {
     package static let consumes: Set<PointerEvent.Kind> = [.move, .leftDown, .leftDrag, .leftUp]
 
     package private(set) var feed = Feed.unknown
+
+    /// 相对鼠标拿不到手指位置：请用户在手机端改成绝对鼠标（措辞到门面那一轮再定）
+    package var advice: String? {
+        feed == .cursor ? "手机端用的是「相对鼠标」，单指滑只能挪光标。在 CrossDesk 手机端的设置里改成「绝对鼠标」，就能像 iPhone 一样滑动" : nil
+    }
     /// 连续几下开头落在上一个事件的位置上
     private var cursorRun = 0
     /// 这一按：手指的（交翻译器）还是虚拟鼠标键的（原样放行）

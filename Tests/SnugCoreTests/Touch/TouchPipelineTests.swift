@@ -38,6 +38,13 @@ private struct SlideFromMoves: TouchNormalizer {
     }
 }
 
+/// 假的整理：一直有话要提醒用户
+private struct Complains: TouchNormalizer {
+    static let consumes: Set<PointerEvent.Kind> = [.move]
+    mutating func normalize(_ event: PointerEvent) -> Normalized { .ignored }
+    var advice: String? { "换个模式" }
+}
+
 /// 假的整理：什么都不管
 private struct IgnoresAll: TouchNormalizer {
     static let consumes: Set<PointerEvent.Kind> = [.leftDown, .leftUp]
@@ -126,6 +133,12 @@ struct TouchPipelineTests {
     func synthesizedReplayCurrentDropped() {
         var p = TouchPipeline(normalizers: [TapFromMove.self])
         #expect(p.take(event(.move, 100, 300, 0), from: 0, regions: [phone]).actions == [.perform(.replayPress, in: phone)])
+    }
+
+    @Test("要提醒用户的话：按登记顺序第一家有话说的；都没话说为 nil（直通从不提醒）")
+    func advice() {
+        #expect(TouchPipeline(normalizers: [DirectTouch.self, IgnoresAll.self]).advice == nil)
+        #expect(TouchPipeline(normalizers: [DirectTouch.self, Complains.self]).advice == "换个模式")
     }
 
     @Test("几家各用各的整理：一家的状态不影响另一家")

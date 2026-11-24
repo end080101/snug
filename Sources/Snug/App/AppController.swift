@@ -96,6 +96,7 @@ final class AppController: Sendable {
         desks.onChange = { [weak self] desks in self?.desksChanged(desks) }
         desks.onGone = { [weak self] gone in self?.catalog.forget(gone) }
         touch.onCloseWindow = { [weak self] window in self?.desks.closePlaced(window: window) }
+        touch.onAdvice = { [weak self] advice in self?.state.update(\.touchAdvice, advice) }
         screenshots.onChange = { [weak self] overlay in self?.screenshotChanged(overlay) }
         desks.onTopologyChange = { [weak self] in
             guard let self else { return }

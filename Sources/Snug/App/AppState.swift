@@ -30,6 +30,8 @@ final class AppState {
     var desks = DeskSet.State()
     /// 手势翻译要开却没开起来（建事件监听失败）
     var gesturesFailed = false
+    /// 手势层要提醒用户的话（比如远控在发光标位移、翻译不了单指滑），手机、平板屏的面板顶上显示
+    var touchAdvice: String?
     var accessibilityTrusted = false
     /// 录屏权限：手机、平板屏上的截图要它，和辅助功能分开授权（开了截图键才去读）
     var screenRecordingTrusted = false

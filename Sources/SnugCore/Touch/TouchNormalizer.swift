@@ -54,11 +54,14 @@ public protocol TouchNormalizer: Sendable {
     var deadline: TimeInterval? { get }
     /// 到了 deadline：交出到点该补的输入（比如补一个抬起）
     mutating func tick(at time: TimeInterval) -> [TouchInput]
+    /// 此刻要提醒用户的话：远控发来的翻译不了时（比如在发光标位移而不是手指位置），说清怎么在远控里换。nil = 不用提醒
+    var advice: String? { get }
 }
 
 extension TouchNormalizer {
     public var deadline: TimeInterval? { nil }
     public mutating func tick(at time: TimeInterval) -> [TouchInput] { [] }
+    public var advice: String? { nil }
 }
 
 /// 远控发的就是手指的按下、拖动、抬起（把手指当鼠标左键）：一对一交给翻译器，不改时间、不补、不等

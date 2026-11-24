@@ -98,9 +98,11 @@ struct CrossDeskTouchTests {
         run.feed([PointerEvent(.move, at: p, time: 3), e(.move, 320, 400, 3.02)])
         run.feed([e(.move, 320, 400, 4), e(.leftDown, 320, 400, 4.0005), e(.leftUp, 320, 400, 4.001)])
         #expect(run.touch.feed == .cursor)
-        // 又从手指落点开始：回到绝对鼠标
+        #expect(run.touch.advice?.contains("绝对鼠标") == true)
+        // 又从手指落点开始：回到绝对鼠标，提醒收起
         run.feed([e(.move, 600, 800, 5)])
         #expect(run.touch.feed == .finger)
+        #expect(run.touch.advice == nil)
     }
 
     @Test("隔太久（10 秒以上，本机的鼠标可能动过光标）、一下没结束的，开头不拿来判模式")
