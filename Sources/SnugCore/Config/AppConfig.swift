@@ -2,9 +2,9 @@
 import Foundation
 
 public struct AppConfig: Codable, Equatable, Sendable {
-    /// 新装只有一块竖屏手机屏。
+    /// 屏幕列表：远程时建出开着的那几块，设为主屏的那块常驻（见 ScreenPlan）。新装只有一块竖屏手机屏
     public var screens = [ScreenConfig.legacyPhone(.standard, enabled: true)]
-    /// 在远控初始化前就建好已启用的虚拟屏，供会缓存屏幕列表的远控使用。
+    /// 提前准备虚拟屏：开着的屏常驻、不等远程，给只在自己启动时认屏的远控（CrossDesk）。默认关，只在开着时写进配置
     public var keepScreensReady = false
     /// 设为主屏的那块，常驻、不随远程建撤；nil 表示不改主屏（默认）
     public var mainScreen: ScreenID?

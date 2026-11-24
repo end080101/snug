@@ -369,6 +369,17 @@ public struct RemoteObservation: Equatable, Sendable {
 
 **审那个 PR 时另要逐条核实的**：fork 里还一并做了几处不属于手势整理的改动，作用范围要逐条确认：远程期间隐藏 Snug 屏上的系统光标（按代码看对所有远控生效）；点按吸附到控件中心（每次点按查一次辅助功能）；点按反馈圈（黄圈、蓝框、红点，像调试画面）；快滑成批到达不再判成长按（改的是共用翻译器）。每条先问：是不是通用、会不会改变只有 UU 时的行为。`.memory` 的改动不收。
 
+### 12.5 接 CrossDesk 时的端口增补（11-23，PR #58）
+
+都按「有第二家的真实用例才加」：
+
+- `RemoteIdentity.seesScreensOnlyAtLaunch`：只在自己启动时认显示器（CrossDesk）。据此显示「提前准备虚拟屏」；没提前准备时远程中不建屏（`ScreenPlan` 的 `seesNewScreens`）。
+- `RemoteIdentity.opensOnMainScreen`：连上时先推 Mac 的主屏（UU）。「设为主屏每次连接即进入」只按声明了的那几家说。
+- `RemoteObservation.knownDisplays`：只在启动时认屏的远控报它这次启动认到的屏，`RemoteReading.unseen` 算出看不到的 Snug 屏，提示重启它；别家为 nil（契约测试守着）。
+- `ScreenWish.prepared`：提前准备的屏，`resident` = 设为主屏 || 提前准备；远程结束时只收拾提前准备的屏。
+- 自检：条目与报告在 `SnugCore` 的 `RemoteCheck`，取证工具（读 Snug 日志、扫包、写材料）在 `SnugSystem` 的 `RemoteCheckTools`，各家只写判定（`UUCheck`、`CrossDeskCheck`）。
+- 界面不写死哪一家：提到远控时用登记处的名单或这次远程的那家（`AppState.remoteNames`）。
+
 ## 附：调研原始报告
 
 - [research/coupling.md](research/coupling.md)：代码耦合与接口，72 条
