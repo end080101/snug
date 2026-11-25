@@ -164,11 +164,15 @@ final class FakeWindows: WindowControl {
         /// 切全屏时换过去的另一个样子：全屏时是平时的位置，平时是整屏大小（和真的一样，全屏时读到的是整屏）
         var otherFrame: CGRect?
         var minimized = false
-        /// App 把窗口藏起来了（被隐藏、关成了隐藏）：还在，但不在屏上
+        /// App 被隐藏了：还在，不在屏上，辅助功能照样找得到、挪得动
         var hidden = false
+        /// App 把窗口收起来了（飞书、微信点关闭）：窗口服务器里还在，不在屏上，辅助功能找不到、挪不动（和真的一样，11-25 实测）
+        var withdrawn = false
         var zoom = 0
         /// 到这个时刻才出现在屏上（App 刚启动、窗口还没画出来）
         var shownFrom: TimeInterval = 0
+        /// 到这个时刻就没了（App 先把窗口收起来、过一会儿才销毁）
+        var goneAt: TimeInterval?
         /// 列表、捕获新窗口时报出来的样子
         var info: WindowInfo?
     }
@@ -218,6 +222,11 @@ final class FakeWindows: WindowControl {
     func onMove(_ hook: @escaping @Sendable (WindowKey) -> Void) { moveHook.withLock { $0 = hook } }
 
     private var reachable: Bool { !blocked.withLock { $0 } }
+    /// 辅助功能够得着的窗口：App 没卡住、窗口没被收起来
+    private func axWindow(_ key: WindowKey) -> Window? {
+        guard reachable, let w = window(key), !w.withdrawn else { return nil }
+        return w
+    }
 
     /// windowed：全屏窗口退出全屏后的平时位置
     func add(_ key: WindowKey, frame: CGRect, fullScreen: Bool = false, windowed: CGRect? = nil, minimized: Bool = false,
@@ -227,8 +236,13 @@ final class FakeWindows: WindowControl {
                              shownFrom: shownFrom, info: info)
         }
     }
-    /// App 重新显示藏起来的窗口（唤回）
-    func unhide(_ key: WindowKey) { state.withLock { $0[key]?.hidden = false } }
+    /// App 重新显示被隐藏、收起来的窗口（唤回）
+    func unhide(_ key: WindowKey) {
+        state.withLock {
+            $0[key]?.hidden = false
+            $0[key]?.withdrawn = false
+        }
+    }
 
     /// App 在问用户，问的是 key 这个窗口（挂着 sheet 的文档窗口，或单独的对话框）。answer 秒数到了就算答完：
     /// 不再问，接着做 then 里的事（App 退出、窗口关掉；什么都不做就是点了取消）
@@ -248,8 +262,8 @@ final class FakeWindows: WindowControl {
         case asks(after: TimeInterval, save: Bool)
         /// 按了不关、也不问
         case stalls
-        /// 像飞书、微信那样：点关闭只是把窗口藏起来
-        case hides
+        /// 像飞书、微信那样：点关闭只是把窗口收起来
+        case withdraws
     }
     func onClose(_ key: WindowKey, _ reaction: CloseReaction) { closeReactions.withLock { $0[key] = reaction } }
 
@@ -257,9 +271,19 @@ final class FakeWindows: WindowControl {
     func closeAll(of pid: Int32) { state.withLock { $0 = $0.filter { $0.key.pid != pid } } }
     /// 窗口没了（用户在 Mac 上关掉、App 自己关掉）
     func vanish(_ key: WindowKey) { _ = state.withLock { $0.removeValue(forKey: key) } }
-    /// 像飞书、微信点关闭那样：窗口藏起来，还在
+    /// App 被隐藏：窗口还在，辅助功能照样够得着
     func hide(_ key: WindowKey) { state.withLock { $0[key]?.hidden = true } }
-    func window(_ key: WindowKey) -> Window? { state.withLock { $0[key] } }
+    /// 像飞书、微信点关闭那样：窗口收起来，窗口服务器里还在，辅助功能够不着
+    func withdraw(_ key: WindowKey) { state.withLock { $0[key]?.withdrawn = true } }
+    /// 进出全屏的动画里那样：窗口还在，到 until 之前窗口服务器报它没显示
+    func unshow(_ key: WindowKey, until: TimeInterval) { state.withLock { $0[key]?.shownFrom = until } }
+    /// 到 time 这个时刻窗口没了
+    func vanish(_ key: WindowKey, at time: TimeInterval) { state.withLock { $0[key]?.goneAt = time } }
+    func window(_ key: WindowKey) -> Window? {
+        guard let w = state.withLock({ $0[key] }) else { return nil }
+        if let gone = w.goneAt, (clock.withLock { $0 }?() ?? 0) >= gone { return nil }
+        return w
+    }
     /// 带着 bundle ID 的窗口都属于哪些进程（假 App 按它报 pids）
     func pids(bundleID: String) -> [Int32] {
         Array(Set(state.withLock { $0 }.compactMap { $0.value.info?.bundleID == bundleID ? $0.key.pid : nil })).sorted()
@@ -273,13 +297,15 @@ final class FakeWindows: WindowControl {
 
     func exists(_ window: WindowKey) async -> Bool { self.window(window) != nil }
 
+    func withdrawn(_ window: WindowKey) async -> Bool { reachable && self.window(window)?.withdrawn == true }
+
     func isShown(_ window: WindowKey) async -> Bool {
         guard let w = self.window(window) else { return false }
         return shown(w)
     }
 
     private func shown(_ w: Window) -> Bool {
-        !w.minimized && !w.hidden && (clock.withLock { $0 }?() ?? 0) >= w.shownFrom
+        !w.minimized && !w.hidden && !w.withdrawn && (clock.withLock { $0 }?() ?? 0) >= w.shownFrom
     }
 
     private func info(_ key: WindowKey, _ w: Window) -> WindowInfo {
@@ -303,14 +329,14 @@ final class FakeWindows: WindowControl {
 
     /// 全屏的按了没反应（和真的一样）
     func close(_ window: WindowKey) async -> Bool {
-        guard reachable, let w = self.window(window) else { return false }
+        guard let w = axWindow(window) else { return false }
         journal.add("close \(window.id)\(w.fullScreen ? "（全屏，没反应）" : "")")
         guard !w.fullScreen else { return true }
         switch closeReactions.withLock({ $0[window] }) {
         case nil: vanish(window)
         case .asks(let after, let save): ask(window, answeredAfter: after) { if save { self.vanish(window) } }
         case .stalls: break
-        case .hides: hide(window)
+        case .withdraws: withdraw(window)
         }
         return true
     }
@@ -321,21 +347,22 @@ final class FakeWindows: WindowControl {
 
     /// 关闭按钮在窗口左上角（和真的一样，大小随便给）
     func closeButton(_ window: WindowKey) async -> CGRect? {
-        guard reachable, let w = self.window(window) else { return nil }
+        guard let w = axWindow(window) else { return nil }
         return CGRect(x: w.frame.minX + 8, y: w.frame.minY + 8, width: 14, height: 14)
     }
 
     func look(_ window: WindowKey) async -> WindowLook? {
-        guard reachable, let w = self.window(window) else { return nil }
+        guard let w = axWindow(window) else { return nil }
         return WindowLook(frame: w.frame, fullScreen: w.fullScreen, minimized: w.minimized)
     }
 
     func move(_ window: WindowKey, to frame: CGRect) async -> CGRect? {
-        guard reachable, !movesBlocked.withLock({ $0 }), self.window(window) != nil,
+        guard axWindow(window) != nil, !movesBlocked.withLock({ $0 }),
               refusal.withLock({ $0 })?(window, frame) != true else { return nil }
         moveHook.withLock { $0 }?(window)
         journal.add("move \(window.id) \(frame.short)\(mark)")
-        if movesIgnored.withLock({ $0 }) { return self.window(window)?.frame }
+        // 全屏的窗口不吃挪动（和真的一样）
+        if movesIgnored.withLock({ $0 }) || self.window(window)?.fullScreen == true { return self.window(window)?.frame }
         if let stop = stops.withLock({ $0[window] }) {
             guard stop.contains(CGPoint(x: frame.midX, y: frame.midY)) else { return self.window(window)?.frame }
             _ = stops.withLock { $0.removeValue(forKey: window) }
@@ -350,7 +377,7 @@ final class FakeWindows: WindowControl {
 
     /// 切全屏：和另一个样子对换（退出全屏变回平时的位置，进全屏变回整屏）
     func setFullScreen(_ window: WindowKey, _ on: Bool) async {
-        guard reachable else { return }
+        guard axWindow(window) != nil else { return }
         journal.add("fullscreen \(window.id) \(on ? "on" : "off")\(mark)")
         state.withLock {
             guard var w = $0[window], w.fullScreen != on else { return }
@@ -361,7 +388,7 @@ final class FakeWindows: WindowControl {
     }
 
     func setMinimized(_ window: WindowKey, _ on: Bool) async {
-        guard reachable else { return }
+        guard axWindow(window) != nil else { return }
         journal.add("minimize \(window.id) \(on ? "on" : "off")\(mark)")
         state.withLock { $0[window]?.minimized = on }
     }
@@ -369,7 +396,7 @@ final class FakeWindows: WindowControl {
     func focus(_ window: WindowKey) async { journal.add("focus \(window.id)") }
 
     func zoom(_ window: WindowKey, steps: Int) async -> Bool {
-        guard reachable, !zoomBlocked.withLock({ $0 }), self.window(window) != nil else { return false }
+        guard axWindow(window) != nil, !zoomBlocked.withLock({ $0 }) else { return false }
         journal.add("zoom \(window.id) \(steps > 0 ? "+" : "")\(steps)\(mark)")
         let grow = grows.withLock { $0 }
         state.withLock {
@@ -379,17 +406,16 @@ final class FakeWindows: WindowControl {
         return true
     }
 
-    /// 和真的一样只问窗口服务器：最小化、藏起来的不在屏上，不算
+    /// 和真的一样只问窗口服务器：最小化、App 被隐藏、被 App 收起来的不在屏上，不算
     func windows(in area: CGRect) async -> [WindowKey: CGRect] {
-        state.withLock { all in
-            all.filter { !$0.value.minimized && !$0.value.hidden && area.contains(CGPoint(x: $0.value.frame.midX, y: $0.value.frame.midY)) }
-                .mapValues(\.frame)
-        }
+        state.withLock { $0 }.filter { shown($0.value) && area.contains(CGPoint(x: $0.value.frame.midX, y: $0.value.frame.midY)) }
+            .mapValues(\.frame)
     }
 
+    /// 和真的一样走辅助功能：最小化的不拍，被 App 收起来的够不着
     func snapshot() async -> [WindowKey: CGRect] {
         journal.add("snapshot")
-        return state.withLock { $0.mapValues(\.frame) }
+        return state.withLock { $0 }.filter { !$0.value.minimized && !$0.value.withdrawn }.mapValues(\.frame)
     }
 
     func restore(_ snapshot: [WindowKey: CGRect], except: Set<WindowKey>) async {
@@ -501,7 +527,7 @@ final class FakeApps: AppControl {
     /// 打开、新建窗口时开出这个窗口；不登记的 App 菜单里没有「新建窗口」
     func willSpawn(_ app: AppInfo, _ spawn: Spawn) { spawns.withLock { $0[app.bundleID] = spawn } }
     func onQuit(_ app: AppInfo, _ quit: Quit) { quits.withLock { $0[app.bundleID] = quit } }
-    /// 唤回时重新显示这个编号的窗口（原来关成了隐藏），不开新的
+    /// 唤回时重新显示这个编号的窗口（原来被收起来了），不开新的
     func willReshow(_ app: AppInfo, id: UInt32) { reshows.withLock { $0[app.bundleID] = id } }
     /// 打不开（启动失败）
     func failLaunches() { launchFails.withLock { $0 = true } }

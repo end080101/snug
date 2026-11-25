@@ -401,7 +401,7 @@ public final class DeskSet {
                 await desk.matchWidth()
             }
             if await self.windows.look(window.key)?.fullScreen == true { await self.windows.setFullScreen(window.key, false) }
-            // 飞书、微信点关闭只是把窗口藏起来：在屏上的窗口按完关闭不在屏上了，也算关上
+            // 飞书、微信点关闭只是把窗口收起来：在屏上的窗口按完关闭不在屏上了，也算关上
             let wasShown = await self.windows.isShown(window.key)
             guard await self.windows.close(window.key) else {
                 let notice = await self.env.unreachable(window)
@@ -515,15 +515,15 @@ public final class DeskSet {
         }
     }
 
-    /// 盯着请它关掉的窗口，同退出；等满了还在、也没在问，提示无响应。
-    /// hides：按关闭前它在屏上，那么不在屏上了（飞书、微信关成了隐藏）也算关上
+    /// 盯着请它关掉的窗口，同退出；等满了还在、也没在问，提示无响应。被 App 收起来了（飞书、微信点关闭）也算关上：
+    /// hides（按关闭前它在屏上）时不在屏上了就是；按之前就没显示（最小化、App 被隐藏、在别的桌面空间）的要问 App 还给不给出它
     private func watchClose(_ window: WindowInfo, hides: Bool, from id: ScreenID) {
         watcher.watch(.close(window.key)) {
             defer { self.state.closing.remove(window.key) }
             let answer = await self.watcher.awaitAnswer(from: window.key.pid, within: Self.closeWait, done: {
                 guard await self.windows.exists(window.key) else { return true }
-                guard hides else { return false }
-                return await !self.windows.isShown(window.key)
+                guard await !self.windows.isShown(window.key) else { return false }
+                return hides ? true : await self.windows.withdrawn(window.key)
             }, ask: self.asking(on: id))
             guard !Task.isCancelled else { return }
             switch answer {
@@ -631,7 +631,7 @@ public final class DeskSet {
     }
 
     /// 定期调用（和 verifyPlacement 同一拍）：刚在 Snug 之外没了的窗口，它的 App 换没换个新窗口（换了就接着放上来）；
-    /// 留下的账的窗口回来没有（带着屏上的大小回来就还账）。没账可查时什么都不做
+    /// 留下的账的窗口回来没有（回来了就还账）。没账可查时什么都不做
     public func checkReturns() {
         guard desks.values.contains(where: \.watchesReplacement) || !env.leftBehind.isEmpty,
               desks.values.allSatisfy({ $0.state.work == nil }) else { return }
@@ -641,7 +641,7 @@ public final class DeskSet {
         }
     }
 
-    /// 留下的账的窗口回来了（同一个 App 的窗口带着 Snug 铺成的大小出现）：还在远程、它就开在一块空着的 Snug 屏上，
+    /// 留下的账的窗口回来了（同一个窗口，或同一个 App 的窗口带着 Snug 铺成的大小出现）：还在远程、它就开在一块空着的 Snug 屏上，
     /// 接着放着（手机上关掉又重开）；否则放回原位，字号随窗口回来的一起缩回。一次只还一笔，还不成（App 没响应）下一拍再试
     private func takeBackReturned() async {
         await env.leftBehind.repayAppWideZoom()

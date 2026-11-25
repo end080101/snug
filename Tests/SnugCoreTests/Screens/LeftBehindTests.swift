@@ -44,7 +44,7 @@ struct LeftBehindTests {
         #expect(r.bundleID == nil && r.title == nil && r.filled == nil)
     }
 
-    @Test("带着手机屏上的大小回来的同一个 App 的窗口才算它：编号变了也认（App 重开、重启后编号都会换）")
+    @Test("换了编号时，带着手机屏上的大小回来的同一个 App 的窗口才算它（App 重开、重启后编号都会换）")
     func matchesBySizeAndApp() {
         let book = LeftBehindBook(entries: [LeftBehind(record: record(), since: Date())])
         #expect(book.match(window(), frame: CGRect(x: 0, y: 33, width: 540, height: 892)) == 0)
@@ -76,9 +76,34 @@ struct LeftBehindTests {
         ])
         #expect(book.match(window(), frame: filled) == 1)
         #expect(book.match(window(key: WindowKey(pid: 20, id: 300)), frame: filled) == 1)
-        #expect(book.awaits(bundleID: vscode, size: filled.size))
-        #expect(!book.awaits(bundleID: vscode, size: CGSize(width: 1200, height: 800)))
-        #expect(!book.awaits(bundleID: "com.apple.Safari", size: filled.size))
+        let other = WindowKey(pid: 21, id: 400)
+        #expect(book.awaits(bundleID: vscode, window: other, size: filled.size))
+        #expect(!book.awaits(bundleID: vscode, window: other, size: CGSize(width: 1200, height: 800)))
+        #expect(!book.awaits(bundleID: "com.apple.Safari", window: other, size: filled.size))
+    }
+
+    @Test("一模一样的账只记一笔（记完账、销还原账之间崩溃，下次启动放不回去时会再记一遍）：同一个窗口不论大小都认，记两笔就会还两遍")
+    func identicalEntryOnce() {
+        var book = LeftBehindBook()
+        book.add(LeftBehind(record: record(), since: Date()))
+        book.add(LeftBehind(record: record(), since: Date().addingTimeInterval(5)))
+        #expect(book.entries.count == 1)
+        var other = record()
+        other.zoom = 1
+        book.add(LeftBehind(record: other, since: Date()))
+        #expect(book.entries.count == 2)
+    }
+
+    @Test("同一个窗口（编号没变）回来了：它从没被销毁，大小变了也认（收起来时系统因为换屏、换档改了它的大小）；换了编号的照旧要原样的大小")
+    func sameWindowMatchesAnySize() {
+        let mine = WindowKey(pid: 20, id: 300)
+        let book = LeftBehindBook(entries: [LeftBehind(record: record(key: mine), since: Date())])
+        let resized = CGRect(x: -756, y: 30, width: 1060, height: 900)
+        #expect(book.match(window(key: mine), frame: resized) == 0)
+        #expect(book.awaits(bundleID: vscode, window: mine, size: resized.size))
+        #expect(book.match(window(key: WindowKey(pid: 20, id: 301)), frame: resized) == nil)
+        #expect(!book.awaits(bundleID: vscode, window: WindowKey(pid: 20, id: 301), size: resized.size))
+        #expect(book.match(window(key: mine, bundleID: "com.apple.Safari"), frame: resized) == nil)   // 编号归了别的 App 不认
     }
 
     @Test("没铺成过的（窗口还没挪上手机屏就没了）不记：认不出它回来没有")

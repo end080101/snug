@@ -49,13 +49,17 @@ public struct WindowLook: Equatable, Sendable {
 }
 
 /// 搬窗口、调字号。辅助功能的调用会阻塞（App 卡住时每次最多等一会儿），实现放在自己的后台队列上。
-/// 除了 exists，读写窗口都经过窗口所在的 App：返回 nil / false 可能只是 App 一时没响应、或者没有辅助功能权限，
-/// 窗口是不是真没了，只有 exists 说了算
+/// 除了 exists、isShown，读写窗口都经过窗口所在的 App：返回 nil / false 可能只是 App 一时没响应、或者没有辅助功能权限。
+/// 窗口是不是真没了只看 exists；对用户来说关了的还有 withdrawn（被 App 收起来了），它要问 App，App 没响应时答 false
 public protocol WindowControl: Sendable {
     /// 窗口还在不在：问窗口服务器，不经过 App，App 卡住、没有权限都不影响
     func exists(_ window: WindowKey) async -> Bool
-    /// 窗口此刻在不在屏上（也问窗口服务器）：最小化、App 被隐藏、关成了隐藏（飞书、微信点关闭只是藏起来）都不在
+    /// 窗口此刻在不在屏上（也问窗口服务器）：最小化、App 被隐藏、被 App 收起来都不在
     func isShown(_ window: WindowKey) async -> Bool
+    /// App 把窗口收起来了：窗口服务器里还有它，App 也照常响应，但已不再给出这个窗口（飞书、微信点关闭只是收起来），
+    /// 辅助功能找不到、挪不动，等 App 再拿出来。对用户来说就是关了。最小化、App 被隐藏、在别的桌面空间的照样给出，不算；
+    /// App 没响应、没有权限时不知道，返回 false
+    func withdrawn(_ window: WindowKey) async -> Bool
     /// 读不到（窗口没了、App 没响应、没有权限）返回 nil
     func look(_ window: WindowKey) async -> WindowLook?
     /// 挪到 frame 并核对，对不上就重试；返回最后的位置，挪不动返回 nil
