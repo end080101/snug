@@ -648,7 +648,7 @@ public final class Desk {
         guard behavior.touch else { return await verifyBrought() }
         guard let p = placement else { return }
         guard await windows.exists(p.window.key) else {
-            Log.info("屏上的 \(p.window.label) 在 Snug 之外关了，回到 App 资源库")
+            Log.info("屏上的 \(p.window.label)（窗口 \(p.window.key.id)）在 Snug 之外关了，回到 App 资源库")
             placement = nil
             state.listVisible = true
             replaced = (p.window.key.pid, p.known.union([p.window.key]), timeline.now + Self.replaceWait)
@@ -688,7 +688,7 @@ public final class Desk {
         for key in brought.keys.sorted(by: Self.order) {
             guard let record = brought[key] else { continue }
             guard await windows.exists(key) else {
-                Log.info("电脑屏上的 \(record.label) 在 Snug 之外关了，不再记着原处")
+                Log.info("电脑屏上的 \(record.label)（窗口 \(key.id)）在 Snug 之外关了，不再记着原处")
                 release(key)
                 continue
             }
