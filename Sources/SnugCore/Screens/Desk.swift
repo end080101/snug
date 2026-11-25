@@ -390,8 +390,6 @@ public final class Desk {
     /// 电脑屏资源库里的「还原」：按账放回原处。放不回去（App 卡住）就留在屏上、账留着，提示一下，可以再点
     func putBackBrought(_ window: WindowKey) async {
         guard let record = brought[window] else { return }
-        // 在这块屏上被点成了全屏（资源库在全屏空间里也打得开）：全屏的窗口不吃挪动，先退出全屏再放回，原来全屏的放回后再进
-        if await windows.look(window)?.fullScreen == true { await windows.setFullScreen(window, false) }
         brought[window] = await putBack(record)
         if let left = brought[window] { state.notice = .windowUnresponsive(app: left.app) }
     }
@@ -572,7 +570,7 @@ public final class Desk {
         state.notice = nil
     }
 
-    /// 按记录放回：缩回字号（窗口还在屏上、还是它 App 的当前窗口；缩完马上记账）→ 挪回原位 →
+    /// 按记录放回：缩回字号（窗口还在屏上、还是它 App 的当前窗口；缩完马上记账）→ 在屏上进了全屏的先退出 → 挪回原位 →
     /// 原来全屏的恢复全屏、原来最小化的再最小化。放回了就销账、窗口确实没了就转成留下的账，返回 nil；
     /// 窗口还在却缩不回、挪不动（App 没响应、没有权限）就留着记录（下次放窗口或下次启动再放），返回留下的这条
     @discardableResult
@@ -585,6 +583,9 @@ public final class Desk {
             record.zoom = 0
             write(record)
         }
+        // 在屏上被点成了全屏（手机上点了绿色按钮，电脑屏的资源库在全屏空间里也打得开）：全屏的窗口不吃挪动，
+        // 先退出全屏再放回，原来全屏的放回后再进
+        if await windows.look(record.window)?.fullScreen == true { await windows.setFullScreen(record.window, false) }
         let target = env.screens.currentFrame(record.original)
         guard let got = await windows.move(record.window, to: target) else {
             return await stuckOrGone(record, "挪不动")

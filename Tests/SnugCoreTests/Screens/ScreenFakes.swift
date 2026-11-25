@@ -337,7 +337,8 @@ final class FakeWindows: WindowControl {
               refusal.withLock({ $0 })?(window, frame) != true else { return nil }
         moveHook.withLock { $0 }?(window)
         journal.add("move \(window.id) \(frame.short)\(mark)")
-        if movesIgnored.withLock({ $0 }) { return self.window(window)?.frame }
+        // 全屏的窗口不吃挪动（和真的一样）
+        if movesIgnored.withLock({ $0 }) || self.window(window)?.fullScreen == true { return self.window(window)?.frame }
         if let stop = stops.withLock({ $0[window] }) {
             guard stop.contains(CGPoint(x: frame.midX, y: frame.midY)) else { return self.window(window)?.frame }
             _ = stops.withLock { $0.removeValue(forKey: window) }

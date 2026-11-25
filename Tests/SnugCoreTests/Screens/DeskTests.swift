@@ -414,6 +414,19 @@ struct DeskTests {
         #expect(rig.displays.width(rig.desk.state.display!) == width)
     }
 
+    @Test("手机屏上的窗口在屏上被点成了全屏：撤屏时先退出全屏再放回原位，账销掉")
+    func placedWindowWentFullScreen() async throws {
+        let rig = try Rig()
+        await rig.ready()
+        await rig.pull(finder)
+        await rig.windows.setFullScreen(finder.key, true)
+        rig.desk.setWanted(false)
+        await rig.desk.idle()
+        #expect(rig.windows.window(finder.key)?.fullScreen == false)
+        #expect(rig.windows.window(finder.key)?.frame == finderHome)
+        #expect(rig.record == nil)
+    }
+
     @Test("App 没响应（或权限被收回）：核对时不当成已关；放不回去的窗口记录留着，恢复时也不动")
     func unresponsiveApp() async throws {
         let rig = try Rig()
@@ -819,7 +832,8 @@ struct DeskTests {
     @Test("上次崩溃留下的记录：窗口还在就缩回字号、放回原位、恢复全屏，然后销账")
     func recover() async throws {
         let rig = try Rig()
-        rig.windows.setFrame(safari.key, CGRect(x: 0, y: 25, width: 540, height: 897))
+        // 放上屏时已退出全屏，崩溃时它是手机屏上的普通窗口
+        rig.windows.add(safari.key, frame: CGRect(x: 0, y: 25, width: 540, height: 897), info: safari)
         try RestoreRecord<PlacedRecord>(url: rig.paths.placedRecord(for: .phone)).record(
             PlacedRecord(window: safari.key, app: safari.app, label: safari.label, original: safariHome, wasFullScreen: true, zoom: 2))
         rig.desk.recover()
