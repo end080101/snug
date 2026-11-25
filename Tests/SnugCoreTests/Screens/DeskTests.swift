@@ -387,7 +387,7 @@ struct DeskTests {
         #expect(rig.record == nil)
     }
 
-    @Test("手机屏上的窗口还在却不在屏上（飞书点关闭只是藏起来）：回到列表，照旧算放着、记录留着")
+    @Test("手机屏上的窗口还在却不在屏上（最小化、App 被隐藏）：回到列表，照旧算放着、记录留着")
     func placedWindowHidden() async throws {
         let rig = try Rig()
         await rig.ready()
@@ -695,7 +695,7 @@ struct DeskTests {
         #expect(rig.windows.window(ghostty.key)?.frame == phoneArea)
     }
 
-    @Test("宽窗口放回原位、被藏起来：回到列表，手机屏换回 540")
+    @Test("宽窗口放回原位、App 被隐藏：回到列表，手机屏换回 540")
     func wideWindowLeaves() async throws {
         let rig = try Rig()
         rig.windows.setMinSize(finder.key, width: 740)

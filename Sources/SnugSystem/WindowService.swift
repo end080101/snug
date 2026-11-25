@@ -26,7 +26,7 @@ public final class WindowService: WindowControl {
 
     // MARK: WindowControl
 
-    // 窗口服务器知道每个窗口（别的桌面空间、最小化、藏起来、App 被隐藏、正在进出全屏的也在），不用等 App 响应，也不要权限；
+    // 窗口服务器知道每个窗口（别的桌面空间、最小化、App 被隐藏、被 App 收起来、正在进出全屏的也在），不用等 App 响应，也不要权限；
     // 只有窗口真没了（关掉、App 重建了窗口、App 退出）才查不到。显示着没有看 isShown。
     // 窗口服务器没回答时两个都按「照旧」答：在、显示着，不凭没有的答案销账、回资源库
 
@@ -37,15 +37,16 @@ public final class WindowService: WindowControl {
 
     public func isShown(_ window: WindowKey) async -> Bool {
         switch Self.serverInfo(window) {
-        case .present(let info): (info[kCGWindowIsOnscreen as String] as? Bool) == true
+        case .present(let onscreen): onscreen
         case .absent: false
         case .noAnswer: true
         }
     }
 
-    // 收起来的窗口系统给的列表里没有、远程令牌也试不出来（11-25 实测）；最小化、App 被隐藏的在列表里，别的桌面空间的试得出来
+    // 收起来的窗口系统给的列表里没有、远程令牌也试不出来（11-25 实测）；最小化、App 被隐藏的在列表里，别的桌面空间的试得出来。
+    // 收起来的一定不在屏上：显示着的不去问 App，App 卡住时不白等辅助功能的超时
     public func withdrawn(_ window: WindowKey) async -> Bool {
-        guard case .present = Self.serverInfo(window) else { return false }
+        guard case .present(onscreen: false) = Self.serverInfo(window) else { return false }
         return await run {
             guard let listed = AX.respondingWindows(pid: window.pid) else { return false }
             if listed.contains(where: { AX.windowID($0) == window.id }) { return false }
@@ -265,30 +266,40 @@ public final class WindowService: WindowControl {
     }
 
     private enum ServerAnswer {
-        case present([String: Any])
+        /// 有这个窗口；onscreen：此刻显示着
+        case present(onscreen: Bool)
         /// 没有这个窗口，或编号已经归了别的进程
         case absent
-        /// 窗口服务器没回答（不在图形会话里时返回 NULL，如切到了别的用户）
+        /// 窗口服务器没回答。系统文档说不在图形会话里、或窗口服务器不可用时返回 NULL（什么现场会碰上，未实测）
         case noAnswer
     }
 
     /// 窗口服务器上次没回答：没回答、恢复各记一笔，不每次核对都记
     private static let serverSilent = Locked(false)
 
+    /// 记下窗口服务器这次回答了没有，和上次不一样才记日志
+    private static func noteServer(answered: Bool) {
+        let changed = serverSilent.withLock { silent in
+            defer { silent = !answered }
+            return silent == answered
+        }
+        guard changed else { return }
+        if answered { Log.info("窗口服务器恢复回答窗口查询") }
+        else { Log.warn("窗口服务器没回答窗口查询，先当窗口都还在、照旧显示着") }
+    }
+
     /// 窗口服务器里这个窗口的信息。按编号要描述（FromArray），不用 CGWindowListCopyWindowInfo 的 optionIncludingWindow：
-    /// 后者只报此刻显示着的窗口，藏起来、最小化、App 被隐藏、进出全屏的那半秒都报「没有」，会把活着的窗口当成关了（#63，11-25 实测）
+    /// 后者只报此刻显示着的窗口，最小化、App 被隐藏、被 App 收起来、进出全屏的那半秒都报「没有」，会把活着的窗口当成关了（#63，11-25 实测）
     private static func serverInfo(_ window: WindowKey) -> ServerAnswer {
         var ids: [UnsafeRawPointer?] = [UnsafeRawPointer(bitPattern: UInt(window.id))]
         guard let array = CFArrayCreate(nil, &ids, 1, nil),
               let list = CGWindowListCreateDescriptionFromArray(array) as? [[String: Any]] else {
-            if serverSilent.withLock({ defer { $0 = true }; return !$0 }) {
-                Log.warn("窗口服务器没回答窗口查询（可能切到了别的用户），先当窗口都还在、照旧显示着")
-            }
+            noteServer(answered: false)
             return .noAnswer
         }
-        if serverSilent.withLock({ defer { $0 = false }; return $0 }) { Log.info("窗口服务器恢复回答窗口查询") }
+        noteServer(answered: true)
         guard let info = list.first, (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == window.pid else { return .absent }
-        return .present(info)
+        return .present(onscreen: (info[kCGWindowIsOnscreen as String] as? Bool) == true)
     }
 
     /// 等到条件成立，最多等 seconds 秒。App 卡住时每次读都要等满超时，所以按截止时间算，不按次数
@@ -339,7 +350,7 @@ public final class WindowService: WindowControl {
                    minimized: AX.flag(element, kAXMinimizedAttribute))
     }
 
-    /// 窗口服务器里此刻在屏上的窗口（进程号、编号）：被最小化、隐藏、关成了隐藏的都不在
+    /// 窗口服务器里此刻在屏上的窗口（进程号、编号）：被最小化、App 被隐藏、被 App 收起来的都不在
     private static func onScreen() -> [(pid: Int32, id: UInt32)] {
         let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]
         return (list ?? []).compactMap { info in

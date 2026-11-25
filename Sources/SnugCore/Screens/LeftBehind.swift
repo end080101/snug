@@ -6,7 +6,9 @@
 // 认它回来只认看得见的证据：同一个窗口（编号没变）又出现，说明它从没被销毁，账就是它的，大小变了也认
 // （收起来的时候系统可能因为换屏、换档改了它的大小）；换了编号的，要同一个 App 的窗口带着 Snug 铺成的大小出现，
 // 说明 App 原样存下、原样带回来了。这两种都按账放回原位（字号存在窗口里的连字号一起缩回）。
-// 换了编号、大小又对不上的不碰：可能是用户自己调过，也可能是 App 重设了，再动就会把用户的窗口挪错、字号缩过头
+// 换了编号、大小又对不上的不碰：可能是用户自己调过，也可能是 App 重设了，再动就会把用户的窗口挪错、字号缩过头。
+// 「编号没变就是同一个窗口」只在这次开机里成立：重启后进程号、窗口编号都从头数，账却留两周。同一个 App 恰好拿到
+// 同样的进程号和窗口编号的机会极小，不为它另做区分
 import CoreGraphics
 import Foundation
 
@@ -55,7 +57,8 @@ public struct LeftBehindBook: Codable, Equatable, Sendable {
 
     /// 没铺成过（还没挪上屏就没了）的不记：大小没被改过，也认不出它回来没有
     public mutating func add(_ entry: LeftBehind) {
-        guard entry.record.filled != nil else { return }
+        // 一模一样的账只记一笔：记完账、销还原账之间崩溃，下次启动放不回去时会再记一遍（同一个窗口不论大小都认，记两笔就会还两遍）
+        guard entry.record.filled != nil, !entries.contains(where: { $0.record == entry.record }) else { return }
         entries.append(entry)
     }
 

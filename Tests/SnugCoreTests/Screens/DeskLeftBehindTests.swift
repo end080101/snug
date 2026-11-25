@@ -151,6 +151,95 @@ struct DeskLeftBehindTests {
         #expect(rig.leftBehind.first?.record.window == clash.key)
     }
 
+    @Test("资源库开着时放着的窗口被收起来了，再点返回：按关了处理，资源库留着，不露出空桌面")
+    func withdrawnThenReturnToPlaced() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.desk.showList()
+        await rig.desk.idle()
+        rig.windows.withdraw(clash.key)
+        rig.desk.returnToPlaced()
+        await rig.desk.idle()
+        #expect(rig.desk.state.placed == nil)
+        #expect(rig.desk.state.listVisible)
+        #expect(rig.leftBehind.first?.record.window == clash.key)
+    }
+
+    @Test("放着的窗口被收起来、确认的那一秒里又销毁了（App 退出时先收起窗口）：按关了处理，不当成最小化")
+    func withdrawnThenDestroyed() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.windows.withdraw(clash.key)
+        rig.windows.vanish(clash.key, at: rig.timeline.now + Desk.unshownConfirm / 2)
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        #expect(rig.desk.state.placed == nil)
+        #expect(rig.leftBehind.first?.record.window == clash.key)
+    }
+
+    @Test("远程结束后收起来的窗口全屏着拿出来（同一个编号）：先退出全屏再放回原位")
+    func withdrawnReshownFullScreen() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.windows.withdraw(clash.key)
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        await rig.endRemote()
+        rig.windows.add(clash.key, frame: safariHome, fullScreen: true, windowed: phoneShaped, info: clash)
+        await rig.checkReturns()
+        #expect(rig.windows.window(clash.key)?.fullScreen == false)
+        #expect(rig.windows.window(clash.key)?.frame == clashHome)
+        #expect(rig.leftBehind.isEmpty)
+    }
+
+    @Test("收起来的窗口全屏着拿出来、又被放上手机屏：原位还按当初的，不改记成退出全屏后的位置")
+    func withdrawnReshownFullScreenPlaced() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.windows.withdraw(clash.key)
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        rig.windows.add(clash.key, frame: safariHome, fullScreen: true, windowed: CGRect(x: 500, y: 300, width: 940, height: 700), info: clash)
+        await rig.pull(clash)
+        #expect(rig.desk.state.placed?.window == clash)
+        #expect(rig.record?.original == clashHome)
+        #expect(rig.leftBehind.isEmpty)
+    }
+
+    @Test("从资源库关掉本来就没显示的飞书窗口（最小化、App 被隐藏）：被收起来了也算关上，不提示无响应")
+    func closeUnshownOnWithdrawingApp() async throws {
+        let rig = try Rig()
+        rig.windows.onClose(notes.key, .withdraws)   // 备忘录默认是最小化的
+        rig.windows.onClose(ghostty.key, .withdraws)
+        rig.windows.hide(ghostty.key)
+        await rig.ready()
+        for w in [notes, ghostty] {
+            rig.desk.close(w)
+            rig.timeline.advance(DeskSet.closeWait + 1)
+            await rig.desk.idle()
+            #expect(rig.desk.state.notice == nil)
+            #expect(rig.desk.state.closing.isEmpty)
+        }
+    }
+
+    @Test("放一个已被 App 收起来的窗口（资源库里还列着它）：提示已关闭，不提示无响应")
+    func pullWithdrawn() async throws {
+        let rig = try Rig()
+        rig.windows.withdraw(finder.key)
+        await rig.ready()
+        await rig.pull(finder)
+        #expect(rig.desk.state.placed == nil)
+        #expect(rig.desk.state.notice == .windowGone(app: finder.app))
+    }
+
     @Test("还在远程、手机上关了又在手机上重开（回到手机屏上）：接着放着，原位按当初的，带回来的字号不重复放大")
     func reopenedOnPhone() async throws {
         let rig = try Rig()
@@ -250,10 +339,10 @@ struct DeskLeftBehindTests {
         #expect(quit.leftBehind.first?.record.zoom == 0)
     }
 
-    @Test("手机上点关闭按钮，飞书只是把窗口藏起来：算关上了，不提示无响应")
+    @Test("手机上点关闭按钮，飞书只是把窗口收起来：算关上了，不提示无响应")
     func closeButtonOnHidingApp() async throws {
         let rig = try Rig()
-        rig.windows.onClose(finder.key, .hides)
+        rig.windows.onClose(finder.key, .withdraws)
         await rig.ready()
         await rig.pull(finder)
         rig.desk.closePlaced(window: finder.key.id)

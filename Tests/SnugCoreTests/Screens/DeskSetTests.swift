@@ -485,6 +485,19 @@ struct DeskSetTests {
         #expect(rig.broughtKeys(on: second) == [notes.key])
     }
 
+    @Test("定期核对：挪过来的窗口被 App 收起来了（飞书、微信点关闭），算在 Snug 之外关了，销账")
+    func verifySettlesWithdrawnBrought() async throws {
+        let rig = try Rig()
+        await rig.readyTwo(computer)
+        rig.set.pull(finder, on: second)
+        await rig.set.idle()
+        rig.windows.withdraw(finder.key)
+        rig.set.verifyPlacement()
+        await rig.set.idle()
+        #expect(rig.brought(finder, on: second) == nil)
+        #expect(rig.broughtKeys(on: second)?.isEmpty == true)
+    }
+
     @Test("Snug 崩溃后再启动：电脑屏挪过来的窗口按各自的账放回原处")
     func recoverBrought() async throws {
         let tmp = try TempDir()
