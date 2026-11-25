@@ -115,6 +115,42 @@ struct DeskLeftBehindTests {
         #expect(rig.leftBehind.isEmpty)
     }
 
+    @Test("飞书、微信点关闭只是把窗口收起来（窗口服务器里还在，辅助功能够不着）：算在 Snug 之外关了，转成留下的账；远程结束后 App 把它拿出来（编号没变、大小被系统改了）：放回原位")
+    func withdrawnThenReshown() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.windows.withdraw(clash.key)
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        #expect(rig.desk.state.placed == nil)
+        #expect(rig.desk.state.listVisible)
+        #expect(rig.record == nil)
+        #expect(rig.leftBehind.first?.record.window == clash.key)
+        await rig.endRemote()
+        rig.windows.unhide(clash.key)
+        rig.windows.setFrame(clash.key, CGRect(x: 0, y: 33, width: 1060, height: 900))
+        await rig.checkReturns()
+        #expect(rig.windows.window(clash.key)?.frame == clashHome)
+        #expect(rig.leftBehind.isEmpty)
+    }
+
+    @Test("资源库开着时放着的窗口被收起来了：换放别的窗口不被它挡住、不提示无响应，它转成留下的账")
+    func withdrawnBehindList() async throws {
+        let rig = try Rig()
+        rig.windows.add(clash.key, frame: clashHome, info: clash)
+        await rig.ready()
+        await rig.pull(clash)
+        rig.desk.showList()
+        await rig.desk.idle()
+        rig.windows.withdraw(clash.key)
+        await rig.pull(finder)
+        #expect(rig.desk.state.placed?.window == finder)
+        #expect(rig.desk.state.notice == nil)
+        #expect(rig.leftBehind.first?.record.window == clash.key)
+    }
+
     @Test("还在远程、手机上关了又在手机上重开（回到手机屏上）：接着放着，原位按当初的，带回来的字号不重复放大")
     func reopenedOnPhone() async throws {
         let rig = try Rig()

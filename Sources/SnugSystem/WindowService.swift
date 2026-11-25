@@ -43,6 +43,17 @@ public final class WindowService: WindowControl {
         }
     }
 
+    // 收起来的窗口系统给的列表里没有、远程令牌也试不出来（11-25 实测）；最小化、App 被隐藏的在列表里，别的桌面空间的试得出来
+    public func withdrawn(_ window: WindowKey) async -> Bool {
+        guard case .present = Self.serverInfo(window) else { return false }
+        return await run {
+            guard let listed = AX.respondingWindows(pid: window.pid) else { return false }
+            if listed.contains(where: { AX.windowID($0) == window.id }) { return false }
+            let scan = AX.remoteWindows(pid: window.pid, until: window.id)
+            return scan.complete && !scan.windows.contains { AX.windowID($0) == window.id }
+        }
+    }
+
     public func look(_ window: WindowKey) async -> WindowLook? {
         await run {
             guard let element = AX.element(for: window), let frame = AX.frame(element) else { return nil }

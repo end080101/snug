@@ -294,7 +294,7 @@ public final class Desk {
         }
         handover?.release()
         if let owed {
-            Log.info("\(window.label) 带着屏上的样子回来了，接着放：原位按当初的 \(record.original.short)，字号已大 \(record.zoom) 级")
+            Log.info("\(window.label) 回来了，接着放：原位按当初的 \(record.original.short)，字号已大 \(record.zoom) 级")
             env.leftBehind.settle(owed)
         }
         if look.minimized { await windows.setMinimized(window.key, false) }
@@ -620,13 +620,17 @@ public final class Desk {
         return await putBack(record)
     }
 
-    /// 放回时有一步做不了：窗口还在就留着记录、返回这条，确实没了就转成留下的账
+    /// 放回时有一步做不了：窗口还在、App 只是没响应就留着记录、返回这条；确实没了、或被 App 收起来了（对用户来说就是关了，
+    /// 辅助功能也找不到它）就转成留下的账，等它回来再还
     private func stuckOrGone(_ record: PlacedRecord, _ what: String) async -> PlacedRecord? {
-        if await windows.exists(record.window) {
+        if await !windows.exists(record.window) {
+            Log.info("\(record.label) 已经关了，等它回来再还")
+        } else if await windows.withdrawn(record.window) {
+            Log.info("\(record.label) 被 App 收起来了（\(what)），等它再拿出来时还")
+        } else {
             Log.warn("\(record.label) 还在，但\(what)（App 没响应或没有辅助功能权限），还原记录留着，稍后再放回")
             return record
         }
-        Log.info("\(record.label) 已经关了，等它回来再还")
         await leaveBehind(record)
         return nil
     }
@@ -644,34 +648,36 @@ public final class Desk {
     /// 要不要核对：放着窗口（电脑屏是挪过来的还记着账）、没在做别的
     var needsVerify: Bool { (placement != nil || !brought.isEmpty) && state.work == nil }
 
-    /// 定期核对（DeskSet 排进队里调）：屏上的窗口被关掉了，就回到 App 资源库。只认窗口服务器的结论：App 一时没响应不算关了。
-    /// 窗口还在却不在屏上（被最小化、App 被隐藏、关成了隐藏），屏上只剩空桌面：也回到列表，
+    /// 定期核对（DeskSet 排进队里调）：屏上的窗口在 Snug 之外关了（窗口没了，或被 App 收起来了），就回到 App 资源库。
+    /// 只认确切的结论：App 一时没响应不算关了。窗口还在却不在屏上（被最小化、App 被隐藏），屏上只剩空桌面：也回到列表，
     /// 但它照旧算放着、还原记录留着，可以返回它、还原或换一个
     func verify() async {
         guard behavior.touch else { return await verifyBrought() }
         guard let p = placement else { return }
-        guard await windows.exists(p.window.key) else {
-            Log.info("屏上的 \(p.window.label)（窗口 \(p.window.key.id)）在 Snug 之外关了，回到 App 资源库")
-            placement = nil
-            state.listVisible = true
-            replaced = (p.window.key.pid, p.known.union([p.window.key]), timeline.now + Self.replaceWait)
-            await leaveBehind(p.record)
-            await matchWidth()
-            return
+        guard await windows.exists(p.window.key) else { return await lostOutside(p, "在 Snug 之外关了") }
+        guard !state.listVisible, await !windows.isShown(p.window.key) else { return }
+        // 进出全屏的动画里窗口服务器有半秒报它没显示（11-25 实测 0.5～0.6 秒），这时屏上不是空桌面。
+        // 动画末尾那几十毫秒和 App 把窗口收起来时读到的一模一样（同一个桌面空间、没排在屏上、辅助功能列表里没有），
+        // 一次读数分不清：隔过动画再看一次，还没显示才算不在屏上
+        await timeline.sleep(Self.unshownConfirm)
+        guard placement?.window.key == p.window.key, !state.listVisible else { return }
+        guard await !windows.isShown(p.window.key) else {
+            return Log.info("屏上的 \(p.window.label) 一时没显示（进出全屏时会这样），再看已经显示，不回资源库")
         }
-        if !state.listVisible, await !windows.isShown(p.window.key) {
-            // 进出全屏的动画里窗口服务器有半秒报它没显示（11-25 实测 0.5～0.6 秒），这时屏上不是空桌面。
-            // 动画末尾那几十毫秒和 App 把窗口藏起来时读到的一模一样（同一个桌面空间、没排在屏上、辅助功能列表里没有），
-            // 一次读数分不清：隔过动画再看一次，还没显示才算不在屏上
-            await timeline.sleep(Self.unshownConfirm)
-            guard placement?.window.key == p.window.key, !state.listVisible else { return }
-            guard await !windows.isShown(p.window.key) else {
-                return Log.info("屏上的 \(p.window.label) 一时没显示（进出全屏时会这样），再看已经显示，不回资源库")
-            }
-            Log.info("屏上的 \(p.window.label) 不在屏上了（最小化、隐藏或关成了隐藏），回到 App 资源库")
-            state.listVisible = true
-            await matchWidth()
-        }
+        if await windows.withdrawn(p.window.key) { return await lostOutside(p, "被 App 收起来了（点关闭只是收起来），算在 Snug 之外关了") }
+        Log.info("屏上的 \(p.window.label) 不在屏上了（最小化或 App 被隐藏），回到 App 资源库")
+        state.listVisible = true
+        await matchWidth()
+    }
+
+    /// 放着的窗口在 Snug 之外关了：回到资源库，账转成留下的账等它回来（见 LeftBehind）；它的 App 接着开出新窗口就接着放上来
+    private func lostOutside(_ p: Placement, _ how: String) async {
+        Log.info("屏上的 \(p.window.label)（窗口 \(p.window.key.id)）\(how)，回到 App 资源库")
+        placement = nil
+        state.listVisible = true
+        replaced = (p.window.key.pid, p.known.union([p.window.key]), timeline.now + Self.replaceWait)
+        await leaveBehind(p.record)
+        await matchWidth()
     }
 
     /// 设主屏、取消主屏时系统在原主屏和新主屏之间整体互换窗口（V11）：这块屏留着，Snug 放上来、挪过来的窗口却被换去了别的屏，
@@ -692,8 +698,8 @@ public final class Desk {
         }
     }
 
-    /// 电脑屏：挪过来的窗口在 Snug 之外关了、或被挪去了别的屏，销掉它的账。关了没有要还的（大小没改、字号没调），
-    /// 挪走了是用户自己安排好了，不再拽回来。最小化的照旧算在这块屏上；读不到位置（App 一时没响应）的先不动
+    /// 电脑屏：挪过来的窗口在 Snug 之外关了（窗口没了，或被 App 收起来了）、或被挪去了别的屏，销掉它的账。关了没有要还的
+    /// （大小没改、字号没调），挪走了是用户自己安排好了，不再拽回来。最小化的照旧算在这块屏上；读不到位置（App 一时没响应）的先不动
     private func verifyBrought() async {
         guard !brought.isEmpty, let bounds = screens.bounds(id) else { return }
         for key in brought.keys.sorted(by: Self.order) {
@@ -703,8 +709,14 @@ public final class Desk {
                 release(key)
                 continue
             }
-            guard let look = await windows.look(key), !look.minimized,
-                  !bounds.contains(CGPoint(x: look.frame.midX, y: look.frame.midY)) else { continue }
+            guard let look = await windows.look(key) else {
+                if await windows.withdrawn(key) {
+                    Log.info("电脑屏上的 \(record.label)（窗口 \(key.id)）被 App 收起来了，算在 Snug 之外关了，不再记着原处")
+                    release(key)
+                }
+                continue
+            }
+            guard !look.minimized, !bounds.contains(CGPoint(x: look.frame.midX, y: look.frame.midY)) else { continue }
             Log.info("电脑屏上的 \(record.label) 被挪去了别的屏（\(look.frame.short)），不再拽回来")
             release(key)
         }

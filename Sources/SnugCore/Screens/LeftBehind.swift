@@ -1,10 +1,12 @@
 // 留下的账：放在屏上的窗口在 Snug 之外没了（用户在手机上关掉、App 自己换了窗口、App 退出），
 // Snug 改过的大小、字号还没还。macOS 不让别的 App 拦关窗，Snug 知道时 App 往往已经把屏上的样子存下了：
 // Clash Verge 再打开还是 540 宽的竖条，VS Code 重开工作区字号还大两级（issue #14，11-16 实测）。
+// 点关闭只把窗口收起来的 App（飞书、微信）也一样：窗口还在窗口服务器里，但 App 不再给出它，辅助功能挪不动，对用户来说就是关了。
 // 所以账不跟着窗口一起销：先挂着，等它回来再还。
-// 认它回来只认看得见的证据：同一个 App 的窗口带着 Snug 铺成的大小出现，说明 App 原样存下、原样带回来了，
-// 这时按账放回原位（字号存在窗口里的连字号一起缩回）。大小对不上的不碰：可能是用户自己调过，也可能是 App 重设了，
-// 再动就会把用户的窗口挪错、字号缩过头
+// 认它回来只认看得见的证据：同一个窗口（编号没变）又出现，说明它从没被销毁，账就是它的，大小变了也认
+// （收起来的时候系统可能因为换屏、换档改了它的大小）；换了编号的，要同一个 App 的窗口带着 Snug 铺成的大小出现，
+// 说明 App 原样存下、原样带回来了。这两种都按账放回原位（字号存在窗口里的连字号一起缩回）。
+// 换了编号、大小又对不上的不碰：可能是用户自己调过，也可能是 App 重设了，再动就会把用户的窗口挪错、字号缩过头
 import CoreGraphics
 import Foundation
 
@@ -68,20 +70,20 @@ public struct LeftBehindBook: Codable, Equatable, Sendable {
         if entries.count > Self.limit { entries.removeFirst(entries.count - Self.limit) }
     }
 
-    /// 这个 App 有没有哪笔账在等这个大小的窗口回来（先用窗口服务器给的大小筛，对上了再读辅助功能）
-    public func awaits(bundleID: String, size: CGSize) -> Bool {
-        entries.contains { $0.record.bundleID == bundleID && Self.isFilled($0, size: size) }
+    /// 这个 App 有没有哪笔账在等这个窗口回来：同一个窗口，或这个大小的窗口（先用窗口服务器给的编号、大小筛，对上了再读辅助功能）
+    public func awaits(bundleID: String, window: WindowKey, size: CGSize) -> Bool {
+        entries.contains { $0.record.bundleID == bundleID && ($0.record.window == window || Self.isFilled($0, size: size)) }
     }
 
-    /// 这个窗口是不是哪一笔账的窗口原样回来了：同一个 App、带着 Snug 铺成的大小。
-    /// 同一个 App 留下好几笔时，先认同一个窗口（编号没变：App 只是藏起来又显示），再认标题，都没有就认任意一笔；
+    /// 这个窗口是不是哪一笔账的窗口回来了：同一个窗口（编号没变，大小不论），或同一个 App 带着 Snug 铺成的大小的窗口。
+    /// 后者同一个 App 留下好几笔时，先认标题，没有就认任意一笔；
     /// 每一层都取最近的：同一个窗口、同一个工作区后来又留下的账，才是它现在实际欠的
     public func match(_ window: WindowInfo, frame: CGRect) -> Int? {
-        let candidates = entries.indices.filter { entries[$0].record.bundleID == window.bundleID && Self.isFilled(entries[$0], size: frame.size) }
+        let mine = entries.indices.filter { entries[$0].record.bundleID == window.bundleID }
         let newest = { (picked: [Int]) in picked.max { entries[$0].since < entries[$1].since } }
-        return newest(candidates.filter { entries[$0].record.window == window.key })
-            ?? newest(candidates.filter { entries[$0].record.title == window.title })
-            ?? newest(candidates)
+        if let same = newest(mine.filter({ entries[$0].record.window == window.key })) { return same }
+        let sized = mine.filter { Self.isFilled(entries[$0], size: frame.size) }
+        return newest(sized.filter { entries[$0].record.title == window.title }) ?? newest(sized)
     }
 
     /// 大小差一两点也算（App 会把尺寸取整）

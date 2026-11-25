@@ -76,9 +76,22 @@ struct LeftBehindTests {
         ])
         #expect(book.match(window(), frame: filled) == 1)
         #expect(book.match(window(key: WindowKey(pid: 20, id: 300)), frame: filled) == 1)
-        #expect(book.awaits(bundleID: vscode, size: filled.size))
-        #expect(!book.awaits(bundleID: vscode, size: CGSize(width: 1200, height: 800)))
-        #expect(!book.awaits(bundleID: "com.apple.Safari", size: filled.size))
+        let other = WindowKey(pid: 21, id: 400)
+        #expect(book.awaits(bundleID: vscode, window: other, size: filled.size))
+        #expect(!book.awaits(bundleID: vscode, window: other, size: CGSize(width: 1200, height: 800)))
+        #expect(!book.awaits(bundleID: "com.apple.Safari", window: other, size: filled.size))
+    }
+
+    @Test("同一个窗口（编号没变）回来了：它从没被销毁，大小变了也认（收起来时系统因为换屏、换档改了它的大小）；换了编号的照旧要原样的大小")
+    func sameWindowMatchesAnySize() {
+        let mine = WindowKey(pid: 20, id: 300)
+        let book = LeftBehindBook(entries: [LeftBehind(record: record(key: mine), since: Date())])
+        let resized = CGRect(x: -756, y: 30, width: 1060, height: 900)
+        #expect(book.match(window(key: mine), frame: resized) == 0)
+        #expect(book.awaits(bundleID: vscode, window: mine, size: resized.size))
+        #expect(book.match(window(key: WindowKey(pid: 20, id: 301)), frame: resized) == nil)
+        #expect(!book.awaits(bundleID: vscode, window: WindowKey(pid: 20, id: 301), size: resized.size))
+        #expect(book.match(window(key: mine, bundleID: "com.apple.Safari"), frame: resized) == nil)   // 编号归了别的 App 不认
     }
 
     @Test("没铺成过的（窗口还没挪上手机屏就没了）不记：认不出它回来没有")

@@ -54,7 +54,7 @@ final class LeftBehindLedger {
 
     // MARK: 认账
 
-    /// 这个窗口是不是哪一笔账的窗口原样回来了（同一个 App、带着 Snug 铺成的大小）
+    /// 这个窗口是不是哪一笔账的窗口回来了（同一个窗口，或同一个 App 带着 Snug 铺成的大小的窗口）
     func owed(by window: WindowInfo, frame: CGRect) -> Owed? {
         book.match(window, frame: frame).map { Owed(record: book.entries[$0].returned(as: window.key), entry: book.entries[$0]) }
     }
@@ -68,13 +68,13 @@ final class LeftBehindLedger {
 
     // MARK: 还账
 
-    /// 下一个原样回来了的窗口（skip 里的不算：各屏还放着的、还原账上还欠着的，归那本账还）。
-    /// 先问窗口服务器（不经过 App，卡住的 App 也拖不慢队），大小对得上才去读辅助功能
+    /// 下一个回来了的窗口（skip 里的不算：各屏还放着的、还原账上还欠着的，归那本账还）。
+    /// 先问窗口服务器（不经过 App，卡住的 App 也拖不慢队），编号或大小对得上才去读辅助功能
     func nextReturn(skip: Set<WindowKey>) async -> (owed: Owed, window: WindowInfo, frame: CGRect)? {
         book.prune(now: Date())
         for bundle in Set(book.entries.compactMap(\.record.bundleID)) {
             for pid in await apps.pids(bundleID: bundle) {
-                let sized = await windows.frames(of: pid).filter { !skip.contains($0.key) && book.awaits(bundleID: bundle, size: $0.value.size) }
+                let sized = await windows.frames(of: pid).filter { !skip.contains($0.key) && book.awaits(bundleID: bundle, window: $0.key, size: $0.value.size) }
                 guard !sized.isEmpty else { continue }
                 for window in await windows.shownWindows(of: pid) {
                     guard let frame = sized[window.key], let owed = owed(by: window, frame: frame) else { continue }
@@ -90,16 +90,16 @@ final class LeftBehindLedger {
         var entry = owed.entry
         if owed.record.zoom != 0 {
             guard await windows.zoom(window.key, steps: -owed.record.zoom) else {
-                return Log.warn("\(window.label) 带着屏上的样子回来了，但字号缩不回（App 没响应），下一拍再试")
+                return Log.warn("\(window.label) 回来了，但字号缩不回（App 没响应），下一拍再试")
             }
             // 缩完先记账：挪的时候出事，下次不会再缩一遍
             entry = update(entry) { $0.record.zoom = 0 }
         }
         guard let got = await windows.move(window.key, to: original) else {
-            return Log.warn("\(window.label) 带着屏上的样子回来了，但挪不动（App 没响应），下一拍再试")
+            return Log.warn("\(window.label) 回来了，但挪不动（App 没响应），下一拍再试")
         }
         settle(Owed(record: owed.record, entry: entry))
-        Log.info("\(window.label) 带着屏上的样子回来了，放回原位 \(got.short)\(owed.record.zoom != 0 ? "，字号缩回 \(owed.record.zoom) 级" : "")")
+        Log.info("\(window.label) 回来了，放回原位 \(got.short)\(owed.record.zoom != 0 ? "，字号缩回 \(owed.record.zoom) 级" : "")")
     }
 
     /// 字号存在整个 App 里、还没缩回的（关窗时那个进程没有别的窗口）：进程又有窗口了就缩回，进程没了就不欠了
