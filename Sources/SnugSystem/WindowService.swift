@@ -26,7 +26,8 @@ public final class WindowService: WindowControl {
 
     // MARK: WindowControl
 
-    // 窗口服务器知道每个窗口（别的桌面空间、最小化、藏起来的也在），不用等 App 响应，也不要权限
+    // 窗口服务器知道每个窗口（别的桌面空间、最小化、藏起来、App 被隐藏、正在进出全屏的也在），不用等 App 响应，也不要权限；
+    // 只有窗口真没了（关掉、App 重建了窗口、App 退出）才查不到。显示着没有看 isShown
 
     public func exists(_ window: WindowKey) async -> Bool { Self.serverInfo(window) != nil }
 
@@ -244,9 +245,13 @@ public final class WindowService: WindowControl {
         return cached.windows
     }
 
-    /// 窗口服务器里这个窗口的信息；没有、或编号已经归了别的进程返回 nil
+    /// 窗口服务器里这个窗口的信息；没有、或编号已经归了别的进程返回 nil。
+    /// 按编号要描述（FromArray），不用 CGWindowListCopyWindowInfo 的 optionIncludingWindow：后者只报此刻显示着的窗口，
+    /// 藏起来、最小化、App 被隐藏、进出全屏的那半秒都报「没有」，会把活着的窗口当成关了（#63，11-25 实测）
     private static func serverInfo(_ window: WindowKey) -> [String: Any]? {
-        guard let info = (CGWindowListCopyWindowInfo([.optionIncludingWindow], window.id) as? [[String: Any]])?.first,
+        var ids: [UnsafeRawPointer?] = [UnsafeRawPointer(bitPattern: UInt(window.id))]
+        guard let array = CFArrayCreate(nil, &ids, 1, nil),
+              let info = (CGWindowListCreateDescriptionFromArray(array) as? [[String: Any]])?.first,
               (info[kCGWindowOwnerPID as String] as? NSNumber)?.int32Value == window.pid else { return nil }
         return info
     }
