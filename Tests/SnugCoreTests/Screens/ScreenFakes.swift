@@ -259,6 +259,8 @@ final class FakeWindows: WindowControl {
     func vanish(_ key: WindowKey) { _ = state.withLock { $0.removeValue(forKey: key) } }
     /// 像飞书、微信点关闭那样：窗口藏起来，还在
     func hide(_ key: WindowKey) { state.withLock { $0[key]?.hidden = true } }
+    /// 进出全屏的动画里那样：窗口还在，到 until 之前窗口服务器报它没显示
+    func unshow(_ key: WindowKey, until: TimeInterval) { state.withLock { $0[key]?.shownFrom = until } }
     func window(_ key: WindowKey) -> Window? { state.withLock { $0[key] } }
     /// 带着 bundle ID 的窗口都属于哪些进程（假 App 按它报 pids）
     func pids(bundleID: String) -> [Int32] {

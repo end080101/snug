@@ -94,6 +94,8 @@ public final class Desk {
     /// 放着的窗口在 Snug 之外没了以后，等它的 App 开出新窗口最多这么久，开出来就接着放上来
     /// （ChatGPT 冷启动约 3 秒后会换掉第一个窗口，实测 11-15）
     static let replaceWait: TimeInterval = 10
+    /// 放着的窗口没显示，隔这么久再看一次才算不在屏上：比进出全屏时窗口服务器报它没显示的那段长（实测最长 0.6 秒）
+    static let unshownConfirm: TimeInterval = 1
 
     let id: ScreenID
     var behavior: ScreenBehavior {
@@ -657,6 +659,14 @@ public final class Desk {
             return
         }
         if !state.listVisible, await !windows.isShown(p.window.key) {
+            // 进出全屏的动画里窗口服务器有半秒报它没显示（11-25 实测 0.5～0.6 秒），这时屏上不是空桌面。
+            // 动画末尾那几十毫秒和 App 把窗口藏起来时读到的一模一样（同一个桌面空间、没排在屏上、辅助功能列表里没有），
+            // 一次读数分不清：隔过动画再看一次，还没显示才算不在屏上
+            await timeline.sleep(Self.unshownConfirm)
+            guard placement?.window.key == p.window.key, !state.listVisible else { return }
+            guard await !windows.isShown(p.window.key) else {
+                return Log.info("屏上的 \(p.window.label) 一时没显示（进出全屏时会这样），再看已经显示，不回资源库")
+            }
             Log.info("屏上的 \(p.window.label) 不在屏上了（最小化、隐藏或关成了隐藏），回到 App 资源库")
             state.listVisible = true
             await matchWidth()
