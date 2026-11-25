@@ -36,7 +36,7 @@ metadata:
 - 截不了屏（终端没录屏权限，关掉沙箱也不行）：界面用辅助功能读树（草稿区写个 `AXUIElementCopyAttributeValue` 递归打印的小程序），露没露、谁压谁用 `CGWindowListCopyWindowInfo(.optionOnScreenOnly)`（不要权限，按前后顺序）。全局键盘事件只在确认焦点在 Snug 的面板上、且主人说了不用电脑时发：焦点不在就会打进主人的 Ghostty（Esc 会打断会话），先把访达点到前台兜底
 - **合成按键绝不带修饰键标志**：11-24 给 Ctrl+← 的按下、松开都设了 Control+Fn，系统一直当它们按着，之后的按键全成了 Ctrl+键，Fn 还唤起了主人常驻的 Typeless 语音输入。每个事件 `flags = []`，发前发后查 `CGEventSource.flagsState(.hidSystemState)`，卡住就发空 flagsChanged 松开并停手；切桌面这类操作别用合成按键
 - 主人日常输入法是简体拼音（`SCIM.ITABC`）。拼音在不激活 Snug 的面板里照常能用，要按真实键码打（unicode 字符串绕过输入法）
-- ~~在 Snug 之外进全屏、退全屏时 CGWindowList 一时读不到窗口~~ ⚠️更正（11-25，#63）：不是窗口真没了，是查法错了。`CGWindowListCopyWindowInfo(.optionIncludingWindow)` 只报此刻显示着的窗口，藏起来、最小化、App 被隐藏、进出全屏那 0.5 秒都报没有；`CGWindowListCreateDescriptionFromArray` 按编号查才报「在、未显示」，只有真关、App 重建窗口、App 被杀才查不到（测试窗口 2955 次采样一次不丢）。exists 已改（分支 fix-window-exists）
+- ~~在 Snug 之外进全屏、退全屏时 CGWindowList 一时读不到窗口~~ ⚠️更正（11-25，#63）：不是窗口真没了，是查法错了。`CGWindowListCopyWindowInfo(.optionIncludingWindow)` 只报此刻显示着的窗口，藏起来、最小化、App 被隐藏、进出全屏那 0.5 秒都报没有；`CGWindowListCreateDescriptionFromArray` 按编号查才报「在、未显示」，只有真关、App 重建窗口、App 被杀才查不到（测试窗口 2955 次采样一次不丢）。exists 已改，随 2.9.1 发布
 - 点关闭只收起来的 App（orderOut，飞书、微信、企业微信）：系统给的辅助功能列表和远程令牌都找不到这个窗口，挪不动；最小化、App 被隐藏的找得到、挪得动。AppKit 窗口 orderOut 后之前拿到的辅助功能对象永久失效（再显示也不恢复），所以别靠留对象判死活
 - 进出全屏的动画：约 0.5 秒窗口不属于任何桌面空间（`SLSCopySpacesForWindows` 为空）、不显示，末尾 10～50 毫秒的读数和 orderOut 完全一样（同一空间、没排在屏上、辅助功能列表里没有），单次读数分不清，只能隔过动画再看
 - 窗口实验法（草稿区不持久，要用再写）：自己写个最小宽度 1060 的测试 App（Info.plist + swiftc，用分布式通知遥控 orderOut / 最小化 / 隐藏 / 重建）；后台启动、没激活过的 App 窗口不显示，起的时候激活一次、再把焦点还回去；实验屏用身份 999000001、切档照 Snug 用短命子进程。端到端：开发版 `--preview-screens`，资源库的行用辅助功能 AXPress，底部小横条是图片，只能按坐标点（点前查修饰键）
