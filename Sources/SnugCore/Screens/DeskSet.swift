@@ -251,6 +251,13 @@ public final class DeskSet {
     /// 转到电脑屏先在原来那块屏上放回原位、缩回字号（电脑屏不调字号）。从电脑屏转走，原位记录同样跟着走。
     /// 这块屏上怎么放归 Desk.place
     private func place(_ window: WindowInfo, on desk: Desk, zoom: Bool = true) async {
+        if let sibling = await windows.selectedTab(replacing: window.key),
+           let source = holder(of: sibling.key), source !== desk {
+            guard desk.readyDisplay(for: "把 \(window.label) 转过来") != nil else { return desk.setNotice(.screenNotReady) }
+            guard await windows.selectTab(window.key), await source.trackSelectedTab(window.key) else {
+                return desk.setNotice(.windowUnresponsive(app: window.app))
+            }
+        }
         if let lender = desks.values.first(where: { $0 !== desk && $0.state.brought.contains(window.key) }),
            let record = lender.broughtRecord(of: window.key) {
             Log.info("\(window.label) 从电脑屏（\(lender.id)）转到屏（\(desk.id)），原位记录跟着走")

@@ -400,6 +400,70 @@ struct DeskTests {
         #expect(rig.record?.window == finder.key)
     }
 
+    @Test("Ghostty 原生切标签：不盖回资源库，原位跟着标签组走，字号按标签各自保留")
+    func followGhosttyTab() async throws {
+        let rig = try Rig()
+        let other = WindowInfo(key: WindowKey(pid: ghostty.key.pid, id: 26), app: ghostty.app,
+                               bundleID: ghostty.bundleID, title: "second tab")
+        rig.windows.add(other.key, frame: ghosttyHome, info: other)
+        rig.windows.joinTabs(ghostty.key, other.key)
+        await rig.ready()
+        await rig.pull(ghostty)
+        let original = try #require(rig.record?.original)
+        #expect(rig.record?.zoom == 2)
+
+        #expect(rig.windows.switchTab(to: other.key))
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        #expect(!rig.desk.state.listVisible)
+        #expect(rig.desk.state.placed?.window == other)
+        #expect(rig.record?.original == original)
+        #expect(rig.record?.zoom == 0)
+        #expect(rig.leftBehind.first?.record.window == ghostty.key)
+        #expect(rig.leftBehind.first?.record.filled == nil)
+
+        #expect(rig.windows.switchTab(to: ghostty.key))
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        #expect(!rig.desk.state.listVisible)
+        #expect(rig.record?.window == ghostty.key)
+        #expect(rig.record?.zoom == 2)
+        #expect(rig.leftBehind.isEmpty)
+
+        rig.windows.hide(ghostty.key)
+        rig.desk.verifyPlacement()
+        await rig.desk.idle()
+        #expect(rig.desk.state.listVisible)
+        #expect(rig.record?.window == ghostty.key)
+    }
+
+    @Test("从资源库点 Ghostty 未激活标签：选中同组目标，放回时只还原一次位置")
+    func selectInactiveGhosttyTab() async throws {
+        let rig = try Rig()
+        let other = WindowInfo(key: WindowKey(pid: ghostty.key.pid, id: 26), app: ghostty.app,
+                               bundleID: ghostty.bundleID, title: ghostty.title)
+        rig.windows.add(other.key, frame: ghosttyHome, info: other)
+        rig.windows.joinTabs(ghostty.key, other.key)
+        await rig.ready()
+        await rig.pull(ghostty)
+        rig.desk.showList()
+        await rig.desk.idle()
+        await rig.pull(other)
+        #expect(!rig.desk.state.listVisible)
+        #expect(rig.desk.state.placed?.window == other)
+        #expect(rig.desk.state.notice == nil)
+        #expect(rig.record?.original == ghosttyHome)
+
+        await rig.endRemote()
+        #expect(rig.windows.window(other.key)?.frame == ghosttyHome)
+        #expect(rig.record == nil)
+        #expect(rig.windows.switchTab(to: ghostty.key))
+        await rig.checkReturns()
+        #expect(rig.windows.window(ghostty.key)?.zoom == 0)
+        #expect(rig.windows.window(ghostty.key)?.frame == ghosttyHome)
+        #expect(rig.leftBehind.isEmpty)
+    }
+
     @Test("手机屏上露着的窗口进出全屏：动画那半秒窗口服务器报它没显示，核对时不回列表、不换档")
     func placedWindowBrieflyUnshown() async throws {
         let rig = try Rig()

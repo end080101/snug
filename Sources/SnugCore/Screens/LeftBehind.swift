@@ -17,10 +17,13 @@ public struct LeftBehind: Codable, Equatable, Sendable {
     public var record: PlacedRecord
     /// 什么时候留下的（墙钟）：过期就不等了
     public var since: Date
+    /// 旧记录里没有这个字段。标签切换留下的记录只还字号，窗口位置交给同组当前标签还。
+    var tabZoomOnly: Bool?
 
-    public init(record: PlacedRecord, since: Date) {
+    public init(record: PlacedRecord, since: Date, tabZoomOnly: Bool? = nil) {
         self.record = record
         self.since = since
+        self.tabZoomOnly = tabZoomOnly
     }
 
     /// 字号存在哪；名单外的 App 没调过字号，为 nil
@@ -55,10 +58,11 @@ public struct LeftBehindBook: Codable, Equatable, Sendable {
 
     public init(entries: [LeftBehind] = []) { self.entries = entries }
 
-    /// 没铺成过（还没挪上屏就没了）的不记：大小没被改过，也认不出它回来没有
+    /// 没铺成过（还没挪上屏就没了）的不记；只欠某个标签字号的账例外，只按原编号认
     public mutating func add(_ entry: LeftBehind) {
         // 一模一样的账只记一笔：记完账、销还原账之间崩溃，下次启动放不回去时会再记一遍（同一个窗口不论大小都认，记两笔就会还两遍）
-        guard entry.record.filled != nil, !entries.contains(where: { $0.record == entry.record }) else { return }
+        guard entry.record.filled != nil || entry.tabZoomOnly == true,
+              !entries.contains(where: { $0.record == entry.record }) else { return }
         entries.append(entry)
     }
 
@@ -84,9 +88,14 @@ public struct LeftBehindBook: Codable, Equatable, Sendable {
     public func match(_ window: WindowInfo, frame: CGRect) -> Int? {
         let mine = entries.indices.filter { entries[$0].record.bundleID == window.bundleID }
         let newest = { (picked: [Int]) in picked.max { entries[$0].since < entries[$1].since } }
-        if let same = newest(mine.filter({ entries[$0].record.window == window.key })) { return same }
+        if let same = exactMatch(window) { return same }
         let sized = mine.filter { Self.isFilled(entries[$0], size: frame.size) }
         return newest(sized.filter { entries[$0].record.title == window.title }) ?? newest(sized)
+    }
+
+    func exactMatch(_ window: WindowInfo) -> Int? {
+        entries.indices.filter { entries[$0].record.bundleID == window.bundleID && entries[$0].record.window == window.key }
+            .max { entries[$0].since < entries[$1].since }
     }
 
     /// 大小差一两点也算（App 会把尺寸取整）

@@ -68,6 +68,24 @@ struct DeskSetTests {
         #expect(rig.record(of: second)?.original == finderHome)
     }
 
+    @Test("从另一块触屏选择未激活的 Ghostty 标签：整组转屏，原位记录跟着走")
+    func transferInactiveGhosttyTab() async throws {
+        let rig = try Rig()
+        let other = WindowInfo(key: WindowKey(pid: ghostty.key.pid, id: 26), app: ghostty.app,
+                               bundleID: ghostty.bundleID, title: "second tab")
+        rig.windows.add(other.key, frame: ghosttyHome, info: other)
+        rig.windows.joinTabs(ghostty.key, other.key)
+        await rig.readyTwo()
+        await rig.pull(ghostty)
+        rig.set.pull(other, on: second)
+        await rig.set.idle()
+        #expect(rig.placed(on: .phone) == nil)
+        #expect(rig.record(of: .phone) == nil)
+        #expect(rig.placed(on: second) == other)
+        #expect(rig.record(of: second)?.original == ghosttyHome)
+        #expect(rig.windows.window(other.key)?.frame == rig.secondArea)
+    }
+
     @Test("在 B 屏上点已经放在 A 屏上的窗口：挪到 B，A 回到 App 资源库；原位记录跟着走，中间不还原一次")
     func transfer() async throws {
         let rig = try Rig()

@@ -190,6 +190,7 @@ final class FakeWindows: WindowControl {
     private let refusal = Locked<(@Sendable (WindowKey, CGRect) -> Bool)?>(nil)
     private let asking = Locked<Asking?>(nil)
     private let closeReactions = Locked<[WindowKey: CloseReaction]>([:])
+    private let tabGroups = Locked<[WindowKey: Set<WindowKey>]>([:])
     /// 判断窗口出没出现在屏上的时钟（见 Window.shownFrom）
     let clock = Locked<(@Sendable () -> TimeInterval)?>(nil)
     /// 设了就在每次挪窗口、发按键时记一下此刻还原记录在不在（检查「先记账再动手」）
@@ -297,7 +298,37 @@ final class FakeWindows: WindowControl {
 
     func exists(_ window: WindowKey) async -> Bool { self.window(window) != nil }
 
-    func withdrawn(_ window: WindowKey) async -> Bool { reachable && self.window(window)?.withdrawn == true }
+    func withdrawn(_ window: WindowKey) async -> Bool {
+        reachable && self.window(window)?.withdrawn == true && tabGroups.withLock { $0[window] == nil }
+    }
+
+    func joinTabs(_ selected: WindowKey, _ other: WindowKey) {
+        tabGroups.withLock { $0[selected] = [selected, other]; $0[other] = [selected, other] }
+        withdraw(other)
+    }
+
+    func switchTab(to key: WindowKey) -> Bool {
+        guard let group = tabGroups.withLock({ $0[key] }),
+              let visible = group.first(where: { self.window($0).map(shown) == true }),
+              let frame = window(visible)?.frame else { return false }
+        state.withLock {
+            $0[visible]?.withdrawn = true
+            $0[key]?.withdrawn = false
+            $0[key]?.frame = frame
+        }
+        return true
+    }
+
+    func selectedTab(replacing window: WindowKey) async -> WindowInfo? {
+        guard reachable, self.window(window)?.withdrawn == true,
+              let group = tabGroups.withLock({ $0[window] }) else { return nil }
+        for key in group where key != window {
+            if let selected = self.window(key), shown(selected) { return info(key, selected) }
+        }
+        return nil
+    }
+
+    func selectTab(_ window: WindowKey) async -> Bool { reachable && switchTab(to: window) }
 
     func isShown(_ window: WindowKey) async -> Bool {
         guard let w = self.window(window) else { return false }

@@ -21,6 +21,15 @@ public final class WindowService: WindowControl {
     private let queue = DispatchQueue(label: "com.zephyr4123.snug.windows", qos: .userInitiated)
     /// 每个 App 用远程令牌试出来的窗口对象和试的时刻（单调时钟）。只在 queue 上读写
     private let remote = Locked<[pid_t: (windows: [AXUIElement], scannedAt: TimeInterval)]>([:])
+    private static let ghostty = "com.mitchellh.ghostty"
+    private struct TabReference {
+        let group: AXUIElement
+        let button: AXUIElement
+        let position: Int
+        let titles: [String]
+    }
+    /// Ghostty 只把选中的标签作为 AXWindow 暴露。只有看到选中时的窗口编号才建关联。只在 queue 上读写。
+    private let tabs = Locked<[WindowKey: TabReference]>([:])
 
     public init() {}
 
@@ -48,6 +57,7 @@ public final class WindowService: WindowControl {
     public func withdrawn(_ window: WindowKey) async -> Bool {
         guard case .present(onscreen: false) = Self.serverInfo(window) else { return false }
         return await run {
+            if self.tabReference(window) != nil { return false }
             guard let listed = AX.respondingWindows(pid: window.pid) else { return false }
             if listed.contains(where: { AX.windowID($0) == window.id }) { return false }
             let scan = AX.remoteWindows(pid: window.pid, until: window.id)
@@ -58,8 +68,30 @@ public final class WindowService: WindowControl {
     public func look(_ window: WindowKey) async -> WindowLook? {
         await run {
             guard let element = AX.element(for: window), let frame = AX.frame(element) else { return nil }
+            if NSRunningApplication(processIdentifier: window.pid)?.bundleIdentifier == Self.ghostty {
+                self.rememberSelectedTab(element, key: window)
+            }
             return WindowLook(frame: frame, fullScreen: AX.flag(element, AX.fullScreen), minimized: AX.flag(element, kAXMinimizedAttribute))
         }
+    }
+
+    public func selectedTab(replacing window: WindowKey) async -> WindowInfo? {
+        guard tabs.withLock({ $0[window] != nil }) else { return nil }
+        return await run {
+            guard let reference = self.tabReference(window),
+                  let element = Self.selectedWindow(in: reference.group),
+                  let id = AX.windowID(element), id != window.id,
+                  let app = Self.app(window.pid), app.bundleID == Self.ghostty else { return nil }
+            let key = WindowKey(pid: window.pid, id: id)
+            guard case .present(onscreen: true) = Self.serverInfo(key) else { return nil }
+            self.rememberSelectedTab(element, key: key)
+            return Self.info(element, key: key, of: app)
+        }
+    }
+
+    public func selectTab(_ window: WindowKey) async -> Bool {
+        guard tabs.withLock({ $0[window] != nil }) else { return false }
+        return await run { self.selectKnownTab(window) != nil }
     }
 
     public func move(_ window: WindowKey, to frame: CGRect) async -> CGRect? {
@@ -232,11 +264,17 @@ public final class WindowService: WindowControl {
             let now = ProcessInfo.processInfo.systemUptime
             let running = Set(apps.map(\.pid))
             self.remote.withLock { $0 = $0.filter { running.contains($0.key) } }
+            self.tabs.withLock { $0 = $0.filter { running.contains($0.key.pid) } }
             let filled = apps.map { app in
                 var app = app
-                app.windows = AX.allWindows(pid: app.pid) { self.remoteWindows(pid: app.pid, now: now) }
-                    .filter(AX.isStandard)
-                    .compactMap { element in AX.windowID(element).map { Self.info(element, key: WindowKey(pid: app.pid, id: $0), of: app.app) } }
+                let elements = AX.allWindows(pid: app.pid) { self.remoteWindows(pid: app.pid, now: now) }.filter(AX.isStandard)
+                if app.app.bundleID == Self.ghostty {
+                    app.windows = self.ghosttyWindows(app, elements: elements)
+                } else {
+                    app.windows = elements.compactMap { element in
+                        AX.windowID(element).map { Self.info(element, key: WindowKey(pid: app.pid, id: $0), of: app.app) }
+                    }
+                }
                 return app
             }
             return AppList.ordered(filled, frontToBack: Self.frontToBack())
@@ -244,6 +282,89 @@ public final class WindowService: WindowControl {
     }
 
     // MARK: 内部
+
+    private func ghosttyWindows(_ app: RunningApp, elements: [AXUIElement]) -> [WindowInfo] {
+        var windows = elements.compactMap { element -> WindowInfo? in
+            // 缓存里的旧窗口对象可能还给得出标题，但已经不能作为窗口读了。
+            guard let id = AX.windowID(element), AX.frame(element) != nil else { return nil }
+            let key = WindowKey(pid: app.pid, id: id)
+            rememberSelectedTab(element, key: key)
+            return Self.info(element, key: key, of: app.app)
+        }
+        let listed = Set(windows.map(\.key))
+        let known = tabs.withLock { $0.keys.filter { $0.pid == app.pid && !listed.contains($0) } }
+        for key in known {
+            if let reference = tabReference(key) {
+                windows.append(Self.info(reference.button, key: key, of: app.app))
+            }
+        }
+        return windows
+    }
+
+    private func rememberSelectedTab(_ element: AXUIElement, key: WindowKey) {
+        guard let group = AX.children(element).first(where: { AX.string($0, kAXRoleAttribute) == kAXTabGroupRole }),
+              let selected = Self.selectedWindow(in: group), AX.windowID(selected) == key.id else { return }
+        let buttons = Self.tabButtons(group)
+        guard let position = buttons.firstIndex(where: { AX.flag($0, kAXValueAttribute) }) else { return }
+        let reference = TabReference(group: group, button: buttons[position], position: position, titles: Self.tabTitles(buttons))
+        tabs.withLock { $0[key] = reference }
+    }
+
+    private func tabReference(_ key: WindowKey) -> TabReference? {
+        guard let reference = tabs.withLock({ $0[key] }) else { return nil }
+        if case .absent = Self.serverInfo(key) {
+            tabs.withLock { $0[key] = nil }
+            return nil
+        }
+        guard let buttons = AX.attribute(reference.group, kAXTabsAttribute) as? [AXUIElement] else { return nil }
+        if let position = buttons.firstIndex(where: { CFEqual($0, reference.button) }) {
+            return TabReference(group: reference.group, button: buttons[position], position: position, titles: Self.tabTitles(buttons))
+        }
+        // AppKit 有时重建整排按钮，但标签组的对象没变。整组顺序仍对得上时，用原来的位置找按钮，
+        // 真正点选后再核对窗口编号。关掉标签时按钮数量会变，不能沿用这个位置。
+        guard buttons.count == reference.titles.count, Self.tabTitles(buttons) == reference.titles else {
+            tabs.withLock { $0[key] = nil }
+            return nil
+        }
+        return TabReference(group: reference.group, button: buttons[reference.position],
+                            position: reference.position, titles: reference.titles)
+    }
+
+    private func selectKnownTab(_ window: WindowKey) -> AXUIElement? {
+        guard let reference = tabReference(window), let current = Self.selectedWindow(in: reference.group),
+              let originalID = AX.windowID(current) else { return nil }
+        if originalID == window.id { return current }
+        let previous = Self.tabButtons(reference.group).firstIndex(where: { AX.flag($0, kAXValueAttribute) })
+        guard AX.press(reference.button) else { return nil }
+        let deadline = ProcessInfo.processInfo.systemUptime + 0.5
+        repeat {
+            if let current = Self.selectedWindow(in: reference.group), AX.windowID(current) == window.id { return current }
+            Thread.sleep(forTimeInterval: 0.025)
+        } while ProcessInfo.processInfo.systemUptime < deadline
+        // 有同名标签且期间重新排序时，位置可能变了。编号不对就选回原来的标签，不挪或关闭别的窗口。
+        if let previous, let now = Self.selectedWindow(in: reference.group),
+           let nowID = AX.windowID(now), nowID != originalID {
+            let buttons = Self.tabButtons(reference.group)
+            if buttons.indices.contains(previous), Self.tabTitles(buttons) == reference.titles {
+                _ = AX.press(buttons[previous])
+            }
+        }
+        return nil
+    }
+
+    private static func selectedWindow(in group: AXUIElement) -> AXUIElement? {
+        guard let value = AX.attribute(group, kAXWindowAttribute), CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+        let window = value as! AXUIElement
+        return AX.string(window, kAXRoleAttribute) == kAXWindowRole ? window : nil
+    }
+
+    private static func tabButtons(_ group: AXUIElement) -> [AXUIElement] {
+        AX.attribute(group, kAXTabsAttribute) as? [AXUIElement] ?? []
+    }
+
+    private static func tabTitles(_ buttons: [AXUIElement]) -> [String] {
+        buttons.map { AX.string($0, kAXTitleAttribute) ?? "" }
+    }
 
     /// 别的桌面空间里的窗口：试一遍是一千次跨进程调用（实测十个 App 约 240ms），列表每 1.5 秒刷一次时不能每次都试。
     /// 试出来的对象记下来接着用（关掉的窗口读不到属性，自然掉出列表）。过了 remoteRescanInterval 先照旧用，

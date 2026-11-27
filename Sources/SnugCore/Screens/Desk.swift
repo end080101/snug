@@ -238,6 +238,11 @@ public final class Desk {
             state.notice = .screenNotReady
             return
         }
+        // 先确认选中的窗口够得着。切同组标签时窗口位置已经跟过去，不把旧标签放回再重新挪。
+        guard await syncSelectedTab() else { return }
+        if placement?.window.key != window.key {
+            guard await reach(window, selectingTab: true) != nil, await syncSelectedTab() else { return }
+        }
         if placement?.window.key == window.key {
             await reveal()
             return
@@ -263,7 +268,6 @@ public final class Desk {
     /// 点到刚关掉的卡片，不能先把现在的拆了、两头落空；放回不了（App 卡住）就不放：两个窗口会叠在屏上，还原记录也只记得住一个。
     /// 成了交回要放的窗口此刻的样子（放回别的窗口可能动到它，重新读）
     private func clearScreen(for window: WindowInfo) async -> WindowLook? {
-        guard await reach(window) != nil else { return nil }
         if let p = placement, await !returnToOriginal(p) {
             Log.warn("\(p.window.label) 放不回去，先不换成 \(window.label)")
             state.notice = .windowUnresponsive(app: p.window.app)
@@ -284,9 +288,10 @@ public final class Desk {
         let inherited = handover?.record
         let known = Set(await windows.shownWindows(of: window.key.pid).map(\.key)).subtracting([window.key])
         let owed = inherited == nil ? env.leftBehind.owed(by: window, frame: look.frame) : nil
-        let record = inherited ?? owed?.record ?? PlacedRecord(
+        var record = inherited ?? (owed?.tabZoomOnly == true ? nil : owed?.record) ?? PlacedRecord(
             window: window.key, app: window.app, label: window.label, original: env.originalFrame(look.frame),
             wasFullScreen: look.fullScreen, wasMinimized: look.minimized, bundleID: window.bundleID, title: window.title)
+        if let owed, owed.tabZoomOnly { record.zoom = owed.record.zoom }
         var next = Placement(window: window, record: record, width: screenFit.baseWidth, known: known, asking: !zoom)
         guard write(next.record) else {
             state.notice = .recordUnwritable
@@ -301,7 +306,7 @@ public final class Desk {
         if look.fullScreen {
             await windows.setFullScreen(window.key, false)
             // 退出全屏后的位置才是它平时的位置：放回时回到这里再进全屏。跟过来的、认来的账原位是当初的，不改
-            if inherited == nil, owed == nil, let windowed = await windows.look(window.key)?.frame {
+            if inherited == nil, owed == nil || owed?.tabZoomOnly == true, let windowed = await windows.look(window.key)?.frame {
                 next.record.original = env.originalFrame(windowed)
                 write(next.record)
             }
@@ -337,7 +342,7 @@ public final class Desk {
             state.notice = .screenNotReady
             return true
         }
-        guard let look = await reach(window) else { return true }
+        guard let look = await reach(window, selectingTab: true) else { return true }
         guard !look.minimized, bounds.contains(CGPoint(x: look.frame.midX, y: look.frame.midY)) else { return false }
         await windows.focus(window.key)
         Log.info("切换到 \(window.label)\(look.fullScreen ? "（全屏）" : "")")
@@ -349,7 +354,7 @@ public final class Desk {
     /// 从别的屏转过来的用跟过来的那份；挪不过来就按账放回
     private func bring(_ window: WindowInfo, from handover: Handover?) async {
         guard let area = screens.windowArea(id, withHomeBar: false) else { return state.notice = .screenNotReady }
-        guard var look = await windows.look(window.key) else { return state.notice = await env.unreachable(window) }
+        guard var look = await reach(window, selectingTab: true) else { return }
         let kept = handover?.record ?? brought[window.key]
         var record = kept ?? PlacedRecord(
             window: window.key, app: window.app, label: window.label, original: env.originalFrame(look.frame),
@@ -473,7 +478,7 @@ public final class Desk {
     /// 收起列表、露出屏上的窗口：先换到它那一档、重新铺满，再收列表、激活它。
     /// 换档时列表还盖着，手机上看不到窗口被挪来挪去
     func reveal() async {
-        guard screens.display(id) != nil, let p = placement else { return }
+        guard screens.display(id) != nil, await syncSelectedTab(), let p = placement else { return }
         // 资源库露着时不查收起来没有（见 verify）：要回到它时才看，被收起来了就按关了处理，不露出空桌面
         if await windows.look(p.window.key) == nil, await windows.withdrawn(p.window.key) {
             return await lostOutside(p, "被 App 收起来了（点关闭只是收起来），算在 Snug 之外关了")
@@ -527,6 +532,7 @@ public final class Desk {
     /// 放回原位、回到 App 资源库，返回放回去了没有。restoringState 为 false 时不恢复全屏、最小化（马上要关的窗口）。
     /// 没放回去时窗口还在屏上，照旧算放着（字号按实际缩回了多少算），还原记录也留着
     func returnToOriginal(restoringState: Bool = true) async -> Bool {
+        guard await syncSelectedTab() else { return false }
         guard let p = placement else { return true }
         return await returnToOriginal(p, restoringState: restoringState)
     }
@@ -545,7 +551,7 @@ public final class Desk {
 
     /// 放回屏上的窗口（小横条上的「还原」）。放不回去（App 卡住）就留在屏上，提示一下，可以再点
     func putBackPlaced() async {
-        if let p = placement, await !returnToOriginal(p) {
+        if let p = placement, await !returnToOriginal() {
             state.notice = .windowUnresponsive(app: p.window.app)
         }
         await matchWidth()
@@ -564,6 +570,7 @@ public final class Desk {
     /// 电脑屏上挪过来的还记着账的都放回（关了的 putBack 自己销账）。这时不按位置判断是不是被用户挪走了：
     /// 撤之前先设回原主屏，系统会把新主屏上的窗口整体搬回原主屏，看上去像挪走了；用户自己挪走的，定期核对时已经销了
     func vacate() async {
+        if let p = placement { _ = await followSelectedTab(p) }
         if let p = placement { await putBack(p.record) }
         placement = nil
         for key in brought.keys.sorted(by: Self.order) {
@@ -660,7 +667,12 @@ public final class Desk {
         guard behavior.touch else { return await verifyBrought() }
         guard let p = placement else { return }
         guard await windows.exists(p.window.key) else { return await lostOutside(p, "在 Snug 之外关了") }
-        guard !state.listVisible, await !windows.isShown(p.window.key) else { return }
+        if state.listVisible {
+            _ = await followSelectedTab(p)
+            return
+        }
+        guard await !windows.isShown(p.window.key) else { return }
+        if await followSelectedTab(p) { return }
         // 进出全屏的动画里窗口服务器有半秒报它没显示（11-25 实测 0.5～0.6 秒），这时屏上不是空桌面。
         // 动画末尾那几十毫秒和 App 把窗口收起来时读到的一模一样（同一个桌面空间、没排在屏上、辅助功能列表里没有），
         // 一次读数分不清：隔过动画再看一次，还没显示才算不在屏上
@@ -670,10 +682,52 @@ public final class Desk {
         guard await !windows.isShown(p.window.key) else {
             return Log.info("屏上的 \(p.window.label) 一时没显示（进出全屏时会这样），再看已经显示，不回资源库")
         }
+        if await followSelectedTab(p) { return }
         if await windows.withdrawn(p.window.key) { return await lostOutside(p, "被 App 收起来了（点关闭只是收起来），算在 Snug 之外关了") }
         Log.info("屏上的 \(p.window.label) 不在屏上了（最小化或 App 被隐藏），回到 App 资源库")
         state.listVisible = true
         await matchWidth()
+    }
+
+    /// Ghostty 换标签时，选中的窗口编号换了，标签组和位置没换。跟着当前标签，保留窗口原位和各标签的字号账。
+    /// 认出是切标签就不退回资源库。写账失败时留着原账，下次核对再试。
+    private func followSelectedTab(_ previous: Placement) async -> Bool {
+        guard !previous.asking, await !windows.isShown(previous.window.key),
+              let tab = await windows.selectedTab(replacing: previous.window.key),
+              let look = await windows.look(tab.key),
+              let bounds = screens.bounds(id), bounds.contains(CGPoint(x: look.frame.midX, y: look.frame.midY))
+        else { return false }
+        let owed = env.leftBehind.owedByTab(tab)
+        var record = previous.record
+        record.window = tab.key
+        record.label = tab.label
+        record.title = tab.title
+        record.zoom = owed?.record.zoom ?? 0
+        record.filled = look.frame
+        guard env.leftBehind.preserveTabZoom(previous.record), write(record) else {
+            state.notice = .recordUnwritable
+            return true
+        }
+        let known = previous.known.union([previous.window.key]).subtracting([tab.key])
+        placement = Placement(window: tab, record: record, width: previous.width, settled: previous.settled, known: known)
+        if let owed { env.leftBehind.settle(owed) }
+        state.closeButton = await windows.closeButton(tab.key).map {
+            CloseButton(frame: $0, window: tab.key.id, windowFrame: look.frame)
+        }
+        if !state.listVisible { await refill(because: "切换了标签") }
+        Log.info("屏上的 \(tab.app) 切换了标签（窗口 \(previous.window.key.id) → \(tab.key.id)），继续显示 \(tab.label)")
+        return true
+    }
+
+    /// true 包括没有切过标签；认出切了但没能写下新还原账时，不能继续挪窗口或销旧账。
+    private func syncSelectedTab() async -> Bool {
+        guard let previous = placement, await followSelectedTab(previous) else { return true }
+        return placement?.window.key != previous.window.key
+    }
+
+    /// 从另一块屏点了同组未选中的标签，先跟上当前标签，再按正常的跨屏规则转交原位。
+    func trackSelectedTab(_ key: WindowKey) async -> Bool {
+        await syncSelectedTab() && placement?.window.key == key
     }
 
     /// 放着的窗口在 Snug 之外关了：回到资源库，账转成留下的账等它回来（见 LeftBehind）；它的 App 接着开出新窗口就接着放上来
@@ -817,8 +871,9 @@ public final class Desk {
     }
 
     /// 读要放的窗口；读不到就提示是关了还是 App 没响应
-    private func reach(_ window: WindowInfo) async -> WindowLook? {
+    private func reach(_ window: WindowInfo, selectingTab: Bool = false) async -> WindowLook? {
         if let look = await windows.look(window.key) { return look }
+        if selectingTab, await windows.selectTab(window.key), let look = await windows.look(window.key) { return look }
         let notice = await env.unreachable(window)
         Log.warn("读不到 \(window.label)（\(Self.reason(notice, gone: "已经关了"))），不放")
         state.notice = notice

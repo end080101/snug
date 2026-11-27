@@ -60,6 +60,10 @@ public protocol WindowControl: Sendable {
     /// 辅助功能找不到、挪不动，等 App 再拿出来。对用户来说就是关了。最小化、App 被隐藏、在别的桌面空间的照样给出，不算；
     /// App 没响应、没有权限时不知道，返回 false
     func withdrawn(_ window: WindowKey) async -> Bool
+    /// 同一标签组里另一标签已经显示，原标签仍在组内时，交回选中的窗口。
+    func selectedTab(replacing window: WindowKey) async -> WindowInfo?
+    /// 只激活认得出确切编号的标签，成功后该编号可读。
+    func selectTab(_ window: WindowKey) async -> Bool
     /// 读不到（窗口没了、App 没响应、没有权限）返回 nil
     func look(_ window: WindowKey) async -> WindowLook?
     /// 挪到 frame 并核对，对不上就重试；返回最后的位置，挪不动返回 nil

@@ -10,6 +10,7 @@ final class LeftBehindLedger {
     struct Owed {
         let record: PlacedRecord
         fileprivate let entry: LeftBehind
+        var tabZoomOnly: Bool { entry.tabZoomOnly == true }
     }
 
     private(set) var book: LeftBehindBook
@@ -59,6 +60,28 @@ final class LeftBehindLedger {
         book.match(window, frame: frame).map { Owed(record: book.entries[$0].returned(as: window.key), entry: book.entries[$0]) }
     }
 
+    /// 标签共用窗口位置，但 Ghostty 的字号各存各的。只按原编号认这笔字号，免得尺寸相同的另一个标签拿错。
+    func preserveTabZoom(_ record: PlacedRecord) -> Bool {
+        guard record.zoom != 0 else { return true }
+        var zoom = record
+        zoom.filled = nil
+        var updated = book
+        updated.add(LeftBehind(record: zoom, since: Date(), tabZoomOnly: true))
+        updated.prune(now: Date())
+        do {
+            try file.save(updated)
+            book = updated
+            return true
+        } catch {
+            Log.error("标签字号记不下来（left-behind.json）：\(error)")
+            return false
+        }
+    }
+
+    func owedByTab(_ window: WindowInfo) -> Owed? {
+        book.exactMatch(window).map { Owed(record: book.entries[$0].returned(as: window.key), entry: book.entries[$0]) }
+    }
+
     /// 接着用这笔账放上屏了（Desk 把它写进了自己的还原账）：这边销掉
     func settle(_ owed: Owed) {
         guard let i = book.entries.firstIndex(of: owed.entry) else { return }
@@ -94,6 +117,11 @@ final class LeftBehindLedger {
             }
             // 缩完先记账：挪的时候出事，下次不会再缩一遍
             entry = update(entry) { $0.record.zoom = 0 }
+        }
+        // 标签的原位由同组当前选中的窗口还原，这里只缩回这个标签的字号。
+        if owed.tabZoomOnly {
+            settle(Owed(record: owed.record, entry: entry))
+            return
         }
         // 同一个窗口不论大小都认，回来时可能是全屏的：全屏的窗口不吃挪动，同放回（Desk.putBack）先退出全屏
         if await windows.look(window.key)?.fullScreen == true { await windows.setFullScreen(window.key, false) }
