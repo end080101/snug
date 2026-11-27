@@ -26,7 +26,8 @@ public final class WindowService: WindowControl {
         let group: AXUIElement
         let button: AXUIElement
         let position: Int
-        let titles: [String]
+        let count: Int
+        let title: String
     }
     /// Ghostty 只把选中的标签作为 AXWindow 暴露。只有看到选中时的窗口编号才建关联。只在 queue 上读写。
     private let tabs = Locked<[WindowKey: TabReference]>([:])
@@ -78,7 +79,7 @@ public final class WindowService: WindowControl {
     public func selectedTab(replacing window: WindowKey) async -> WindowInfo? {
         guard tabs.withLock({ $0[window] != nil }) else { return nil }
         return await run {
-            guard let reference = self.tabReference(window),
+            guard let (reference, _) = self.tabReference(window),
                   let element = Self.selectedWindow(in: reference.group),
                   let id = AX.windowID(element), id != window.id,
                   let app = Self.app(window.pid), app.bundleID == Self.ghostty else { return nil }
@@ -294,8 +295,11 @@ public final class WindowService: WindowControl {
         let listed = Set(windows.map(\.key))
         let known = tabs.withLock { $0.keys.filter { $0.pid == app.pid && !listed.contains($0) } }
         for key in known {
-            if let reference = tabReference(key) {
-                windows.append(Self.info(reference.button, key: key, of: app.app))
+            if let (reference, buttons) = tabReference(key) {
+                let button = buttons.first { CFEqual($0, reference.button) }
+                let title = button.flatMap { AX.string($0, kAXTitleAttribute) } ?? reference.title
+                windows.append(WindowInfo(key: key, app: app.app.name, bundleID: app.app.bundleID,
+                                          title: WindowInfo.visibleTitle(title)))
             }
         }
         return windows
@@ -306,36 +310,38 @@ public final class WindowService: WindowControl {
               let selected = Self.selectedWindow(in: group), AX.windowID(selected) == key.id else { return }
         let buttons = Self.tabButtons(group)
         guard let position = buttons.firstIndex(where: { AX.flag($0, kAXValueAttribute) }) else { return }
-        let reference = TabReference(group: group, button: buttons[position], position: position, titles: Self.tabTitles(buttons))
+        let reference = TabReference(group: group, button: buttons[position], position: position, count: buttons.count,
+                                     title: AX.string(buttons[position], kAXTitleAttribute) ?? "")
         tabs.withLock { $0[key] = reference }
     }
 
-    private func tabReference(_ key: WindowKey) -> TabReference? {
+    private func tabReference(_ key: WindowKey) -> (TabReference, [AXUIElement])? {
         guard let reference = tabs.withLock({ $0[key] }) else { return nil }
         if case .absent = Self.serverInfo(key) {
             tabs.withLock { $0[key] = nil }
             return nil
         }
         guard let buttons = AX.attribute(reference.group, kAXTabsAttribute) as? [AXUIElement] else { return nil }
-        if let position = buttons.firstIndex(where: { CFEqual($0, reference.button) }) {
-            return TabReference(group: reference.group, button: buttons[position], position: position, titles: Self.tabTitles(buttons))
-        }
-        // AppKit 有时重建整排按钮，但标签组的对象没变。整组顺序仍对得上时，用原来的位置找按钮，
-        // 真正点选后再核对窗口编号。关掉标签时按钮数量会变，不能沿用这个位置。
-        guard buttons.count == reference.titles.count, Self.tabTitles(buttons) == reference.titles else {
+        // AppKit 换标签时可能重建整排按钮。窗口仍在、标签组未换且没有变少时，可以跟着当前标签。
+        // 终端随时会更新标题，标题变化不能当成标签离开了这组。
+        guard buttons.contains(where: { CFEqual($0, reference.button) }) || buttons.count == reference.count else {
             tabs.withLock { $0[key] = nil }
             return nil
         }
-        return TabReference(group: reference.group, button: buttons[reference.position],
-                            position: reference.position, titles: reference.titles)
+        return (reference, buttons)
     }
 
     private func selectKnownTab(_ window: WindowKey) -> AXUIElement? {
-        guard let reference = tabReference(window), let current = Self.selectedWindow(in: reference.group),
+        guard let (reference, buttons) = tabReference(window), let current = Self.selectedWindow(in: reference.group),
               let originalID = AX.windowID(current) else { return nil }
         if originalID == window.id { return current }
-        let previous = Self.tabButtons(reference.group).firstIndex(where: { AX.flag($0, kAXValueAttribute) })
-        guard AX.press(reference.button) else { return nil }
+        let titles = Self.tabTitles(buttons)
+        let matchingTitle = titles.indices.filter { !reference.title.isEmpty && titles[$0] == reference.title }
+        let position = buttons.firstIndex { CFEqual($0, reference.button) }
+            ?? (matchingTitle.count == 1 ? matchingTitle.first : reference.position)
+        guard let position, buttons.indices.contains(position) else { return nil }
+        let previous = buttons.firstIndex { AX.flag($0, kAXValueAttribute) }
+        guard AX.press(buttons[position]) else { return nil }
         let deadline = ProcessInfo.processInfo.systemUptime + 0.5
         repeat {
             if let current = Self.selectedWindow(in: reference.group), AX.windowID(current) == window.id { return current }
@@ -345,7 +351,7 @@ public final class WindowService: WindowControl {
         if let previous, let now = Self.selectedWindow(in: reference.group),
            let nowID = AX.windowID(now), nowID != originalID {
             let buttons = Self.tabButtons(reference.group)
-            if buttons.indices.contains(previous), Self.tabTitles(buttons) == reference.titles {
+            if buttons.indices.contains(previous), Self.tabTitles(buttons) == titles {
                 _ = AX.press(buttons[previous])
             }
         }
