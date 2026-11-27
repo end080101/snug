@@ -191,6 +191,7 @@ final class FakeWindows: WindowControl {
     private let asking = Locked<Asking?>(nil)
     private let closeReactions = Locked<[WindowKey: CloseReaction]>([:])
     private let tabGroups = Locked<[WindowKey: Set<WindowKey>]>([:])
+    private let readableInactiveTabs = Locked<Set<WindowKey>>([])
     /// 判断窗口出没出现在屏上的时钟（见 Window.shownFrom）
     let clock = Locked<(@Sendable () -> TimeInterval)?>(nil)
     /// 设了就在每次挪窗口、发按键时记一下此刻还原记录在不在（检查「先记账再动手」）
@@ -307,6 +308,11 @@ final class FakeWindows: WindowControl {
         withdraw(other)
     }
 
+    /// Ghostty 有时仍能读到未选中标签的旧位置，却没有真正选中它。
+    func allowInactiveTabLook(_ window: WindowKey) {
+        _ = readableInactiveTabs.withLock { $0.insert(window) }
+    }
+
     func switchTab(to key: WindowKey) -> Bool {
         guard let group = tabGroups.withLock({ $0[key] }),
               let visible = group.first(where: { self.window($0).map(shown) == true }),
@@ -383,7 +389,8 @@ final class FakeWindows: WindowControl {
     }
 
     func look(_ window: WindowKey) async -> WindowLook? {
-        guard let w = axWindow(window) else { return nil }
+        guard let w = axWindow(window) ?? (reachable && readableInactiveTabs.withLock { $0.contains(window) } ? self.window(window) : nil)
+        else { return nil }
         return WindowLook(frame: w.frame, fullScreen: w.fullScreen, minimized: w.minimized)
     }
 

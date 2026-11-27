@@ -872,8 +872,9 @@ public final class Desk {
 
     /// 读要放的窗口；读不到就提示是关了还是 App 没响应
     private func reach(_ window: WindowInfo, selectingTab: Bool = false) async -> WindowLook? {
+        // 未激活的标签有时还读得到旧位置。先选中再读，才能跟着同组窗口接过原位，而不会先归位再挪一遍。
+        if selectingTab { _ = await windows.selectTab(window.key) }
         if let look = await windows.look(window.key) { return look }
-        if selectingTab, await windows.selectTab(window.key), let look = await windows.look(window.key) { return look }
         let notice = await env.unreachable(window)
         Log.warn("读不到 \(window.label)（\(Self.reason(notice, gone: "已经关了"))），不放")
         state.notice = notice
